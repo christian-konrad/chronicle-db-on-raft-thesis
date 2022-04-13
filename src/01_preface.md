@@ -1,5 +1,5 @@
 ---
-title: Log Replication using Raft Consensus Protocol for ChronicleDB, a High-Throughput Time-Series Database \vspace{2ex}
+title: Log Replication using Raft Consensus Protocol for ChronicleDB, a High-Throughput Event Store \vspace{2ex}
 subtitle: > 
     Master Thesis\vspace{1ex}
 date: 07.11.2021\vspace{4ex}
@@ -17,7 +17,7 @@ header-includes: |
     \pagestyle{fancy}
     \fancyhead{}
     \fancyfoot{}
-    \fancyhead[LE,RO]{<Log Replication using Raft Consensus Protocol for ChronicleDB, a High-Throughput Time-Series Database > \hfill \thepage}
+    \fancyhead[LE,RO]{\leftmark\hfill \thepage}
     \renewcommand{\headrulewidth}{0pt}    
     \usepackage{tikz}
     \usetikzlibrary{shapes,arrows,positioning,calc,fit,babel}
@@ -29,7 +29,12 @@ header-includes: |
     \usepackage{xcolor}
     \usepackage{boxedminipage}
     \usepackage{needspace}
+    \usepackage{epigraph}
+    \setlength\epigraphwidth{8cm}
+    \setlength\epigraphrule{0pt}
+    \usepackage[raggedright]{titlesec}
     \usepackage[font={small},justification=centering]{caption}
+    \usepackage{glossaries}
     \lstset{
       columns=fullflexible,
       frame=single,
@@ -55,10 +60,10 @@ header-includes: |
 bibliography: [citations.bib]
 csl: [ieee.csl]    
 classoption: [symmetric]
-documentclass: article
+documentclass: report
 link-citations: true
 numbersections: true
-secnumdepth: 2
+secnumdepth: 4
 indent: true
 hyperrefoptions:
 - breaklinks

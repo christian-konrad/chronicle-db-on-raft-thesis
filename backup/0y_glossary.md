@@ -1,0 +1,16 @@
+# Glossary {#sec:glossary}
+
+\newglossaryentry{latex}
+{
+    name=latex,
+    description={Is a markup language specially suited 
+    for scientific documents}
+}
+
+\newglossaryentry{maths}
+{
+    name=mathematics,
+    description={Mathematics is what mathematicians do}
+}
+
+\printglossaries
