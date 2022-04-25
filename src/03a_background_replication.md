@@ -1,5 +1,7 @@
 ## Why Replication {#sec:why-replication}
 
+> TODO or call it "Motivation"?
+
 \epigraph{A distributed system is one in which the failure of a computer you didn't even know existed can render your own computer unusable.}{--- \textup{Leslie Lamport} \cite{milojicic2002discussion}}
 
 - Performance
@@ -17,7 +19,7 @@ Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod 
 
 #### Distributed Systems
 
-Distributed systems are...
+A distributed system is a collection of autonomous computing elements that appears to its users as a single coherent system [@steen2007distributed].
 
 Replication plays an important role in distributed systems. In fact, a distributed system...
 
@@ -36,6 +38,8 @@ High availability requires that your application can handle node failures withou
 - Fault tolerance
   - Against data corruption
   - Against faulty operations (see byzantine fault in next subchapter)
+
+See [@cristian1991understanding]
 
 Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.
 
@@ -57,7 +61,7 @@ Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod 
 - Results in various consistency models with different correctness properties:
   - **Weak Consistency** - 
   - **Strong Consistency** - 
-  - TODO more [gotsman2016cause]
+  - TODO more [@gotsman2016cause]
 "requesting stronger consistency in too many places may hurt performance, and requesting it in too few places may violate correctness"
 
 - TODO describe that I opted for strong consistency here

@@ -12,6 +12,11 @@ Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod 
 
 ## Popular Applications of Replication Protocols
 
+### LogCabin
+
+Written by the author of Raft... [@ongaro2015logcabin]
+... this thesis' implementation for metadata and cluster management follows similar principle... see Implementation Section 
+
 ### Apache Kafka
 
 #### Zookeeper
@@ -52,7 +57,7 @@ Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod 
 
 ### Apache Ozone
 
-Apache Ozone is a... [apache2022ozone]
+Apache Ozone is a... [@apache2022ozone]
 The replication layer of Apache Ozone is built upon Apache Ratis, a library for..., []
 Apaache Ratis is the library of choice for the implementation of a replicated event store presented in the next chapter.
 

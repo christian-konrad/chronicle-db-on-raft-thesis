@@ -5,6 +5,17 @@
   publisher={Tech Report. May, 2014. http://ramcloud. stanford. edu/Raft. pdf}  
 }
 
+@phdthesis{ongaro2014consensus,
+  title={Consensus: Bridging theory and practice},
+  author={Ongaro, Diego},
+  advisor={K., Ousterhout, John and David, Mazi\`{e}res, and Mendel, Rosenblum,},
+  year={2014},
+  isbn = {9798662514218},
+  address={Stanford, CA, USA},
+  publisher={Stanford University},
+  howpublished={\url{https://purl.stanford.edu/qr033xr6097}}  
+}
+
 @article{seidemann2019chronicledb,
   title={Chronicledb: A high-performance event store},
   author={Seidemann, Marc and Glombiewski, Nikolaus and K{\"o}rber, Michael and Seeger, Bernhard},
@@ -13,7 +24,20 @@
   number={4},
   pages={1--45},
   year={2019},
+  doi={10.1145/3342357},
   publisher={ACM New York, NY, USA}
+}
+
+@article{glombiewski2020designing,
+  title={Designing an event store for a modern three-layer storage hierarchy},
+  author={Glombiewski, Nikolaus and G{\"o}tze, Philipp and K{\"o}rber, Michael and Morgen, Andreas and Seeger, Bernhard},
+  journal={Datenbank-Spektrum},
+  volume={20},
+  number={3},
+  pages={211--222},
+  year={2020},
+  doi={10.1007/s13222-020-00356-6},
+  publisher={Springer}
 }
 
 @article{lamport1992distributed,
@@ -24,6 +48,48 @@
   year={1992}
 }
 
+@book{steen2007distributed,
+  title={Distributed systems},
+  author={Steen, Maarten van and Tanenbaum, Andrew S},
+  publisher={CreateSpace Independent Publishing Platform},
+  year={2007}
+  isbn={978-1543057386}
+}
+
+@article{cristian1991understanding,
+  title={Understanding fault-tolerant distributed systems},
+  author={Cristian, Flavin},
+  journal={Communications of the ACM},
+  volume={34},
+  number={2},
+  pages={56--78},
+  year={1991},
+  doi={10.1145/102792.102801},
+  publisher={ACM New York, NY, USA}
+}
+
+@article{schneider1990implementing,
+  title={Implementing fault-tolerant services using the state machine approach: A tutorial},
+  author={Schneider, Fred B},
+  journal={ACM Computing Surveys (CSUR)},
+  volume={22},
+  number={4},
+  pages={299--319},
+  year={1990},
+  doi={10.1145/98163.98167},
+  publisher={ACM New York, NY, USA}
+}
+
+@inproceedings{garg2010implementing,
+  title={Implementing fault-tolerant services using state machines: Beyond replication},
+  author={Garg, Vijay K},
+  booktitle={International Symposium on Distributed Computing},
+  pages={450--464},
+  year={2010},
+  doi={10.1007/978-3-642-15763-9_44},
+  organization={Springer}
+}
+
 @article{milojicic2002discussion,
   title={A discussion with Leslie Lamport},
   author={Milojicic, Dejan},
@@ -32,6 +98,29 @@
   number={8},
   year={2002}
 }
+
+@inproceedings{xu2019elastic,
+  title={Elastic, geo-distributed raft},
+  author={Xu, Zichen and Stewart, Christopher and Huang, Jiacheng},
+  booktitle={2019 IEEE/ACM 27th International Symposium on Quality of Service (IWQoS)},
+  pages={1--9},
+  year={2019},
+  organization={IEEE}
+}
+
+@inbook{lamport1982byzantine,
+author={Lamport, Leslie and Shostak, Robert and Pease, Marshall},
+title={The Byzantine Generals Problem},
+year={2019},
+isbn={9781450372701},
+publisher={Association for Computing Machinery},
+address={New York, NY, USA},
+doi={10.1145/3335772.3335936}
+booktitle={Concurrency: The Works of Leslie Lamport},
+pages={203–226},
+numpages={24}
+}
+
 
 @misc{clow2017byzantine,
   title={A byzantine fault tolerant raft},
@@ -47,12 +136,37 @@
   publisher={Tech. Rep}
 }
 
+@inproceedings{tan2019vbbft,
+  title={VBBFT-Raft: an understandable blockchain consensus protocol with high performance},
+  author={Tan, Dezhi and Hu, Jianguo and Wang, Jun},
+  booktitle={2019 IEEE 7th International Conference on Computer Science and Network Technology (ICCSNT)},
+  pages={111--115},
+  year={2019},
+  organization={IEEE}
+  doi={10.1109/ICCSNT47585.2019.8962479}
+}
+
+@inproceedings{arora2017leader,
+  title={Leader or majority: Why have one when you can have both? improving read scalability in raft-like consensus protocols},
+  author={Arora, Vaibhav and Mittal, Tanuj and Agrawal, Divyakant and El Abbadi, Amr and Xue, Xun and others},
+  booktitle={9th USENIX Workshop on Hot Topics in Cloud Computing (HotCloud 17)},
+  year={2017}
+}
+
 @inproceedings{gotsman2016cause,
   title={'Cause I'm strong enough: Reasoning about consistency choices in distributed systems},
   author={Gotsman, Alexey and Yang, Hongseok and Ferreira, Carla and Najafzadeh, Mahsa and Shapiro, Marc},
   booktitle={Proceedings of the 43rd Annual ACM SIGPLAN-SIGACT Symposium on Principles of Programming Languages},
   pages={371--384},
   year={2016}
+}
+
+@inproceedings{deyerl2019search,
+  title={In search of a scalable Raft-based replication architecture},
+  author={Deyerl, Christian and Distler, Tobias},
+  booktitle={Proceedings of the 6th Workshop on Principles and Practice of Consistency for Distributed Data},
+  pages={1--7},
+  year={2019}
 }
 
 @misc{rabbitmq2021quorum,
@@ -113,5 +227,15 @@
   journal={GitHub Repository},
   title={ChronicleDB Cloud},
   year={2022},
+  note={Accessed: 2022-04-13}
+}
+
+@misc{ongaro2015logcabin,
+  author={Diego Ongaro},
+  howpublished={\url{https://github.com/logcabin/logcabin}},
+  publisher={GitHub},
+  journal={GitHub Repository},
+  title={LogCabin},
+  year={2015},
   note={Accessed: 2022-04-13}
 }

@@ -23,6 +23,8 @@ Lorem ipsum [@seidemann2019chronicledb]
 
 - Out-Of-Order
 
-ABC
+ABC 
+
+More benefits... [@glombiewski2020designing]
 
 \pagebreak

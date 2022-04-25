@@ -17,7 +17,7 @@
 
 ## Apache Ratis
 
-- Repo, maybe mvn link, version 2.1.0 [ratisGithub2022] 
+- Repo, maybe mvn link, version 2.1.0 [@apache2022ratis] [@apacheratis2022github] 
 
 TODO from https://de.slideshare.net/Hadoop_Summit/high-throughput-data-replication-over-raft:
 Raft protocol has been successfully used for consistent metadata replication; however, using it for data replication poses unique challenges. Apache Ratis is a RAFT implementation targeted at high throughput data replication problems. 
@@ -51,11 +51,13 @@ in order to support zero buffer coping and a light-weighted raft log.
 
 #### Cluster Management
 
+- Similar to LogCabin (see previous work)
 - The management quorum
 - Bookkeeping of available nodes and balancing partitions
 - Heartbeats and health checks
 - Registering of Partitions for StateMachines
 - Additional RaftServer (with own port)
+- Explain how to startup the cluster similar to https://github.com/logcabin/logcabin/blob/master/README.md
 
 #### Event Store State Machine
 
