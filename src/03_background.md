@@ -1,6 +1,11 @@
 # Background {#sec:background}
 
-- TODO what of this does belong to introduction, what to background?
+<!--
+Fundamentals / environment and related work: 1/3
+• describe methods and techniques that build the basis of your work 
+• review related work(!)
+-->
+
 - Describe in short requirements to modern software, platforms and databases
   - Served from the cloud
   - Must be high available, fast (independent of geographic region)

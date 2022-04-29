@@ -1,4 +1,11 @@
-# Design and Implementation {#sec:implementation}
+## System Design and Architecture {#sec:system-design}
+
+<!--
+Developed architecture / system design / implementation: 1/3
+• start with a theoretical approach
+• describe the developed system/algorithm/method from a high-level point of view
+• go ahead in presenting your developments in more detail
+-->
 
 - This section is about the solution design and implementation
 - First list high-level requirements (strong consistency, availability, fault-tolerance...) just reference the previous chapters
@@ -45,9 +52,24 @@ in order to support zero buffer coping and a light-weighted raft log.
 
 - TODO better title for this chapter about the concrete implementation?
 
-### Overall Architecture
+### Requirements
 
-> TODO pretty architecture diagrams
+- List of all requirements/use cases
+
+### Overall Architecture & Design
+
+- Stack:
+    - Spring Boot
+        - Why Spring Boot
+    - Apache Ratis
+    - Google Protocol Buffers
+    - Standalone/Embedded ChronicleDB Event Store + ChronicleEngine
+
+- pretty architecture diagrams
+
+- Architecture in overview: Communication layers, client + server architecture, node architecture, how to run the system, ... afterwards the details in own sections
+
+- Describe target package/library ecosystem (replicated event store as lib, consumed by spring)
 
 #### Cluster Management
 
@@ -61,7 +83,10 @@ in order to support zero buffer coping and a light-weighted raft log.
 
 #### Event Store State Machine
 
-Lorem ipsum...
+- Standalone Event Store wrapped
+- Replicated Event Store as a facade / to be used as the client to the cluster
+- TODO think of moving it out of spring boot, use as standalone lib
+- TODO if reasonable, list algos
 
 #### Log Implementation
 
@@ -73,16 +98,20 @@ Lorem ipsum...
 - Persisting the log expensive
 - TODO compare with other databases write-ahead logs
 - OOO challenges
+- TODO if reasonable, list algos
 
 #### Buffered Inserts
 
-- > TODO pretty architecture diagram
+- TODO pretty architecture diagram (buffer state, timeout, flush... + what's in the raft log)
 - TODO reasoning, performance and concurrency considerations
 - TODO compare the 2 buffer approaches (blocking vs. non-blocking)
 - TODO explain impact of buffer sizes
 - TODO explain similarities with Raft Log Buffer
+- TODO if reasonable, list algos
 
 ### Simplified API for Apache Ratis
+
+> This should already be covered in previous sections (cluster management + state machine)
 
 - StateMachineProviders
 - PartitionInfo
@@ -90,17 +119,29 @@ Lorem ipsum...
 
 ### Partitioning using Multi-Raft Groups
 
+- Basic vertical partitioning by stream, no sharding
+- One raft group = one partition containing an instance of a certain state machine, distributed over n nodes (n = replication factor)
 - PriorityBlockingQueue for simple load balancing
     - Naive implementation (balanced per absolute # of partitions, not by time splits or per actual load); better partitioning approaches see background#Partitioning and Sharding + conclusion
+- Show diagram of partitioning approach
 
-### Replicated Microservices using Apache Ratis and Spring Boot
+
+### Replicated Microservice using Apache Ratis and Spring Boot
+
+> May omit this. This is about providing my interface as a library, which is nice-to-have, but not subject of this thesis
 
 // TODO consider to update title; as Microservices in general should be stateless and therefore replication does not make sense.
 It is more about replicating a state or storage that is consumed by services.
 
 ### Messaging between Raft Nodes using gRPC and Protocol Buffers
 
-Lorem ipsum...
+- Describe briefly the messaging format
+- ExecutableMessages with Executors framework
+- 1:1 protobuf message per java message wrapper
+- protobuf: the message. Java: How to apply the message's command on the state machine's state
+- Makes it scalable, modular, message-based instead of monolithic state machines
+    - If suitable depends on requirements. If state machine operations should be encapsuled and a closed set, just wrap a StateManager around it and reference it in the MessageExecutors
+- High potential for model based programming / code generation (could generate executors and java message objects from proto+annotations)
 
 ### Running in Docker Containers
 
@@ -109,8 +150,11 @@ Lorem ipsum...
 ### Running on Kubernetes
 
 - TODO only cover it in this section if I get a working prototype running
+- Helm Charts
 
 ### End-User APIs
+
+> This may be covered in previous sections
 
 #### Java API
 
@@ -121,6 +165,15 @@ Lorem ipsum...
 
 ### Management User Interface
 
+> Only brief description with a few screenshots
+
 Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.
+
+<!--
+TODOS:
+
+- Write readme.md
+- Write unit + integration tests
+-->
 
 \pagebreak

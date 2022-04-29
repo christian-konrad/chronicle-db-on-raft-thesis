@@ -15,6 +15,14 @@ You can use inline comments to organize yourself
 <!--- PARAGRAPH 1 - DESCRIBE IT HERE -->
 Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.
 
+<!--
+General motivation for your work, context and goals: 1-2 pages
+Make sure to address the following: 
+• Context: make sure to link where your work fits in
+• Problem: gap in knowledge, too expensive, too slow, a deficiency, superseded technology
+• Strategy: the way you will address the problem
+-->
+
 - TODO List the research question(s)
     - What are the unique characteristics of event stores? 
     - What are the use cases of event stores?

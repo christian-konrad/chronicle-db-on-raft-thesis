@@ -1,67 +1,61 @@
-# Previous Work {#sec:previous-work}
+## Previous Work {#sec:previous-work}
 
 \epigraph{If I have seen further it is by standing on the shoulders of Giants.}{--- \textup{Isaac Newton}}
 
-Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.
-
-## Latest Research on Raft
-
-- TODO Do I need this section? Better names? See other work for references (e.g. Raft Diss)
-
 - ... as far as current research goes into theoretical details of what is possible with Raft, seeing it in action gives insights into practical usage and therefore current limits and possibilities...
 
-## Popular Applications of Replication Protocols
+### Popular Applications of Replication Protocols
 
-### LogCabin
+#### LogCabin
 
 Written by the author of Raft... [@ongaro2015logcabin]
 ... this thesis' implementation for metadata and cluster management follows similar principle... see Implementation Section 
 
-### Apache Kafka
+#### Apache Kafka
 
-#### Zookeeper
+##### Zookeeper
 
 - Discontinued in KIP-500: Self-Managed Meta Quorum with Raft, see next section
 
-#### KIP-500: Replace ZooKeeper with a Self-Managed Metadata Quorum (Raft)
+##### KIP-500: Replace ZooKeeper with a Self-Managed Metadata Quorum (Raft)
 
 - TODO summarize [@kafka2022kip500]
 
 - Kind-of Raft
 
-### CockroachDB
+#### CockroachDB
 
 - Raft
 
-### Camunda Zeebe
+#### Camunda Zeebe
 
 - TODO add stuff from our pages
 - https://github.com/camunda/zeebe/tree/main/raft/src/main/java/io/zeebe/raft/state
 - docs... etc
 
-### RabbitMQ
+#### RabbitMQ
 
 - Raft in Quorum Queues [@rabbitmq2021quorum]
 
-### ElasticSearch
+#### ElasticSearch
 
 - Some-kind-of Raft
 
-### MongoDB
+#### MongoDB
 
 - Kind-of Raft
 
-### etcd / Kubernetes
+#### etcd / Kubernetes
 
 - Raft
 
-### Apache Ozone
+#### Apache Ozone
 
 Apache Ozone is a... [@apache2022ozone]
 The replication layer of Apache Ozone is built upon Apache Ratis, a library for..., []
 Apaache Ratis is the library of choice for the implementation of a replicated event store presented in the next chapter.
 
-### Other Mentionable Implementations
+#### Other Mentionable Implementations
 
 > TODO should summarize, not an own section per tool
 
@@ -72,19 +66,19 @@ Apaache Ratis is the library of choice for the implementation of a replicated ev
 - Apache Flink
 - Apache Cassandra
 
-## Popular Event Stores and Time-Series Databases
+### Popular Event Stores and Time-Series Databases
 
-### TimescaleDB
+#### TimescaleDB
 
-### InfluxDB
+#### InfluxDB
 
-### Prometheus
+#### Prometheus
 
-### Apache Kafka
+#### Apache Kafka
 
-### Other Mentionable Implementations
+#### Other Mentionable Implementations
 
-### Use Cases and Differentiation to ChronicleDB
+#### Use Cases and Differentiation to ChronicleDB
 
 ABC
 

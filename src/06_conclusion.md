@@ -21,6 +21,7 @@
 
 - Per time split; Log merge...
 - Allows to increase number of nodes without decreasing throughput
+- Show diagram of further partitioning/sharding techniques (i.e. by timesplit..., reference methods from background chapter here)
 
 #### Elasticity: Auto Scaling and Recovery
 

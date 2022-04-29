@@ -2,6 +2,14 @@
 
 \epigraph{I've always liked code that runs fast.}{--- \textup{Jeff Dean}}
 
+<!--
+Measurement results / analysis / discussion: 1/3
+• whatever you have done, you must comment it, compare it to other systems,
+evaluate it
+• usually, adequate graphs help to show the benefits of your approach
+• caution: each result/graph must be discussed! what’s the reason for this peak or why have you ovserved this effect
+-->
+
 Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.
 
 ## Setup for Comparison
