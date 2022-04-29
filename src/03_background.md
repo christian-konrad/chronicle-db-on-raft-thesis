@@ -1,4 +1,4 @@
-# Background {#sec:background}
+# Fundamentals {#sec:background}
 
 <!--
 Fundamentals / environment and related work: 1/3
