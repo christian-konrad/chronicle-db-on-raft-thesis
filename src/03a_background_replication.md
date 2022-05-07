@@ -43,7 +43,7 @@ See [@cristian1991understanding]
 
 Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.
 
-- Example: Aviation Systems
+- Example use cases: Aviation Systems, lab measurements with low fault-tolerance...
 
 ##### Types of Possible Failures
 
@@ -51,6 +51,7 @@ Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod 
   - Show examples like in https://kriha.de/docs/seminars/distributedsystemsmaster/reliability/reliability.pdf or in official Raft Interactive Diagram
 - OS Crashes
 - Application Crashes
+- Hardware Crashes
 - Not finding Consensus
   - Byzantine Fault vs Fail Stop
   - Instruction Failures on CPU, RAM Failures, even Bitwise Failures in Cables (quote the one example here I found recently)
@@ -75,12 +76,17 @@ For this reason, modern replicated databases often eschew synchronisation comple
 ### Partitioning and Sharding
 
 - Performance is critical for many applications, especially for distributed ones
-- Partitioning and sharding are methods to ensure throughput by providing horizontal scalability
+- sharding (also known as horizontal partitioning) helps to provide high availability, fault-tolerance, and scalability to large databases in the cloud [bagui2015database]
+- Partitioning and sharding are methods to ensure throughput by providing horizontal scalability 
   - Explain horizontal scal.
 
 - Various Partitioning strategies 
   - Reference hashing, Cassandra strategies, time split strategies etc. here
 - Strategies can also support geograhical scalability, see following subchapter
+
+TODO obsidian notes here
+
+TODO compare with replication, show later how multi-raft supports both
 
 TODO diagrams, also my own ones from PPT
 
@@ -98,7 +104,8 @@ Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod 
 
 ##### Other Kinds of Protocols
 
-- Active-Passive
+- Master-Slave
+- Active-Passive (any difference to master-slave?^)
 
 #### Concrete Protocols
 

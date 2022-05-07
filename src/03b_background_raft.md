@@ -55,6 +55,8 @@ Raft does... but does not...
 
 - Allows partitioning (for load balancing and horizontal scalability), sharding
 
+- TODO reference to partitioning section in background chapter
+
 ### Byzantine Fault Tolerant Raft
 
 TODO rephrase
