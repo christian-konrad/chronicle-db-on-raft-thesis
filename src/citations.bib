@@ -40,6 +40,79 @@
   publisher={Springer}
 }
 
+@article{kleppmann2015critique,
+  title={A Critique of the CAP Theorem},
+  author={Kleppmann, Martin},
+  journal={arXiv preprint arXiv:1509.05393},
+  doi={10.48550/arXiv.1509.05393},
+  year={2015}
+}
+
+@article{hellerstein2019keeping,
+  title={Keeping CALM: when distributed consistency is easy. CoRR abs/1901.01930 (2019)},
+  author={Hellerstein, Joseph M and Alvaro, Peter},
+  journal={arXiv preprint arXiv:1901.01930},
+  year={2019}
+}
+
+@article{pritchett2008base,
+  title={BASE: An Acid Alternative: In partitioned databases, trading some consistency for availability can lead to dramatic improvements in scalability.},
+  author={Pritchett, Dan},
+  journal={Queue},
+  volume={6},
+  number={3},
+  pages={48--55},
+  year={2008},
+  doi={10.1145/1394127.1394128},
+  publisher={ACM New York, NY, USA}
+}
+
+@inproceedings{brewer2000towards,
+  title={Towards robust distributed systems},
+  author={Brewer, Eric A},
+  booktitle={PODC},
+  volume={7},
+  number={10.1145},
+  pages={343477--343502},
+  year={2000},
+  organization={Portland, OR}
+}
+
+@article{gilbert2002brewer,
+  title={Brewer's conjecture and the feasibility of consistent, available, partition-tolerant web services},
+  author={Gilbert, Seth and Lynch, Nancy},
+  journal={Acm Sigact News},
+  volume={33},
+  number={2},
+  pages={51--59},
+  year={2002},
+  doi={10.1.1.20.1495},
+  publisher={ACM New York, NY, USA}
+}
+
+@article{brewer2012cap,
+  title={CAP twelve years later: How the" rules" have changed},
+  author={Brewer, Eric},
+  journal={Computer},
+  volume={45},
+  number={2},
+  pages={23--29},
+  year={2012},
+  doi={10.1109/MC.2012.37},
+  publisher={IEEE}
+}
+
+@article{attiya1994sequential,
+  title={Sequential consistency versus linearizability},
+  author={Attiya, Hagit and Welch, Jennifer L},
+  journal={ACM Transactions on Computer Systems (TOCS)},
+  volume={12},
+  number={2},
+  pages={91--122},
+  year={1994},
+  publisher={ACM New York, NY, USA}
+}
+
 @article{bagui2015database,
   title={Database sharding: to provide fault tolerance and scalability of big data on the cloud},
   author={Bagui, Sikha and Nguyen, Loi Tang},
@@ -120,16 +193,25 @@
 }
 
 @inbook{lamport1982byzantine,
-author={Lamport, Leslie and Shostak, Robert and Pease, Marshall},
-title={The Byzantine Generals Problem},
-year={2019},
-isbn={9781450372701},
-publisher={Association for Computing Machinery},
-address={New York, NY, USA},
-doi={10.1145/3335772.3335936},
-booktitle={Concurrency: The Works of Leslie Lamport},
-pages={203–226},
-numpages={24}
+  author={Lamport, Leslie and Shostak, Robert and Pease, Marshall},
+  title={The Byzantine Generals Problem},
+  year={2019},
+  isbn={9781450372701},
+  publisher={Association for Computing Machinery},
+  address={New York, NY, USA},
+  doi={10.1145/3335772.3335936},
+  booktitle={Concurrency: The Works of Leslie Lamport},
+  pages={203--226},
+  numpages={24}
+}
+
+@incollection{lamport1978time,
+  title={Time, clocks, and the ordering of events in a distributed system},
+  author={Lamport, Leslie},
+  pages={558--564},
+  journal={Communications of the ACM},
+  volume={52},
+  year={1978}
 }
 
 @misc{clow2017byzantine,
@@ -169,6 +251,84 @@ numpages={24}
   booktitle={Proceedings of the 43rd Annual ACM SIGPLAN-SIGACT Symposium on Principles of Programming Languages},
   pages={371--384},
   year={2016}
+}
+
+@article{campelo2020brief,
+  title={A brief survey on replica consistency in cloud environments},
+  author={Camp{\^e}lo, Robson A and Casanova, Marco A and Guedes, Dorgival O and Laender, Alberto HF},
+  journal={Journal of Internet Services and Applications},
+  volume={11},
+  number={1},
+  pages={1--13},
+  year={2020},
+  doi={10.1186/s13174-020-0122-y},
+  publisher={SpringerOpen}
+}
+
+@article{vogels2009eventually,
+  title={Eventually consistent},
+  author={Vogels, Werner},
+  journal={Communications of the ACM},
+  volume={52},
+  number={1},
+  pages={40--44},
+  year={2009},
+  publisher={AcM New York, NY, USA}
+}
+
+@inproceedings{shen2015causal,
+  title={Causal consistency for geo-replicated cloud storage under partial replication},
+  author={Shen, Min and Kshemkalyani, Ajay D and Hsu, Ta-yuan},
+  booktitle={2015 IEEE international parallel and distributed processing symposium workshop},
+  pages={509--518},
+  year={2015},
+  doi={10.1109/IPDPSW.2015.68},
+  organization={IEEE}
+}
+
+@inproceedings{lloyd2011don,
+  title={Don't settle for eventual: Scalable causal consistency for wide-area storage with COPS},
+  author={Lloyd, Wyatt and Freedman, Michael J and Kaminsky, Michael and Andersen, David G},
+  booktitle={Proceedings of the Twenty-Third ACM Symposium on Operating Systems Principles},
+  pages={401--416},
+  doi={10.1145/2043556.2043593},
+  year={2011}
+}
+
+@inproceedings{zhou2021fault,
+  title={Fault-Tolerant Replication with Pull-Based Consensus in MongoDB},
+  author={Zhou, Siyuan and Mu, Shuai},
+  booktitle={18th USENIX Symposium on Networked Systems Design and Implementation (NSDI 21)},
+  pages={687--703},
+  isbn={978-1-939133-21-2},
+  url={https://www.usenix.org/conference/nsdi21/presentation/zhou},
+  publisher={USENIX Association},
+  year={2021}
+}
+
+@inproceedings{wang2019parallels,
+  title={On the Parallels between Paxos and Raft, and how to Port Optimizations},
+  author={Wang, Zhaoguo and Zhao, Changgeng and Mu, Shuai and Chen, Haibo and Li, Jinyang},
+  booktitle={Proceedings of the 2019 ACM Symposium on Principles of Distributed Computing},
+  pages={445--454},
+  doi={10.1145/3293611.3331595},
+  year={2019}
+}
+
+@inproceedings{mkandla2021evaluation,
+  title={An Evaluation of Data Consistency Models in Geo-Replicated Cloud Storage},
+  author={Mkandla, Rebaone and Chikohora, Edmore},
+  booktitle={2021 3rd International Multidisciplinary Information Technology and Engineering Conference (IMITEC)},
+  pages={1--5},
+  year={2021},
+  organization={IEEE}
+}
+
+@misc{hsu2021cost,
+  title={Cost-Effective Protocols for Enforcing Causal Consistency in Geo-Replicated Data Store Systems},
+  author={Hsu, Ta-Yuan},
+  year={2021},
+  publisher={University of Illinois at Chicago}
 }
 
 @inproceedings{deyerl2019search,
@@ -227,6 +387,14 @@ numpages={24}
   title={Apache Ozone},
   year={2022},
   note={Accessed: 2022-03-28}
+}
+
+@misc{amazon2021s3consistency,
+  author={Amazon Web Services},
+  howpublished={\url{https://web.archive.org/web/20210509002449/https://aws.amazon.com/de/s3/consistency/}},
+  title={Amazon S3 Strong Consistency},
+  year={2021},
+  note={Accessed: 2021-05-09}
 }
 
 # TODO rename repo to chronicledb-cloud, create a tag, create a .cff file, link it

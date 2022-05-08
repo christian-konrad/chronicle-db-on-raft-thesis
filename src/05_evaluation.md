@@ -10,7 +10,9 @@ evaluate it
 • caution: each result/graph must be discussed! what’s the reason for this peak or why have you ovserved this effect
 -->
 
-Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.
+This section covers the evaluation of the implementation of a replicated ChronicleDB event store with Raft presented in this paper. Especially, this section evaluates the cost of replication. Theoretically, the more the number of replicas, the higher the data availability; but the cost of replication (the detrimental in performance) increases at the same time. The challenge of the implementation is to achieve the optimal trade-off between the cost of replication and data access availability.
+
+To evaluate this, the implementation is benchmarked against... as described in the following section.
 
 ## Setup for Comparison
 
@@ -28,6 +30,8 @@ Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod 
 
 ## Throughput on Different Cluster Settings
 
+TODO first describe expected latency decrease due to network roundtrip/maximum wide area delay of replica nodes (do some math here)
+
 ### Comparison of Cluster Sizes
 
 ### Comparison of Buffer Types and Sizes
@@ -43,6 +47,13 @@ Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod 
 // TODO consider Amdahls Law here for upfront theoretical considerations https://en.wikipedia.org/wiki/Amdahl%27s_law
 
 ### Querying and Aggregation
+
+### Fault-Tolerance
+
+The Raft protocol is formally proven (TODO reference to proof)...
+It is not byzanthine-fault tolerant...
+
+TODO any experimental setup to test fault tolerance anecdotably?
 
 ### Usability and Developer Experience
 

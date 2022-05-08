@@ -13,7 +13,16 @@ You can use inline comments to organize yourself
 -->
 
 <!--- PARAGRAPH 1 - DESCRIBE IT HERE -->
-Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.
+At the foundation of data-intense applications are distributed event stores...
+
+
+there are a lot of requirements to today's distributed systems: They must be able to ingest high throughputs, store a massive load of data (what is a massive load?) and respond almost immediately to user queries, while providing fault-tolerance, consistency and high availability at the same time.
+ 
+ need to meet these requirements while serving millions of users...
+ 
+For distributed event stores, those requirements are even higher (why?). With modern approaches to replication, it is possible to meet this requirements for both vertical and horizontal scalability...
+
+TODO better, catchy introduction. See other work for inspiration
 
 <!--
 General motivation for your work, context and goals: 1-2 pages

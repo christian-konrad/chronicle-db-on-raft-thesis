@@ -7,6 +7,10 @@
 - Possible to build a strong-consistent event store with great availability
 - TODO
 
+
+
+The given implementation of the Raft replication protocol has a high cost of replication. With a growing number of replica nodes, the throughput decreases. There are various strategies to address this issue: partitioning strategies (TODO ref to section),... to mention a few. They all come with some level of tradeoffs.
+
 ## Recommendations
 
 > TODO depends on outcome. If throughput decreases to much, will recommend to weigh between throughput and availability
@@ -27,6 +31,15 @@
 
 - Using Kubernetes
 - Bring it together with Kubernetes Replicas
+
+#### Geo-Replication
+
+- In it's given implementation not suitable for geo-replication (TODO reference to 03b) due to it's single-leader characteristic
+- There are different solution proposals for that like multi-raft, multi-leader raft... (TODO reference those from 03b)
+- Or one could learn from strategies of protocols with weaker consistency [@hsu2021cost] 
+
+#### More Raft Optimizations
+- A paper describes a formal mapping of Paxos optimization to Raft with guaranteed correctness... [@wang2019parallels]
 
 ### Distributed Queries
 

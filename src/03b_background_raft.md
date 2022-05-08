@@ -10,6 +10,9 @@ Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod 
 - Raft is actually formally proven (TODO reference Proof GitHub Repo)
 
 
+- TODO section on general raft properties
+Suitable for ACID transactional systems...
+
 ### Understandability
 
 - Why another Consensus Protocol and not Paxos?
@@ -33,6 +36,8 @@ See [@schneider1990implementing] [@garg2010implementing]
 - Describe Raft Log
 - show diagrams (redraw original paper diagrams of state machine)
 
+- Raft therefore provides strong consistency (TODO reference to 03a, mention rule of the protocol that ensures this)
+
 - TODO? write-ahead log https://martinfowler.com/articles/patterns-of-distributed-systems/wal.html
 
 ### The Protocol in Detail
@@ -40,7 +45,26 @@ See [@schneider1990implementing] [@garg2010implementing]
 - Messages
 - etc from paper
 
+TODO ordering of events... [@lamport1978time]
+
 > Should put this following sections here or in previous work?
+
+### Cost of Replication
+
+The theoretical cost of replication (describes latency)... can be measured by the number of replicas... for a single state machine... network round trip... 
+
+TODO rephrase
+
+"Theoretically, the more the number of replicas, the higher the data availability; but the cost of replication (the detrimental in performance) increases at the same time. The challenge of the implementation is to achieve the optimal trade-off between the cost of replication and data access availability."
+
+TODO some math here would be nice
+
+The latency considerations...
+
+low Latency defined as the latency less than the maximum wide-area
+delay between replicas.
+
+"Causal consistency is the strongest form of consistency that satisfies low Latency"
 
 ### Multi-Raft
 
@@ -68,12 +92,15 @@ Validation-Based Byzantine Failure Tolerant Raft [@tan2019vbbft]
 
 ### Elasticity, Geo-Distribution and Auto-Scaling
 
-See [@xu2019elastic]
+The original Raft protocol does not provide lower latency to users by leveraging geo-replication due to its approach of a single leader at a time...
+
+See multi-raft and [@xu2019elastic]
 
 ### Read Scalability
 
-The original Raft protocol knows only one leader at a time (ref here)... for both reads and writes...
-This has negative effects on read scalability... see [@arora2017leader]
+Having a single leader has also negative effects on read scalability in general... see [@arora2017leader]
+
+TODO can we merge this and previous sub section?
 
 ### Vertical Scalability
 

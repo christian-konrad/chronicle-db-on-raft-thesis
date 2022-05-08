@@ -44,6 +44,22 @@ Written by the author of Raft... [@ongaro2015logcabin]
 #### MongoDB
 
 - Kind-of Raft
+- Strongly consistent (TODO refer to consistency types in 03a)
+- Pull-based consensus
+
+TODO rephrase
+
+"MongoDB provides linearizability and tolerates any minority of failures
+through a novel consensus protocol that derives from Raft. A
+major difference between our protocol and vanilla Raft is that
+MongoDB deploys a unique pull-based data synchronization
+model: a replica pulls new data from another replica. This
+pull-based data synchronization in MongoDB can be initiated
+by any replica and can happen between any two replicas, as
+opposed to vanilla Raft, where new data can only be pushed
+from the primary to other replicas. This flexible data transmission topology enabled by the pull-based model is strongly
+desired by our users since it has an edge on performance and
+monetary cost [@zhou2021fault]."
 
 #### etcd / Kubernetes
 
