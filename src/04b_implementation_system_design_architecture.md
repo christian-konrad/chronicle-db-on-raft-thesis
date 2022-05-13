@@ -12,17 +12,24 @@ Developed architecture / system design / implementation: 1/3
     - TODO describe that I opted for strong consistency here [gotsman2016cause]
     - in background or later in implementation?
     - TODO describe my reasoning for this
+    - if possible (and tradeoff ok), strong consistency is always prefered
+    - Many other db vendors provide strong consistency (anecdotal proven that it works, TODO reference previous work)
+        - Especially with raft or similar protocols
+        - Even in high throughput scenarios
+        - Multiple strategies to solve throughput issues like multi-raft + partiioning, less replicas for the write partition (time split) but increase replica count for read-only splits (easy as those only few OOO inserts into old splits does not affect whole performance when looking at the big picture)
 - Then detailed requirements (how the user interacts with it, requirements to the API, infra and tech requirements)
 
 - Then show design: What platform, what libraries (reference next ratis section)...
 
-## Popular Implementations of Replication Protocols
+## Library Decision Considerations
 
-> TODO list them here or in previous work?
+- Building it from ground up makes sense if you want full control and adjust the protocol to perfectly fit your use case (TODO find and cite the paper/tool that mentioned that, it must have been mongo or couchbase)
+- Adjusting the protocols allows you to tickle out the last ounce of performance, but oftentimes under the cost of losing the formal verification (TODO reference to raft verification mention in 03b)
+- This thesis is about a proof that it works, so we use something existant to leverage implementation power of the OOS community and save time to build the proof
+- It is also possible to build upon a library / an API and also leveraging the library in a way that allows you to maximize throughput
+- TODO List other libraries in short
 
-- Reference to previous work chapter
-
-## Apache Ratis
+### Apache Ratis
 
 - Repo, maybe mvn link, version 2.1.0 [@apache2022ratis] [@apacheratis2022github] 
 

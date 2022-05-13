@@ -51,6 +51,10 @@ TODO ordering of events... [@lamport1978time]
 
 ### Cost of Replication
 
+In general, maintaining strong consistency is achievable but expensive (TODO reference 03a).
+
+TODO why does raft still work?
+
 The theoretical cost of replication (describes latency)... can be measured by the number of replicas... for a single state machine... network round trip... 
 
 TODO rephrase

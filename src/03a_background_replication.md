@@ -24,15 +24,32 @@ A distributed system is a collection of autonomous computing elements that appea
 TODO rephrase
 
 "To achieve availability and horizontal scalability, many modern distributed systems rely on replicated databases, which maintain multiple
-replicas of shared data [@]. Depending on the replication protocol, the data is accessible to clients at any of the replicas, and these replicas communicate changes to each other using message passing."
+replicas of shared data [@liu2013replication]. Depending on the replication protocol, the data is accessible to clients at any of the replicas, and these replicas communicate changes to each other using message passing."
 
 Example use cases for replication in distributed systems are large-scale software-as-a-service applications that use data replicas in geographically distinct locations [@mkandla2021evaluation], applications for mobile devices that keep replicas locally to support fast and offline access, key-value stores that act as a book keeper for shared cluster meta data [@] or social networks where user content is to be distributed to billions of other users, to mention a few.
 
-- Horizontal Scalability
+#### Horizontal Scalability
 
 - Nodes accessible from different geographic regions, providing lower latencies to users by serving data from nodes closer to the user...
 
-Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.
+"C. Replication for Scalability
+Replication is not only used to achieve high availability,
+but also to make a system more scalable, i.e., to improve
+ability of the system to meet increasing performance demands in order to provide acceptable level of response time.
+Imagine a situation, when a system operates under so high
+workload that goes beyond the system’s capability to handle
+it. In such situation, either system performance degrades
+significantly or the system becomes unavailable. There are
+two general solutions for such scenario: vertical scaling, i.e.,
+scaling up, and horizontal scaling, i.e., scaling out.
+For vertical scaling, data served on a single server [@liu2013replication]"
+
+replication allows making the service horizontally scalable, i.e., improving service throughput. Apart from this, in some cases, replication allows also to
+improve access latency and hence the service quality. When
+concerning about service latency, it is always desirable to
+place service replicas in close proximity to its clients. This
+allows reducing the request round-trip time and hence the
+latency experienced by clients
 
 #### Safety and Reliability
 
@@ -61,19 +78,51 @@ Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod 
   - Byzantine Fault vs Fail Stop
   - Instruction Failures on CPU, RAM Failures, even Bitwise Failures in Cables (quote the one example here I found recently)
 
-### High Availability and Strong Consistency
+### High Availability and Consistency
 
 TODO rephrase
 
 "Building reliable distributed systems at a worldwide scale demands trade-offs between consistency and availability. Consistency is a property of the distributed system which ensures that every node or replica has the same view of data at a given time, irrespective of which client has updated the data. Trading some consistency for availability can oftentimes lead to dramatic improvements in scalability [@pritchett2008base].
 
-Consistency is an ambiguous term in data systems: in the sense of the ACID model (Atomic, Consistent, Isolated and Durable), it is a very different property than the one described in CAP. In the distributed systems literature in general, consistency is understood as a spectrum of models with different guarantees and correctness properties.
+Consistency is an ambiguous term in data systems: in the sense of the ACID model (Atomic, Consistent, Isolated and Durable), it is a very different property than the one described in CAP. In the distributed systems literature in general, consistency is understood as a spectrum of models with different guarantees and correctness properties, as well as various constraints on performance.
 
 A database consistency model determines the manner and timing in which a successful write or update is reflected in a subsequent read operation of that same value. It describes what values are allowed to be returned by operations accessing the storage, depending on other operations executed previously or concurrently, and the return values of those operations. There exists no one-size-fits-all approach: it is difficult to find one model that satisfies all main challenges associated with data consistency [@mkandla2021evaluation]. 
 
 TODO Two distinct perspectives on consistency models: data-centric vs client-centric... "From the data-centric perspective, the distributed data storage system synchronizes the data access operations from all processes to guarantee correct results. From the client-centric perspective, the system only synchronizes the data access operations of the same process, independently from the other ones, to guarantee their consistency. This perspective is justified because it is often the case that shared updates are rare and access mostly private data." [@campelo2020brief]
 
-Following, a few of those consistency models are mentioned [@steen2007distributed]:
+Following, a few of those consistency models are mentioned, including those relevant for the work of this thesis [@steen2007distributed]:
+
+**Strong Consistency** - 
+"A strong consistency model like linearizability provides an easy-to-understand guarantee: informally, all
+operations behave as if they executed atomically on a
+single copy of the data. However, this guarantee comes
+at the cost of reduced performance [@attiya1994sequential]  [@liu2013replication] and fault tolerance [22] compared to weaker consistency models.  algorithms that
+ensure stronger consistency properties among replicas
+are more sensitive to message delays and faults in the
+network. " 
+"To achieve that, an absolute global time order must be maintained" [@lamport1978time]
+
+( TODO like in raft )
+
+Strong consistency is important for online transaction or analytical processing with zero tolerance for invalid states.
+
+- After a succesful write, the written object is immediately accessible from all nodes at the same time. What you write is what you will read.
+- TODO more [@gotsman2016cause]
+"requesting stronger consistency in too many places may hurt performance, and requesting it in too few places may violate correctness"
+
+  - AWS S3 introduced Strong Consistency in 2021 [@amazon2021s3consistency]
+  - Read-after-write and list consistency
+
+- TODO describe that I opted for strong consistency here
+  - in background or later in implementation?
+- TODO describe my reasoning for this (just reference below explanation of CALM)
+
+"Ideally, we would like replicated databases to provide strong consistency, i.e., to behave as if a single centralised node handles all operations. However, achieving this ideal usually requires synchronisation among replicas, which slows down the database and
+even makes it unavailable if network connections between replicas fail"
+
+(The latter does not count for raft if quorum still works)
+
+"For this reason, modern replicated databases often eschew synchronisation completely; such databases are commonly dubbed eventually consistent [47]. In these databases, a replica performs an operation requested by a client locally without any synchronisation with other replicas and immediately returns to the client; the effect of the operation is propagated to the other replicas only eventually. This may lead to anomalies—behaviours deviating from strong consistency"
 
 **Weak Consistency** - 
 - Data-centric
@@ -101,38 +150,6 @@ TODO NoSQL Databases are often BASE and not ACID and therefore not strong consis
   - Maximizing read throughput
   - Returning recent writes is not guaranteed
   - Eventual different responses from different nodes at different points in time
-
-**Strong Consistency** - 
-"A strong consistency model like linearizability provides an easy-to-understand guarantee: informally, all
-operations behave as if they executed atomically on a
-single copy of the data. However, this guarantee comes
-at the cost of reduced performance [@attiya1994sequential] and fault tolerance [22] compared to weaker consistency models.  algorithms that
-ensure stronger consistency properties among replicas
-are more sensitive to message delays and faults in the
-network. " 
-"To achieve that, an absolute global time order must be maintained" [@lamport1978time]
-
-( TODO like in raft )
-
-Strong consistency is important for online transaction or analytical processing with zero tolerance for invalid states.
-
-- After a succesful write, the written object is immediately accessible from all nodes at the same time. What you write is what you will read.
-- TODO more [@gotsman2016cause]
-"requesting stronger consistency in too many places may hurt performance, and requesting it in too few places may violate correctness"
-
-  - AWS S3 introduced Strong Consistency in 2021 [@amazon2021s3consistency]
-  - Read-after-write and list consistency
-
-- TODO describe that I opted for strong consistency here
-  - in background or later in implementation?
-- TODO describe my reasoning for this (just reference below explanation of CALM)
-
-"Ideally, we would like replicated databases to provide strong consistency, i.e., to behave as if a single centralised node handles all operations. However, achieving this ideal usually requires synchronisation among replicas, which slows down the database and
-even makes it unavailable if network connections between replicas fail"
-
-(The latter does not count for raft if quorum still works)
-
-"For this reason, modern replicated databases often eschew synchronisation completely; such databases are commonly dubbed eventually consistent [47]. In these databases, a replica performs an operation requested by a client locally without any synchronisation with other replicas and immediately returns to the client; the effect of the operation is propagated to the other replicas only eventually. This may lead to anomalies—behaviours deviating from strong consistency"
 
 #### The CAP Theorem
 
@@ -201,9 +218,16 @@ Section N then will take a closer look on Raft, a consensus-based, state machine
 
 ##### Paxos
 
+- Had been state of the art for a long time for strong consistent replication (TODO ref to 03a)
+- original by Leslie Lamport [@lamport1998paxos] and further improvements by himself [@lamport2006fast]
+- although he tried to make it understandable [@lamport2001paxos], it is shown that people of any kind (students, engineers...) still struggle to understand it in its fullest [@ongaro2013raft] 
+- Formally verified using TLA+, as attached to the paper [@lamport2006fast]
+
 #### Other Mentionable Protocols
 
 ##### Chain Replication
+
+[@van2004chain]
 
 ##### Viewstamped Replication
 

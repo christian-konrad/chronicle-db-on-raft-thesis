@@ -12,6 +12,16 @@ evaluate it
 
 This section covers the evaluation of the implementation of a replicated ChronicleDB event store with Raft presented in this paper. Especially, this section evaluates the cost of replication. Theoretically, the more the number of replicas, the higher the data availability; but the cost of replication (the detrimental in performance) increases at the same time. The challenge of the implementation is to achieve the optimal trade-off between the cost of replication and data access availability.
 
+## General Performance Considerations
+
+- TODO do we need this section or just refer to consistency section?
+- Consistency models faced with different performance considerations
+
+"horizontal scaling has the same issue as replication
+for availability: both require maintaining replica consistency.
+In general, maintaining strong consistency is achievable but
+expensive"
+
 To evaluate this, the implementation is benchmarked against... as described in the following section.
 
 ## Setup for Comparison
