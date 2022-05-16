@@ -1,4 +1,4 @@
-## Raft, an Understandable Consensus Algorithm
+## Raft, an Understandable Consensus Algorithm {#sec:raft}
 
 \epigraph{There is a race between the increasing complexity of the systems we build and our ability to develop intellectual tools for understanding their complexity. 
 If the race is won by our tools, then systems will eventually become easier to use and more reliable. If not, they will continue to become harder to use and less reliable [...].}{--- \textup{Leslie Lamport} \cite{lamport1992distributed}}
@@ -6,6 +6,8 @@ If the race is won by our tools, then systems will eventually become easier to u
 Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. [@ongaro2013raft] [@ongaro2014consensus]
 
 - TODO not only reference paper, but also diss
+
+- Based on distributed consensus, strong consistent
 
 - Raft is actually formally proven (TODO reference Proof GitHub Repo)
 
@@ -15,9 +17,15 @@ Suitable for ACID transactional systems...
 
 ### Understandability
 
-- Why another Consensus Protocol and not Paxos?
+Why is there a need for another Consensus Protocol which offers equivalent fault-tolerance and performance characteristics as Paxos (does it? Cite proof here)? The main caveat of Paxos is the difficulty to understand the protocol, which makes it a challenge both for work in academia building on Paxos and for developers who want to implement the protocol and adapt it to their use case (see the [previous section on Paxos](#sec:paxos)). This inhibits progress in these areas and hampers discourse. In fact, Raft is a consensus protocol that was explicitly designed as an alternative to the Paxos family of algorithms to solve this understandability issues of how consensus can be achieved.
+
+There are some other main differences in the protocol, which are handled in [Main Differences to Paxos](#sec:raft-vs-paxos).
 
 ... The author of raft even uses a visual and interactive game to teach the protocol (TODO link)
+
+### Main Differences to Paxos {#sec:raft-vs-paxos}
+
+TODO
 
 ### Replicated State Machine
 

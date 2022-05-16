@@ -4,9 +4,7 @@
 
 \epigraph{A distributed system is one in which the failure of a computer you didn't even know existed can render your own computer unusable.}{--- \textup{Leslie Lamport} \cite{milojicic2002discussion}}
 
-- Performance
-  - response time, throughput 
-
+In this chapter, the ...
 
 Maintaining copies of the data on multiple nodes...
 
@@ -201,9 +199,19 @@ TODO [@shen2015causal]
 
 #### Categorization of Replication Protocols
 
+##### Consensus Protocols
+
+TODO difference between decentralized (raft, paxos... (but care that single leader may be a problem)) and centralized consensus (zookeeper?)
+
+Distributed consensus protocols describe a procedure to reach a common agreement among nodes in a distributed or decentralized multi-agent system.
+
+"we apply consensus to ensure reliability and fault tolerance..."
+
+Popular examples for distributed consennsus protocols are [Paxos](#sec:paxos) and [Raft](#sec:raft), the latter being the focus of this work.
+
 ##### State Machine Replication
 
-##### Consensus Protocols
+State machine replication is... and can be achieved through consensus protocols.
 
 ##### Other Kinds of Protocols
 
@@ -212,13 +220,14 @@ TODO [@shen2015causal]
 
 #### Concrete Protocols
 
-This section provides the reader an overview of concrete, popular replication protocols. Some of them are used in production for years, others are just subject of academic study.
+This section provides an overview of concrete, popular replication protocols to the reader. Some of them are used in production for years, while others are subject of academic studies only.
 
-Section N then will take a closer look on Raft, a consensus-based, state machine replication protocol. The author has chosen to use Raft for replication of the time series database which is the subject of this thesis.
+The [following chapter](#sec:raft) will then spend a closer look on Raft, a consensus-based state machine replication protocol. The author has chosen to use Raft for replication of the event store which is the subject of this thesis.
 
-##### Paxos
+##### Paxos {#sec:paxos}
 
-- Had been state of the art for a long time for strong consistent replication (TODO ref to 03a)
+- Had been state of the art for a long time for strong consistent replication
+- Based on distributed consensus
 - original by Leslie Lamport [@lamport1998paxos] and further improvements by himself [@lamport2006fast]
 - although he tried to make it understandable [@lamport2001paxos], it is shown that people of any kind (students, engineers...) still struggle to understand it in its fullest [@ongaro2013raft] 
 - Formally verified using TLA+, as attached to the paper [@lamport2006fast]
