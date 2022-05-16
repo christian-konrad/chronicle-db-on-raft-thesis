@@ -1,7 +1,10 @@
 # Conclusion {#sec:conclusion}
 
-- Has negative impact on performance when scaling vertically
-- Positive impact when scaling horizontally
+- TODO conclude and start a discussion
+
+- Has negative impact on performance (within the expectations of strong consistency) when scaling vertically
+- Can have a positive impact when scaling horizontally, when partitioning is leveraged in a smart way
+- Is fault-tolerant as Raft...
 - Raft formally proven
     - If ratis is 100% following raft protocol and therefore formally correct still to be confirmed
 - Possible to build a strong-consistent event store with great availability

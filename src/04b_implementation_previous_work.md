@@ -4,6 +4,8 @@
 
 - ... as far as current research goes into theoretical details of what is possible with Raft, seeing it in action gives insights into practical usage and therefore current limits and possibilities...
 
+### Criteria for Review and Comparison
+
 ### Popular Applications of Replication Protocols
 
 #### LogCabin
@@ -82,20 +84,40 @@ Apaache Ratis is the library of choice for the implementation of a replicated ev
 - Apache Flink
 - Apache Cassandra
 
+#### Comparison Results
+
+Lorem ipsum...
+
 ### Popular Event Stores and Time-Series Databases
+
+Lorem ipsum...
 
 #### TimescaleDB
 
+Lorem ipsum...
+
 #### InfluxDB
+
+Lorem ipsum...
 
 #### Prometheus
 
+Lorem ipsum...
+
 #### Apache Kafka
+
+TODO PubSub etc., Differentiation to event stores
 
 #### Other Mentionable Implementations
 
+Lorem ipsum...
+
 #### Use Cases and Differentiation to ChronicleDB
 
-ABC
+Lorem ipsum...
+
+#### Comparison Results
+
+Lorem ipsum...
 
 \pagebreak

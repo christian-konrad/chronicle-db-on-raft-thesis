@@ -29,7 +29,18 @@ Developed architecture / system design / implementation: 1/3
 - It is also possible to build upon a library / an API and also leveraging the library in a way that allows you to maximize throughput
 - TODO List other libraries in short
 
-### Apache Ratis
+## Consistency Model and Replication Protocol Choice
+
+- TODO describe why strong consistency and finally raft
+- TODO reference criteria from 04a
+
+## Popular Implementations of Replication Protocols
+
+> TODO list them here or in previous work?
+
+- Reference to previous work chapter
+
+## Apache Ratis
 
 - Repo, maybe mvn link, version 2.1.0 [@apache2022ratis] [@apacheratis2022github] 
 
@@ -64,6 +75,8 @@ in order to support zero buffer coping and a light-weighted raft log.
 - List of all requirements/use cases
 
 ### Overall Architecture & Design
+
+<!-- Now, I present my results -->
 
 - Stack:
     - Spring Boot
@@ -175,6 +188,10 @@ It is more about replicating a state or storage that is consumed by services.
 > Only brief description with a few screenshots
 
 Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.
+
+### Implementation Summary
+
+- TODO short summary section to start a discussion
 
 <!--
 TODOS:

@@ -23,9 +23,11 @@ Alle Ausführungen, die wörtlich oder sinngemäß übernommen wurden, sind als 
 \vspace{3cm}
 
 
-\noindent%
-(\theauthor)\\
+\noindent
+\theauthor
 Marburg, \thedate
+
+TODO Signature here
 
 \cleardoublepage
 }

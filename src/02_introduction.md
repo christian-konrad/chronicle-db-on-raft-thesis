@@ -32,13 +32,14 @@ Make sure to address the following:
 • Strategy: the way you will address the problem
 -->
 
-- TODO List the research question(s)
+- TODO List (implicitly?) and answer (explicitly if possible or keep open for the thesis) the research question(s)
     - What are the unique characteristics of event stores? 
     - What are the use cases of event stores?
     - Which role do event stores play in distributed systems and what are the requirements on them in this context?
     - How to make event stores fault tolerant?
         - .. we want ... to be still operational... when one node fails...
-    - What is replication, and why do we need it?
+    - What is replication, and why do we need it (to make it fault tolerant)?
+        - Why is there particular interest in researching this for event stores?
     - What are the different replication protocols and what are the differences between them?
     - Which protocol fits best and why? What are the advantages of this protocol and which are the disadvantages? 
         - What is the performance/throughput impact and what influences it? What are ways to improve it?

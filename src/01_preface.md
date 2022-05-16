@@ -1,8 +1,8 @@
 ---
-title: Log Replication using Raft Consensus Protocol for ChronicleDB, a High-Throughput Event Store \vspace{2ex}
+title: Replication in data stream management systems\vspace{2ex}
 subtitle: > 
-    Master Thesis\vspace{1ex}
-date: 07.11.2021\vspace{4ex}
+    Master Thesis - Log Replication using Raft Consensus Protocol for ChronicleDB, a High-Throughput Event Store\vspace{1ex}
+date: May 15th, 2022\vspace{4ex}
 author: 
     - Christian Konrad
 institute: Philipps-Universität Marburg
@@ -35,6 +35,7 @@ header-includes: |
     \usepackage[raggedright]{titlesec}
     \usepackage[font={small},justification=centering]{caption}
     \usepackage{glossaries}
+    \usepackage{titling}
     \lstset{
       columns=fullflexible,
       frame=single,
@@ -67,7 +68,4 @@ secnumdepth: 4
 indent: true
 hyperrefoptions:
 - breaklinks
-abstract: |
-    <YOUR ABSTRACT HERE>
-    Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.
 ---
