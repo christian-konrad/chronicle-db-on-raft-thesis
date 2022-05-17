@@ -15,3 +15,4 @@ out/*.tex
 
 # temp docx files
 ~$*.doc*
+.DS_Store
