@@ -13,8 +13,10 @@ You can use inline comments to organize yourself
 -->
 
 <!--- PARAGRAPH 1 - DESCRIBE IT HERE -->
-At the foundation of data-intense applications are distributed event stores...
 
+\todo{Introduce into the topic of event stores (why/what) and replication (why/what)}
+
+At the foundation of data-intense applications are distributed event stores...
 
 there are a lot of requirements to today's distributed systems: They must be able to ingest high throughputs, store a massive load of data (what is a massive load?) and respond almost immediately to user queries, while providing fault-tolerance, consistency and high availability at the same time.
  
@@ -22,7 +24,7 @@ there are a lot of requirements to today's distributed systems: They must be abl
  
 For distributed event stores, those requirements are even higher (why?). With modern approaches to replication, it is possible to meet this requirements for both vertical and horizontal scalability...
 
-TODO better, catchy introduction. See other work for inspiration
+\todo{Better, catchy introduction. See other work for inspiration}
 
 <!--
 General motivation for your work, context and goals: 1-2 pages
@@ -31,6 +33,17 @@ Make sure to address the following:
 • Problem: gap in knowledge, too expensive, too slow, a deficiency, superseded technology
 • Strategy: the way you will address the problem
 -->
+
+\todo{Introduce into research methodology and questions/hypotheses}
+
+- Explorative Research: No strong first hypothesis; a practical, qualitative approach; the goals are
+
+- Identification of a consistency model suitable for an event store with a specific set of requirements and differentiation from other consistency models including a detailed discussion of the advantages and disadvantages of the models in question.
+- Identification and justification of a replication protocol suitable for an event store that satisfies the characteristic requirements of the selected consistency model, including a differentiation from other replication techniques
+- Investigation of the performance trade-off of an implementation of the chosen replication protocol in an event store to make it fault-tolerant and horizontally scalable, compared with the expected trade-off (quantitative approach).
+
+- One goal: find a plausible grounded theory about making a event store fault-tolerant and horizontally scalable by replication, to build new hypotheses and opportunities on.
+- Get an overview and rough insight into the (unexplored) subject area of replication for event stores, then test the hypothesis on performance
 
 - TODO List (implicitly?) and answer (explicitly if possible or keep open for the thesis) the research question(s)
     - What are the unique characteristics of event stores? 

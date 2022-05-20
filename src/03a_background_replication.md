@@ -1,6 +1,4 @@
-## Why Replication {#sec:why-replication}
-
-> TODO or call it "Motivation"?
+## Replication {#sec:why-replication}
 
 \epigraph{A distributed system is one in which the failure of a computer you didn't even know existed can render your own computer unusable.}{--- \textup{Leslie Lamport} \cite{milojicic2002discussion}}
 
@@ -8,10 +6,24 @@ In this chapter, the ...
 
 Maintaining copies of the data on multiple nodes...
 
-- Reference https://gousios.org/courses/bigdata/dist-databases.html#:~:text=Replication%3A%20Keep%20a%20copy%20of,the%20partitions%20to%20different%20nodes. (in which subsection?)
-
 - https://dimosr.github.io/partitioning-and-replication/ 
 - https://dev.mysql.com/doc/refman/5.7/en/replication-features-partitioning.html
+
+### Why Replication?
+
+\todo{Call it "Motivation"?}
+
+- Describe in short requirements to modern software, platforms and databases
+  - Served from the cloud
+  - Must be high available, fast (independent of geographic region)
+  - Must be horizontal scalable (explain the term here)
+    - Multiple loads in parallel without throughput detrementation
+    - Standalone apps could benefit from multithreaded/concurrency, but only to a certain limit (CPU cores, shared memory etc.)) 
+  - Must be fault-tolerant. Consistency is important
+    - May reference https://gousios.org/courses/bigdata/dist-databases.html#:~:text=Replication%3A%20Keep%20a%20copy%20of,the%20partitions%20to%20different%20nodes. ?
+  - Therefore, in fact, modern applications (served on the web but also enterprise and research software , e.g. in compute clusters) are distributed systems most of the times
+- Describe in short todays' challenges of distributed systems
+  - TODO find those challenges and differentiate what I've written in the previous paragraph
 
 ### Use Cases and Challenges
 
@@ -19,7 +31,7 @@ Maintaining copies of the data on multiple nodes...
 
 A distributed system is a collection of autonomous computing elements that appears to its users as a single coherent system [@steen2007distributed].
 
-TODO rephrase
+\todo{Rephrase}
 
 "To achieve availability and horizontal scalability, many modern distributed systems rely on replicated databases, which maintain multiple
 replicas of shared data [@liu2013replication]. Depending on the replication protocol, the data is accessible to clients at any of the replicas, and these replicas communicate changes to each other using message passing."
@@ -67,6 +79,8 @@ Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod 
 
 ##### Types of Possible Failures {#sec:possible-failures}
 
+\todo{Write section}
+
 - Network Partitioning
   - Show examples like in https://kriha.de/docs/seminars/distributedsystemsmaster/reliability/reliability.pdf or in official Raft Interactive Diagram
 - OS Crashes
@@ -78,7 +92,7 @@ Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod 
 
 ### High Availability and Consistency
 
-TODO rephrase
+\todo{Rephrase}
 
 "Building reliable distributed systems at a worldwide scale demands trade-offs between consistency and availability. Consistency is a property of the distributed system which ensures that every node or replica has the same view of data at a given time, irrespective of which client has updated the data. Trading some consistency for availability can oftentimes lead to dramatic improvements in scalability [@pritchett2008base].
 
@@ -100,7 +114,7 @@ are more sensitive to message delays and faults in the
 network. " 
 "To achieve that, an absolute global time order must be maintained" [@lamport1978time]
 
-( TODO like in raft )
+\todo{Like in raft}
 
 Strong consistency is important for online transaction or analytical processing with zero tolerance for invalid states.
 
@@ -137,8 +151,7 @@ even makes it unavailable if network connections between replicas fail"
 delay between replicas [@lloyd2011don]."
 "Causal consistency is a model in which a sequential ordering is maintained only between requests that have a causal dependency. Two requests A and B have a causal dependency if at least one of the following two conditions is achieved: (1) both A and B are executed on a single thread and the execution of one precedes the other in time; (2) B reads a value that has been written by A. Moreover, this dependency is transitive, in the sense that, if A and B have a causal dependency, and B and C have a causal dependency, then A and C also have a causal dependency [56, 60]. Thus, in a scenario of an always-available storage system in which requests have causal dependencies, a consistency level stricter than that provided by the causal model cannot be achieved due to trade-offs of the CAP Theorem [5, 48]."
 
-
-TODO BASE? [@pritchett2008base]
+\todo{BASE? [@pritchett2008base]}
 
 Basically Available, Soft state, Eventually consistent
 

@@ -6,9 +6,9 @@ TODO put it here or before background?
 <!-- See https://www.indeed.com/career-advice/career-development/how-to-write-a-methodology -->
 
 <!-- Restate your thesis or research problem -->
-- Identifikation eines geeigneten Konsistenzmodells für einen Event Store (mit einer Menge von Requirements) und Abgrenzung zu anderen Konsistenzmodellen mit Auflistung der Vor- und Nachteile
-- Identifikation eines geeigneten Replikationsprotokolls für einen Event Store, das den Charakteristiken des gewählten Konsistenzmodells genügt, und Abgrenzung zu anderen Replikationstechniken
-- Untersuchung der Performance einer Implementierung eines Consensus-Based Strong-Consistent Replication Protocols in einem Event Store, um diesen fault tolerant und horizontally scalable zu machen
+- Identification of a consistency model suitable for an event store with a specific set of requirements and differentiation from other consistency models including a detailed discussion of the advantages and disadvantages of the models in question.
+- Identification and justification of a replication protocol suitable for an event store that satisfies the characteristic requirements of the selected consistency model, including a differentiation from other replication techniques
+- Investigation of the performance trade-off of an implementation of the chosen consensus-based, strong-consistent replication protocol in an event store to make it fault tolerant and horizontally scalable, compared with the expected trade-off.
 <!-- Explain the approach you chose; Describe how you collected the data you used -->
 - Embedded/Explorative Research Design: Conducting a qualitative, comparative analysis, then using a quantiative method (benchmarking) to confirm the results / that the expectations are met.
 - Qualitative Untersuchung: Untersuchung via Evaluierung der Literatur zu Replikation (siehe vorhergehende Kapitel), Beschreibung der Anforderungen an die Implementierungen, Evaluierung und Vergleich bestehender Implementierungen (verschiedener populärer und akademisch relevanter Datenbanken und weiteren Stores), Auswahl eines geeigneten Konsistenzmodells und anschließend eines Replikationsprotokolls für diese Anforderungen, Implementierung des Protokolls in geeigneter Sprache und Framework und anschließende quantiative Untersuchung: Messung und Evaluation des Performance-Impacts anhand eines Benchmark-Vergleichs mit dem nicht-replizierten originalen Event Store

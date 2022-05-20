@@ -4,6 +4,8 @@
 
 \begin{otherlanguage*}{american}
 
+\todo{Write abstract}
+
 about 1/2 page:
 (1) Motivation (Why do we care?)
 (2) Problem statement (What problem are we trying to solve?)

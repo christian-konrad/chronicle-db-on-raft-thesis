@@ -1,7 +1,7 @@
 ---
-title: Replication in data stream management systems\vspace{2ex}
+title: Replication in Data Stream Management Systems\vspace{2ex}
 subtitle: > 
-    Master Thesis - Log Replication using Raft Consensus Protocol for ChronicleDB, a High-Throughput Event Store\vspace{1ex}
+    Log Replication using Raft Consensus Protocol for ChronicleDB, a High-Throughput Event Store\vspace{1ex}
 date: May 15th, 2022\vspace{4ex}
 author: 
     - Christian Konrad
@@ -36,6 +36,13 @@ header-includes: |
     \usepackage[font={small},justification=centering]{caption}
     \usepackage{glossaries}
     \usepackage{titling}
+    \usepackage{todonotes}
+    \usepackage{booktabs}
+    \usepackage{draftwatermark}    	
+    \SetWatermarkColor[gray]{0.95}
+    \usepackage{lmodern}
+    \usepackage{helvet}
+    \usepackage[bitstream-charter,sfscaled=false]{mathdesign}
     \lstset{
       columns=fullflexible,
       frame=single,
@@ -66,6 +73,10 @@ link-citations: true
 numbersections: true
 secnumdepth: 4
 indent: true
+# Avoid widows and orphans (single line on bottom or top of page, respectively) at almost any cost
+clubpenalty: 10000
+widowpenalty: 10000
 hyperrefoptions:
 - breaklinks
 ---
+\setlength{\baselineskip}{15pt}

@@ -50,6 +50,11 @@ des User-Logins in einer Webanwendung verdeutlicht. Demzufolge erfolgt die Speic
 
 #### Aggregation and Stream Processing
 
+- "Stateful Computations over Data Streams"
+- Apache Flink - https://flink.apache.org/
+- Apache Spark
+- Machine Learning
+
 #### Out-Of-Order (Random Writes)
 
 #### Differences between popular Event Stores

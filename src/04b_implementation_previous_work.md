@@ -17,7 +17,13 @@ Written by the author of Raft... [@ongaro2015logcabin]
 
 ##### Zookeeper
 
+- External agent
+- Provides a risk as a single point of failure
+- Ends up in Primary-Secondary Replication
 - Discontinued in KIP-500: Self-Managed Meta Quorum with Raft, see next section
+- TODO provide the reasoning from Apache here why Zookeeper is considered bad vs. raft/self-organized quorum
+- Zookeeper is used in some/many (?) other Apache Projects:
+- https://mesos.apache.org/ 
 
 ##### KIP-500: Replace ZooKeeper with a Self-Managed Metadata Quorum (Raft)
 
