@@ -10,6 +10,7 @@ Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod 
 - TODO not only reference paper, but also diss
 
 - Based on distributed consensus, strong consistent
+- TODO see and incorporate images of https://www.cs.princeton.edu/courses/archive/fall16/cos418/docs/L13-strong-cap.pdf
 
 - Raft is actually formally proven (TODO reference Proof GitHub Repo)
 
@@ -31,9 +32,9 @@ TODO
 
 ### Replicated State Machine
 
-See [@schneider1990implementing] [@garg2010implementing]
+See [@garg2010implementing]
 
-- Describe State Machine replication in short, reference corresponding section from Background
+- Describe State Machine replication again very briefly and reference the full corresponding section from Background
     - State Machine replication is... For reference, see... in Raft, State Machine replication looks as follows...
 - Describe State Machine in Raft
 - show diagrams (redraw original paper diagrams of state machine)
@@ -97,8 +98,7 @@ Raft does... but does not...
 
 ### Byzantine Fault Tolerant Raft
 
-TODO rephrase
-The Byzantine Generals Problem is a classic problem in distributed systems that is not as easy to implement, adapt, and understand as it might seem to a systems architect [@lamport1982byzantine]
+TODO see [Types of Possible Failures](#sec:possible-failures) and [Consensus Protocols](#sec:consensus-protocols) for reference
 
 There are certain approaches in research on byzantine fault tolerant versions and derivations of Raft... 
 TODO reference/citation of [@clow2017byzantine] [@copeland2016tangaroa]...

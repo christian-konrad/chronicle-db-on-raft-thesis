@@ -89,6 +89,8 @@ Apaache Ratis is the library of choice for the implementation of a replicated ev
 - Apache Spark
 - Apache Flink
 - Apache Cassandra
+- Redis (https://github.com/RedisLabs/redisraft), still working on it, not production-ready
+    - https://redis.com/blog/redisraft-new-strong-consistency-deployment-option/ 
 
 #### Comparison Results
 

@@ -21,6 +21,8 @@ Developed architecture / system design / implementation: 1/3
 
 - Then show design: What platform, what libraries (reference next ratis section)...
 
+\todo{list Algorithms (heartbeat, load balancer, partitioning...) like in https://software.imdea.org/~gotsman/papers/unistore-atc21.pdf}
+
 ## Library Decision Considerations
 
 - Building it from ground up makes sense if you want full control and adjust the protocol to perfectly fit your use case (TODO find and cite the paper/tool that mentioned that, it must have been mongo or couchbase)

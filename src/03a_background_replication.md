@@ -36,7 +36,16 @@ A distributed system is a collection of autonomous computing elements that appea
 "To achieve availability and horizontal scalability, many modern distributed systems rely on replicated databases, which maintain multiple
 replicas of shared data [@liu2013replication]. Depending on the replication protocol, the data is accessible to clients at any of the replicas, and these replicas communicate changes to each other using message passing."
 
-Example use cases for replication in distributed systems are large-scale software-as-a-service applications that use data replicas in geographically distinct locations [@mkandla2021evaluation], applications for mobile devices that keep replicas locally to support fast and offline access, key-value stores that act as a book keeper for shared cluster meta data [@] or social networks where user content is to be distributed to billions of other users, to mention a few.
+To achieve high availability and horizontal scalability, many modern distributed systems rely on replicated databases that maintain multiple
+replicas of shared data [@liu2013replication]. Depending on the replication protocol, the data is accessible to clients at each of the replicas, and these replicas communicate changes to each other using message passing.
+
+A distributed database therefore is a distributed system designed to provide read/write access to data.
+
+Example use cases for replication in distributed systems are large-scale software-as-a-service applications with data replicated across data centers in geographically distinct locations [@mkandla2021evaluation], applications for mobile devices that keep replicas locally to support fast and offline access, key-value stores that act as a book keeper for shared cluster meta data [@] or social networks where user content is to be distributed to billions of other users, to mention a few.
+
+- TODO distributed kv store
+- TODO social network replication (see fb research paper)
+
 
 #### Horizontal Scalability
 
@@ -79,16 +88,29 @@ Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod 
 
 ##### Types of Possible Failures {#sec:possible-failures}
 
-\todo{Write section}
+Various types of failures with two kinds of faulty processes [@bracha1983resilient]:
 
-- Network Partitioning
-  - Show examples like in https://kriha.de/docs/seminars/distributedsystemsmaster/reliability/reliability.pdf or in official Raft Interactive Diagram
+**Crash Failure/Fail Stop** 
+- a process abruptly stops and does not resume
+
 - OS Crashes
 - Application Crashes
 - Hardware Crashes
+
+**Byzantine Failure** 
+malicious processes can also send false messages
+\todo{Rephrase}
+The Byzantine Generals Problem is a classic problem in distributed systems that is not as easy to implement, adapt, and understand as it might seem to a systems architect [@lamport1982byzantine]
+- "A process that experiences a Byzantine failure may send contradictory or conflicting data to other processes. Byzantine failures are far more disruptive."
 - Not finding Consensus
   - Byzantine Fault vs Fail Stop
   - Instruction Failures on CPU, RAM Failures, even Bitwise Failures in Cables (quote the one example here I found recently)
+
+There is also the case of **Network Partitioning**
+- Show examples like in https://kriha.de/docs/seminars/distributedsystemsmaster/reliability/reliability.pdf or in official Raft Interactive Diagram
+\todo{Is network partitioning fail-stop or byzantine? Or something else?}
+
+
 
 ### High Availability and Consistency
 
@@ -105,13 +127,8 @@ TODO Two distinct perspectives on consistency models: data-centric vs client-cen
 Following, a few of those consistency models are mentioned, including those relevant for the work of this thesis [@steen2007distributed]:
 
 **Strong Consistency** - 
-"A strong consistency model like linearizability provides an easy-to-understand guarantee: informally, all
-operations behave as if they executed atomically on a
-single copy of the data. However, this guarantee comes
-at the cost of reduced performance [@attiya1994sequential]  [@liu2013replication] and fault tolerance [22] compared to weaker consistency models.  algorithms that
-ensure stronger consistency properties among replicas
-are more sensitive to message delays and faults in the
-network. " 
+"A strong consistency model like linearizability provides an easy-to-understand guarantee: informally, all operations behave as if they executed atomically on a
+single copy of the data. However, this guarantee comes at the cost of reduced performance [@attiya1994sequential] [@liu2013replication] and fault tolerance compared to weaker consistency models. Algorithms that ensure stronger consistency properties among replicas are more sensitive to message delays and makes the system vulnerable to network partitions. "
 "To achieve that, an absolute global time order must be maintained" [@lamport1978time]
 
 \todo{Like in raft}
@@ -130,9 +147,7 @@ Strong consistency is important for online transaction or analytical processing 
 - TODO describe my reasoning for this (just reference below explanation of CALM)
 
 "Ideally, we would like replicated databases to provide strong consistency, i.e., to behave as if a single centralised node handles all operations. However, achieving this ideal usually requires synchronisation among replicas, which slows down the database and
-even makes it unavailable if network connections between replicas fail"
-
-(The latter does not count for raft if quorum still works)
+even makes it unavailable if network connections between replicas fail (= network partitions)". This does not apply to all protocols with strong consistency: Raft, the protocol of choice of this work, allows the system to be responsive even when the network is partitioned under certain constraints [TODO raft paper].
 
 "For this reason, modern replicated databases often eschew synchronisation completely; such databases are commonly dubbed eventually consistent [47]. In these databases, a replica performs an operation requested by a client locally without any synchronisation with other replicas and immediately returns to the client; the effect of the operation is propagated to the other replicas only eventually. This may lead to anomalies—behaviours deviating from strong consistency"
 
@@ -161,6 +176,9 @@ TODO NoSQL Databases are often BASE and not ACID and therefore not strong consis
   - Maximizing read throughput
   - Returning recent writes is not guaranteed
   - Eventual different responses from different nodes at different points in time
+
+This more relaxing consistency models in general violate crucial correctness properties, compared with strong consistency. A compromise is to allow multiple consistency levels to coexist in the data store, which can be achieved depending on the use case and constraints of the system. An example is to combine both strong and causal consistency for applications with geographically replicated data in distributed data centers [@bravo2021unistore].
+
 
 #### The CAP Theorem
 
@@ -212,7 +230,13 @@ TODO [@shen2015causal]
 
 #### Categorization of Replication Protocols
 
-##### Consensus Protocols
+##### Consensus Protocols {#sec:consensus-protocols}
+
+"A consensus protocol enables a system of n asynchronous processes, some of which are faulty, to reach agreement." [@bracha1983resilient]
+
+- achieve overall system reliability in the presence of a number of faulty processes
+- coordinating processes to reach consensus
+  - agree on some data value that is needed during computation
 
 TODO difference between decentralized (raft, paxos... (but care that single leader may be a problem)) and centralized consensus (zookeeper?)
 
@@ -222,9 +246,104 @@ Distributed consensus protocols describe a procedure to reach a common agreement
 
 Popular examples for distributed consennsus protocols are [Paxos](#sec:paxos) and [Raft](#sec:raft), the latter being the focus of this work.
 
+Example applications where consensus is needed:
+- Clock synchronisation
+- Google PageRank
+- Smart Power Grid
+- Load Balancing
+- Key-Value Stores
+- and ultimatively Blockchain
+- \todo{Find other consensus examples then the wiki ones}
+- Distributed systems in general
+
+<!-- (https://en.wikipedia.org/wiki/Consensus_(computer_science)) -->
+
+Different ways to categorize consensus protocols. One is by the size of the value scope:
+
+**Single-Value Consensus Protocols**
+- such as Paxos
+- nodes agree on a single value
+
+**Multi-Value Consensus Protocols**
+- such as Multi-Paxos or Raft
+- agree on not just a single value but a series of values over time
+- forming a progressively-growing history
+- may be achieved naively by running multiple iterations of a single-valued consensus protocol
+- but many optimizations and other considerations such as reconfiguration support can make multi-valued consensus protocols more efficient in practice
+
+The other way to categorize those protocols is by fault tolerance (see [Types of Possible Failures](#sec:possible-failures) for reference):
+
+**Crash-Fault Tolerant (BFT) Consensus Protocols**
+
+For Fail-Stop failure model...
+
+"A consensus protocol tolerating those halting failures must satisfy the following properties:
+
+\todo{Re-Research and rephrase}
+
+**Termination**
+Eventually, every correct process decides some value.
+**Integrity**
+If all the correct processes proposed the same value {\displaystyle v}v, then any correct process must decide {\displaystyle v}v.
+**Agreement**
+Every correct process must agree on the same value."
+
+⎡(n + 1)/2⎤ correct processes are necessary and sufficient to reach agreement [@bracha1983resilient].
+
+"there is no consensus protocol for the fail-stop case that always terminates within a bounded number of steps" [@bracha1983resilient]
+\todo{Is this of interest for this work?}
+
+**Byzantine-Fault Tolerant (BFT) Consensus Protocols**
+
+BFT consensus is defined by the following four requirements:
+
+\todo{Rephrase}
+
+**Termination**: Every non-faulty process decides an output.
+**Agreement**: Every non-faulty process eventually decides the same output ˆy.
+**Validity**: If every process begins with the same input ˆx, then ˆy = xˆ.
+**Integrity**: Every non-faulty process’ decision and the consensus value ˆy must have been proposed by some nonfaulty process.
+
+For any consensus protocol to attain these BFT requirements, ⎡(2n + 1)/3⎤ correct processes/nodes are necessary and sufficient to reach agreement, or in other words N ≥ 3f + 1 where f is the number of Byzantine processes and N the number of total processes/nodes needed to tolerate this number of faulty nodes. This fundamental result was first proved by Pease, Lamport et al. [@pease1980faults] and later adapted to the BFT consensus framework [@bracha1983resilient].
+
+\todo{Mention this is not the focus of this work}
+
+Byzantine-Fault tolerant (BFT) consensus protocols are naturally Crash-Fault tolerant (CFT) [@xiao2020survey]
+
 ##### State Machine Replication
 
-State machine replication is... and can be achieved through consensus protocols.
+State machine replication is... [@schneider1990statemachine] and can be achieved through consensus protocols. 
+
+\todo{Rephrase}
+
+Consensus in distributed computing is a more sophisticated
+realization of the aforementioned distributed system. In a
+typical distributed computing system, one or more clients
+issue operation requests to the server consortium, which
+provides timely and correct computing service in response
+to the requests despite some of servers may fail. Here the
+correctness requirement is two-fold: correct execution results
+for all requests and correct ordering of them. According to
+Alpern and Schneider’s work on liveness definition [31] in
+1985, the correctness of consensus can be formulated into
+two requirements: **safety** — every server correctly executes the
+same sequence of requests, and **liveness** — all requests should
+be served.
+To fulfill these requirements even in the presence of faulty
+servers, server replication schemes especially state machine
+replication (SMR) are often heralded as the de facto solution.
+SMR, originated from Lamport’s early works on clock synchronization in distributed systems [@lamport1978time], [33], was formally
+presented by Schneider [@schneider1990statemachine] in 1990. Setting in the clientserver framework, SMR sets the following requirements:
+1) All servers start with the same initial state;
+2) Total-order broadcast/atomic broadcast: All servers receive the same sequence of requests as how they were generated from
+clients;
+3) All servers receiving the same request shall output the
+same execution result and end up in the same state. 
+[@xiao2020survey]
+
+TODO image from https://arxiv.org/pdf/1904.04098.pdf
+
+<!-- https://en.wikipedia.org/wiki/State_machine_replication -->
 
 ##### Other Kinds of Protocols
 
@@ -239,6 +358,9 @@ The [following chapter](#sec:raft) will then spend a closer look on Raft, a cons
 
 ##### Paxos {#sec:paxos}
 
+- State machine replication (TODO is it ?)
+- Strong consistent
+- Single-Value, but also multi-value using Multi-Paxos
 - Had been state of the art for a long time for strong consistent replication
 - Based on distributed consensus
 - original by Leslie Lamport [@lamport1998paxos] and further improvements by himself [@lamport2006fast]
@@ -247,6 +369,8 @@ The [following chapter](#sec:raft) will then spend a closer look on Raft, a cons
 
 #### Other Mentionable Protocols
 
+##### PBFT
+
 ##### Chain Replication
 
 [@van2004chain]
@@ -254,3 +378,8 @@ The [following chapter](#sec:raft) will then spend a closer look on Raft, a cons
 ##### Viewstamped Replication
 
 ABC
+
+##### Various Blockchain Protocols
+
+PoW, PoS, PoX... all are BFT if conditions apply (for example, no 51% attack) (most important to prevent those failures!)
+TODO this is nice to have, remove if not enough time to mention this. If yes, reference (https://arxiv.org/pdf/1810.03357.pdf and https://arxiv.org/pdf/1904.04098.pdf)

@@ -2,6 +2,19 @@
 
 - TODO conclude and start a discussion
 
+<!-- Style in this way:
+
+This paper presented UNISTORE, the first fault-tolerant and
+scalable data store that combines causal and strong consistency. UNISTORE carefully integrates state-of-the-art scalable
+protocols and extends them in nontrivial ways. To maintain
+liveness despite data center failures, unlike previous work,
+UNISTORE commits a strong transaction only when all its
+causal dependencies are uniform. Our results show that UNISTORE combines causal and strong consistency effectively:
+3.7× lower latency on average than a strongly consistent system with 1.2ms latency on average for causal transactions. We
+expect that the key ideas in UNISTORE will pave the way for
+practical systems that combine causal and strong consistency
+ -->
+
 - Has negative impact on performance (within the expectations of strong consistency) when scaling vertically
 - Can have a positive impact when scaling horizontally, when partitioning is leveraged in a smart way
 - Is fault-tolerant as Raft...
