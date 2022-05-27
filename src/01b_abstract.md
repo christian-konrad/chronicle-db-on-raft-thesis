@@ -1,6 +1,6 @@
 \pagenumbering{roman}
 
-# Abstract {#sec:abstract}
+\chapter*{Abstract}
 
 \begin{otherlanguage*}{american}
 
@@ -23,11 +23,13 @@ low latency and high throughput, while ensuring different correctness constraint
 TODO this style https://software.imdea.org/~gotsman/papers/unistore-atc21.pdf and find more use-case related reasoning regarding Event Processing, EPA... for example. inspiration from Kafka and Spark
 -->
 
+<!-- Also find inspiration for the abstract here http://www.diva-portal.org/smash/get/diva2:24228/FULLTEXT01.pdf -->
+
 \end{otherlanguage*}
 
 \pagebreak
 
-# Zusammenfassung {#sec:abstract-german}
+\chapter*{Zusammenfassung}
 
 \begin{otherlanguage*}{ngerman}
 

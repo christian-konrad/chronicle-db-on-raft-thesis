@@ -9,7 +9,7 @@ Developed architecture / system design / implementation: 1/3
 
 - This section is about the solution design and implementation
 - First list high-level requirements (strong consistency, availability, fault-tolerance...) just reference the previous chapters
-    - TODO describe that I opted for strong consistency here [gotsman2016cause]
+    - TODO describe that I opted for strong consistency here [@gotsman2016cause]
     - in background or later in implementation?
     - TODO describe my reasoning for this
     - if possible (and tradeoff ok), strong consistency is always prefered
@@ -36,11 +36,9 @@ Developed architecture / system design / implementation: 1/3
 - TODO describe why strong consistency and finally raft
 - TODO reference criteria from 04a
 
-## Popular Implementations of Replication Protocols
+## Raft Implementations
 
-> TODO list them here or in previous work?
-
-- Reference to previous work chapter
+> TODO just the list from the raft github
 
 ## Apache Ratis
 
@@ -81,17 +79,25 @@ in order to support zero buffer coping and a light-weighted raft log.
 <!-- Now, I present my results -->
 
 - Stack:
-    - Spring Boot
-        - Why Spring Boot
-    - Apache Ratis
-    - Google Protocol Buffers
-    - Standalone/Embedded ChronicleDB Event Store + ChronicleEngine
+    - Protocol Implementation: Apache Ratis
+    - Messaging Implementation: Google Protocol Buffers / gRPC
+    - Event Store: Standalone/Embedded ChronicleDB Event Store + ChronicleEngine
 
 - pretty architecture diagrams
 
 - Architecture in overview: Communication layers, client + server architecture, node architecture, how to run the system, ... afterwards the details in own sections
 
 - Describe target package/library ecosystem (replicated event store as lib, consumed by spring)
+
+<!--
+#### Simplified API for Apache Ratis
+
+> This should better be covered in the following sections (cluster management + state machine)
+
+- StateMachineProviders
+- PartitionInfo
+- ClusterManager
+-->
 
 #### Cluster Management
 
@@ -102,6 +108,8 @@ in order to support zero buffer coping and a light-weighted raft log.
 - Registering of Partitions for StateMachines
 - Additional RaftServer (with own port)
 - Explain how to startup the cluster similar to https://github.com/logcabin/logcabin/blob/master/README.md
+- Failure detection (TODO also reference 03a)
+- TODO chain replication states to Allow to build a distributed system without external cluster management process; raft did it, too (see KIP-500), but why did I ended up in here? Describe this so it makes sense (multi-raft, partitioning, add work item to conclusion to get rid of the cluster manager process)
 
 #### Event Store State Machine
 
@@ -131,14 +139,6 @@ in order to support zero buffer coping and a light-weighted raft log.
 - TODO explain similarities with Raft Log Buffer
 - TODO if reasonable, list algos
 
-### Simplified API for Apache Ratis
-
-> This should already be covered in previous sections (cluster management + state machine)
-
-- StateMachineProviders
-- PartitionInfo
-- ClusterManager
-
 ### Partitioning using Multi-Raft Groups
 
 - Basic vertical partitioning by stream, no sharding
@@ -147,15 +147,9 @@ in order to support zero buffer coping and a light-weighted raft log.
     - Naive implementation (balanced per absolute # of partitions, not by time splits or per actual load); better partitioning approaches see background#Partitioning and Sharding + conclusion
 - Show diagram of partitioning approach
 
-
-### Replicated Microservice using Apache Ratis and Spring Boot
-
-> May omit this. This is about providing my interface as a library, which is nice-to-have, but not subject of this thesis
-
-// TODO consider to update title; as Microservices in general should be stateless and therefore replication does not make sense.
-It is more about replicating a state or storage that is consumed by services.
-
 ### Messaging between Raft Nodes using gRPC and Protocol Buffers
+
+> TODO here or earlier?
 
 - Describe briefly the messaging format
 - ExecutableMessages with Executors framework
@@ -165,28 +159,38 @@ It is more about replicating a state or storage that is consumed by services.
     - If suitable depends on requirements. If state machine operations should be encapsuled and a closed set, just wrap a StateManager around it and reference it in the MessageExecutors
 - High potential for model based programming / code generation (could generate executors and java message objects from proto+annotations)
 
-### Running in Docker Containers
+### Test Application
+
+To test the implementation of the replicated event store and the middlewares supporting it, a test application is needed. In the context of this thesis, a synthetic application is constructed to perform trade-off studies. The application is composed of...
+
+- Spring Boot
+- REST, facades...
+
+#### Running in Docker Containers
 
 - TODO simple cluster start with docker-compose
 
-### Running on Kubernetes
+<!--
+
+#### Running on Kubernetes
 
 - TODO only cover it in this section if I get a working prototype running
 - Helm Charts
 
-### End-User APIs
+-->
+
+#### End-User APIs
 
 > This may be covered in previous sections
 
-#### Java API
-
+**Java API**: 
 - Replicated Chronicle Engine
 - Buffer Settings
 
-#### HTTP/REST
+**HTTP/REST**:
+- Lorem ipsum
 
-### Management User Interface
-
+**User Interface**:
 > Only brief description with a few screenshots
 
 Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.

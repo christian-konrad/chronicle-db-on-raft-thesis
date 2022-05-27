@@ -71,7 +71,7 @@ classoption: [symmetric]
 documentclass: report
 link-citations: true
 numbersections: true
-secnumdepth: 4
+secnumdepth: 3
 indent: true
 # Avoid widows and orphans (single line on bottom or top of page, respectively) at almost any cost
 clubpenalty: 10000

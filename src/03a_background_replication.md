@@ -6,12 +6,9 @@ In this chapter, the ...
 
 Maintaining copies of the data on multiple nodes...
 
-- https://dimosr.github.io/partitioning-and-replication/ 
-- https://dev.mysql.com/doc/refman/5.7/en/replication-features-partitioning.html
+The following paragraphs examine and explain why replication is neccessary...
 
-### Why Replication?
-
-\todo{Call it "Motivation"?}
+<!-- ### why replication is neccessary -->
 
 - Describe in short requirements to modern software, platforms and databases
   - Served from the cloud
@@ -25,9 +22,24 @@ Maintaining copies of the data on multiple nodes...
 - Describe in short todays' challenges of distributed systems
   - TODO find those challenges and differentiate what I've written in the previous paragraph
 
-### Use Cases and Challenges
+"One of the potential benefits of distributed systems is their use in
+providing highly-available services, that is, services that are likely to
+be up and accessible when needed. Availability is essential to many
+computer-based services; for example, in airline reservation systems
+the failure of a single computer can prevent ticket sales for a
+considerable time, causing a loss of revenue and passenger
+goodwill.
+Availability is achieved through replication. By having more than
+one copy of important information, the service continues to be usable
+even when some copies are inaccessible, for example, because of a
+crash of the computer where a copy was stored. Various replication
+algorithms have been proposed to achieve availability. This work tries to find an algorithm that has desirable performance properties for an event store.... "
 
-#### Distributed Systems
+The following subsections describe replication use cases and the challenges in these particular cases.
+
+\todo{Do we really need an own subsection to explain distributed systems?}
+
+### Distributed Systems
 
 A distributed system is a collection of autonomous computing elements that appears to its users as a single coherent system [@steen2007distributed].
 
@@ -47,7 +59,7 @@ Example use cases for replication in distributed systems are large-scale softwar
 - TODO social network replication (see fb research paper)
 
 
-#### Horizontal Scalability
+### Horizontal Scalability
 
 - Nodes accessible from different geographic regions, providing lower latencies to users by serving data from nodes closer to the user...
 
@@ -70,7 +82,7 @@ place service replicas in close proximity to its clients. This
 allows reducing the request round-trip time and hence the
 latency experienced by clients
 
-#### Safety and Reliability
+### Safety and Reliability
 
 \epigraph{Anything that can go wrong will go wrong.}{--- \textup{Murphy's Law} \cite{milojicic2002discussion}}
 
@@ -82,33 +94,43 @@ High availability requires that your application can handle node failures withou
 
 See [@cristian1991understanding]
 
-Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.
-
 - Example use cases: Aviation Systems, lab measurements with low fault-tolerance...
 
-##### Types of Possible Failures {#sec:possible-failures}
+\todo{Add line wraps after those titles, or use a different approach to enumerate the paragraphs}
 
-Various types of failures with two kinds of faulty processes [@bracha1983resilient]:
+#### Types of Possible Faults {#sec:possible-faults}
 
-**Crash Failure/Fail Stop** 
-- a process abruptly stops and does not resume
+To describe a fault-tolerant approach that is useful, it must be specified which faults[^1] the system can tolerate. No system can tolerate all kinds of faults (e.g. if all nodes crash permanently), so we need a model that describes the set of faults allowed. There are different types of such faults and two major models to describe them [@bracha1983resilient]:
 
-- OS Crashes
-- Application Crashes
-- Hardware Crashes
+\paragraph{Crash Failure/Fail-Stop.} Processes with fail-stop behaviour simply "die" on a fault, i.e. they stop participating in the protocol [@schlichting1983fail]. Such a process stops automatically in response to an internal fault even before the effects of this fault become visible. In asynchronous systems, there is no way to distinguish between a dead process and a merely slow process. In such a system, a process may even appear to have failed because the network connection to it is slow or partitioned. However, designing a system as a fail-stop system helps mitigate long-term faulty behavior and can improve the overall fault-tolerance, performance and usability by making a few assumptions [@candea2003crash]: one approach to assuming such a failure is to send and receive heartbeats and conclude that the absence of heartbeats within a certain period of time means that a process has died. False detections of processes that are thought to be dead but are in fact just slow are therefore possible but acceptable as long as they are reasonable in terms of performance. With a growing number of processes involved in a system, such failure detection approaches can become slower and  lead to more false assumptions, so more advanced error detection methods come into play, for example based on gossiping [@renesse1998gossip] or _unreliable failure detectors_ as in the Chandra–Toueg consensus algorithm [@chandra1996unreliable].
 
-**Byzantine Failure** 
-malicious processes can also send false messages
+"Studies have shown that a main source of downtime in large scale software systems is caused by intermittent or transient bugs" [@candea2003crash]
+
+Examples for faults causing such a fail-stop failure in a distributed system are Operating System (OS) crashes, application crashes, and hardware crashes. 
+
+\paragraph{Byzantine Faults.} Instead of crashing, faulty processes can also send arbitrary or even malicious messages to other processes, containing contradictory or conflicting data. The effect of the fault becomes visible (while being hard to detect) and, if not handled properly, can negatively impact the future behavior of the faulty system, resulting in a _byzantine failure_. Byzantine failures are far more disruptive to a system. Such faults can only be detected under certain circumstances (see later section)...
 \todo{Rephrase}
-The Byzantine Generals Problem is a classic problem in distributed systems that is not as easy to implement, adapt, and understand as it might seem to a systems architect [@lamport1982byzantine]
-- "A process that experiences a Byzantine failure may send contradictory or conflicting data to other processes. Byzantine failures are far more disruptive."
+\todo{Illustration for byzantine generals problem}
+The _Byzantine Generals Problem_ is a classic problem in distributed systems that is not as easy to implement, adapt, and understand as it might seem to a systems architect [@lamport1982byzantine]
 - Not finding Consensus
   - Byzantine Fault vs Fail Stop
   - Instruction Failures on CPU, RAM Failures, even Bitwise Failures in Cables (quote the one example here I found recently)
 
+\todo{Find paper with proof, especially for the byzantine case}
+A system of $n$ replicas is considered to be fault-tolerant (or _$k$-resilient_) if no more than $k$ replicas become faulty:
+- Byzantine failure: $2k + 1$
+- Fail-stop failure: $k + 1$
+
 There is also the case of **Network Partitioning**
+- network connections between replica nodes fail
 - Show examples like in https://kriha.de/docs/seminars/distributedsystemsmaster/reliability/reliability.pdf or in official Raft Interactive Diagram
 \todo{Is network partitioning fail-stop or byzantine? Or something else?}
+[https://www.usenix.org/system/files/osdi18-alquraan.pdf]
+
+Catastrophic failures manifest easily:
+Overall, we found that network-partitioning faults lead to silent catastrophic failures (e.g., data loss, data corruption, data unavailability, and
+broken locks), with 21% of the failures leaving the system in a lasting erroneous state that persists even after the partition heals. Oddly, it is easy for these
+failures to occur. A majority of the failures required three or fewer frequently used events (e.g., read, and write), 88% of them can be triggered by isolating a single node, and 62% of them were deterministic
 
 
 
@@ -166,6 +188,9 @@ even makes it unavailable if network connections between replicas fail (= networ
 delay between replicas [@lloyd2011don]."
 "Causal consistency is a model in which a sequential ordering is maintained only between requests that have a causal dependency. Two requests A and B have a causal dependency if at least one of the following two conditions is achieved: (1) both A and B are executed on a single thread and the execution of one precedes the other in time; (2) B reads a value that has been written by A. Moreover, this dependency is transitive, in the sense that, if A and B have a causal dependency, and B and C have a causal dependency, then A and C also have a causal dependency [56, 60]. Thus, in a scenario of an always-available storage system in which requests have causal dependencies, a consistency level stricter than that provided by the causal model cannot be achieved due to trade-offs of the CAP Theorem [5, 48]."
 
+TODO Causal+ [@lloyd2011don]
+"able to leverage the existence of multiple replicas to distribute the load of read requests"
+
 \todo{BASE? [@pritchett2008base]}
 
 Basically Available, Soft state, Eventually consistent
@@ -182,11 +207,14 @@ This more relaxing consistency models in general violate crucial correctness pro
 
 #### The CAP Theorem
 
-Why can't we always have strong consistency? The CAP theorem (CAP stands for Consistency, Availability and Partition Tolerance), also known as Brewer's Theorem, named after its original author Eric Brewer [@brewer2000towards], asserts that the requirements for strong consistency and high availability cannot be met at the same time and serves as a simplifying explanatory model for consistency decisions that depend on the requirements for the availability of the distributed system in question [@gilbert2002brewer]. 
+Why can't we always have strong consistency? The CAP theorem (CAP stands for Consistency, Availability and Partition Tolerance), also known as Brewer's Theorem, named after its original author Eric Brewer [@brewer2000towards], asserts that the requirements for strong consistency and high availability cannot be met at the same time and serves as a simplifying explanatory model for consistency decisions that depend on the requirements for the availability of the distributed system in question [@gilbert2002brewer].
 
 TODO draw and show the diagram
 
-In general, partition tolerance should always be guaranteed in distributed systems (as described above in the [types of possible failures](#sec:possible-failures)). Therefore, the tradeoff is to be made between consistency and availability. Eric Brewer revisited his thoughts on the theorem, stating that tradeoffs are possible for all three dimensions of the theorem: by explicitly handling partitions, both consistency and availability can be optimized [@brewer2012cap].
+Traditional, non-distributed relational database management systems (RDBMS) support both consistency and availability (as there is either one single node available or none), while they do not support partition tolerance, which is mandatory for distributed databases. 
+\todo{Source for RDBMS, clustering etc}
+
+In general, partition tolerance should always be guaranteed in distributed systems (as described above in the [types of possible faults](#sec:possible-faults)). Therefore, the tradeoff is to be made between consistency and availability in the case of a network partition. Eric Brewer revisited his thoughts on the theorem, stating that tradeoffs are possible for all three dimensions of the theorem: by explicitly handling partitions, both consistency and availability can be optimized [@brewer2012cap].
 
 The theorem is often interpreted as a proof that eventually consistent databases have better availability properties than strongly consistent databases. There is sound critic that in practice this is only true under certain circumstances: the reasoning for consistency tradeoffs in practical systems should be made more carefully and strong consistency can be reached in more real-world applications then the CAP theorem would allow [@kleppmann2015critique].
 
@@ -198,6 +226,9 @@ The CALM theorem (CALM stands for...) is a critic on the CAP theorem that says..
 
 
 ### Partitioning and Sharding
+
+- https://dimosr.github.io/partitioning-and-replication/ 
+- https://dev.mysql.com/doc/refman/5.7/en/replication-features-partitioning.html
 
 - Performance is critical for many applications, especially for distributed ones
 - sharding (also known as horizontal partitioning) helps to provide high availability, fault-tolerance, and scalability to large databases in the cloud [bagui2015database]
@@ -222,21 +253,55 @@ Providing lower latencies to users by serving data from nearby nodes...
 
 Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.
 
-### Partial Replication
+### Performance-Tradeoff Mitigation
+
+#### Partial Replication
 
 TODO [@shen2015causal]
 
-### Overview of Replication Protocols
+### Replication Protocols
 
-#### Categorization of Replication Protocols
+The next subsections describe the different categories of replication protocols and follow with a discussion of specific protocols.
 
-##### Consensus Protocols {#sec:consensus-protocols}
+#### Consensus Protocols {#sec:consensus-protocols}
+
+\todo{Rephrase}
+
+\todo{Talk about processes or nodes?}
+
+<!--
+TODO The first studies on consensus protocols happened in the field of distributed, asynchronous systems of processes, but is also applicable to large-scale distributed systems of today
+-->
 
 "A consensus protocol enables a system of n asynchronous processes, some of which are faulty, to reach agreement." [@bracha1983resilient]
+
+"Each process starts with some initial value. At the conclusion of the protocol all the working nodes must agree on the same value. "
 
 - achieve overall system reliability in the presence of a number of faulty processes
 - coordinating processes to reach consensus
   - agree on some data value that is needed during computation
+
+\todo{Rephrase}
+
+Certain different variations of how to understand a consensus protocol appear in the literature. They differ in the assumed properties of the messaging system, in the type of errors allowed to the processes, and in the notion of what a solution is. 
+Fischer et al. investigated deterministic protocols that always terminate within a finite number of steps and showed that "every protocol for this problem has the possibility of nontermination, even with only one faulty process [@fischer1985impossibility]." This is based on the failure detection problem discussed earlier in [types of possible faults](#sec:possible-faults): in such a system, a crashed process cannot be distinguished from a very slow one.
+
+Bracha et al. consider protocols that may never terminate, "but this would occur with probability 0, and the expected termination time is finite. Therefore, they terminate within finite time with probability 1 under certain assumptions on the behavior of the system" [@bracha1983resilient]. This can be achieved by adding characteristics of randomness to the protocol, such as random retry timeouts for failed messages, or by the application of _unreliable failure detectors_ as in the Chandra–Toueg consensus algorithm [@chandra1996unreliable].
+
+\todo{Reference the random timeout thing later in raft, which is one basic characteristic}
+
+\todo{Relation to Atomic Broadcasts (Equivalency)?}
+
+<!--
+in systems with crash failures, atomic broadcast and consensus are equivalent problems. 
+A value can be proposed by a process for consensus by atomically broadcasting it, and a process can decide a value by selecting the value of the first message which it atomically receives. Thus, consensus can be reduced to atomic broadcast. [@chandra1996unreliable]
+Conversely, a group of participants can atomically broadcast messages by achieving consensus regarding the first message to be received, followed by achieving consensus on the next message, and so forth until all the messages have been received. Thus, atomic broadcast reduces to consensus. This was demonstrated more formally and in greater detail by Xavier Défago, et al.[https://doi.org/10.1145%2F1041680.1041682]
+
+The Chandra-Toueg algorithm[6] is a consensus-based solution to atomic broadcast.
+
+The Zookeeper Atomic Broadcast (ZAB) protocol is the basic building block for Apache ZooKeeper, a fault-tolerant distributed coordination service which underpins Hadoop and many other important distributed systems.[8][9]
+
+-->
 
 TODO difference between decentralized (raft, paxos... (but care that single leader may be a problem)) and centralized consensus (zookeeper?)
 
@@ -271,7 +336,7 @@ Different ways to categorize consensus protocols. One is by the size of the valu
 - may be achieved naively by running multiple iterations of a single-valued consensus protocol
 - but many optimizations and other considerations such as reconfiguration support can make multi-valued consensus protocols more efficient in practice
 
-The other way to categorize those protocols is by fault tolerance (see [Types of Possible Failures](#sec:possible-failures) for reference):
+The other way to categorize those protocols is by fault tolerance (see [Types of Possible Faults](#sec:possible-faults) for reference):
 
 **Crash-Fault Tolerant (BFT) Consensus Protocols**
 
@@ -284,11 +349,13 @@ For Fail-Stop failure model...
 **Termination**
 Eventually, every correct process decides some value.
 **Integrity**
-If all the correct processes proposed the same value {\displaystyle v}v, then any correct process must decide {\displaystyle v}v.
+If all the correct processes proposed the same value $y$, then any correct process must decide $y$.
 **Agreement**
 Every correct process must agree on the same value."
 
-⎡(n + 1)/2⎤ correct processes are necessary and sufficient to reach agreement [@bracha1983resilient].
+For a faulty system to still be able to reach consensus, even more nodes are required than initially for a system to be [fault-tolerant](#sec:possible-faults):
+
+$\left \lceil (n + 1)/2 \right \rceil$ correct processes are necessary and sufficient to reach agreement [@bracha1983resilient].
 
 "there is no consensus protocol for the fail-stop case that always terminates within a bounded number of steps" [@bracha1983resilient]
 \todo{Is this of interest for this work?}
@@ -300,19 +367,26 @@ BFT consensus is defined by the following four requirements:
 \todo{Rephrase}
 
 **Termination**: Every non-faulty process decides an output.
-**Agreement**: Every non-faulty process eventually decides the same output ˆy.
-**Validity**: If every process begins with the same input ˆx, then ˆy = xˆ.
-**Integrity**: Every non-faulty process’ decision and the consensus value ˆy must have been proposed by some nonfaulty process.
+**Agreement**: Every non-faulty process eventually decides the same output $y$.
+**Validity**: If every process begins with the same input $x$, then $y = x$.
+**Integrity**: Every non-faulty process' decision and the consensus value $y$ must have been proposed by some nonfaulty process.
 
-For any consensus protocol to attain these BFT requirements, ⎡(2n + 1)/3⎤ correct processes/nodes are necessary and sufficient to reach agreement, or in other words N ≥ 3f + 1 where f is the number of Byzantine processes and N the number of total processes/nodes needed to tolerate this number of faulty nodes. This fundamental result was first proved by Pease, Lamport et al. [@pease1980faults] and later adapted to the BFT consensus framework [@bracha1983resilient].
+For any consensus protocol to attain these BFT requirements, $\left \lceil (2n + 1)/3 \right \rceil$ correct processes/nodes are necessary and sufficient to reach agreement, or in other words $N \geq 3f + 1$ where $f$ is the number of Byzantine processes and $N$ the number of total processes/nodes needed to tolerate this number of faulty nodes. This fundamental result was first proved by Pease, Lamport et al. [@pease1980faults] and later adapted to the BFT consensus framework [@bracha1983resilient].
 
 \todo{Mention this is not the focus of this work}
 
 Byzantine-Fault tolerant (BFT) consensus protocols are naturally Crash-Fault tolerant (CFT) [@xiao2020survey]
 
-##### State Machine Replication
+
+"TODO Use cases: Recent advances in permissioned blockchains [58, 111, 124], firewalls [20, 56], and SCADA systems [9, 92] have shown that Byzantine fault-tolerant (BFT) state-machine replication [106] is not a concept of solely academic interest but a problem of high relevance in practice. [@distler2021byzantine]"
+
+\todo{describe that practical consensus protocols need to incorporate a reconfiguration protocol (and describe what this means)}
+
+#### State Machine Replication
 
 State machine replication is... [@schneider1990statemachine] and can be achieved through consensus protocols. 
+
+\todo{Are all state-machine approaches non-byzantine? I don't think so. What about byzantine raft/paxos?}
 
 \todo{Rephrase}
 
@@ -343,43 +417,88 @@ same execution result and end up in the same state.
 
 TODO image from https://arxiv.org/pdf/1904.04098.pdf
 
+TODO cite the slides for the State-Machine Approach for fault-tolerance https://www.inf.ufpr.br/aldri/disc/slides/SD712_lect13.pdf
+
+TODO there are both BFT and CFT state machine replication protocols: 
+"Recent advances in permissioned blockchains [58, 111, 124], firewalls [20, 56], and SCADA systems [9, 92] have shown that Byzantine fault-tolerant (BFT) state-machine replication [106] is not a concept of solely academic interest but a problem of high relevance in practice. [@distler2021byzantine]"
+
+
 <!-- https://en.wikipedia.org/wiki/State_machine_replication -->
 
-##### Other Kinds of Protocols
+<!--
+#### Other Kinds of Protocols
 
 - Master-Slave
 - Active-Passive (any difference to master-slave?^)
+- Primary-Copy
+- TODO Mention them here or just below?
+-->
+
+#### Primary-Copy Replication
+
+The simplest, yet weakest approach. One primary server, N backup (copy) servers.
+
+See section "11.6 Replicated state machines vs. primary copy approach" from https://web.stanford.edu/~ouster/cgi-bin/papers/OngaroPhD.pdf
+
+TODO incorporate the table State-machine vs. Primary-backup at the end of the slides https://www.inf.ufpr.br/aldri/disc/slides/SD712_lect13.pdf
+
+#### Chain Replication
+
+"Chain replication is a new approach to coordinating
+clusters of fail-stop storage servers. The approach is
+intended for supporting large-scale storage services
+that exhibit high throughput and availability without sacrificing strong consistency guarantees." [@van2004chain]
+
+There are deviations from the original, strong-consistency case, such as ChainReaction, which provides causal+ consistency (see TODO ref to paragraph) and geo-replication, and is able to leverage the presence of multiple replicas to distribute the load of read requests [@almeida2013chainreaction].
+
+"Allows to build a distributed system without external cluster management process"
+
+TODO Comparison with primary-copy and state machine approaches
+
+TODO see https://medium.com/coinmonks/chain-replication-how-to-build-an-effective-kv-storage-part-1-2-b0ce10d5afc3
 
 #### Concrete Protocols
 
-This section provides an overview of concrete, popular replication protocols to the reader. Some of them are used in production for years, while others are subject of academic studies only.
+This subsection provides an overview of concrete, popular replication protocols to the reader. Some of them are used in production for years, while others are subject of academic studies only.
 
 The [following chapter](#sec:raft) will then spend a closer look on Raft, a consensus-based state machine replication protocol. The author has chosen to use Raft for replication of the event store which is the subject of this thesis.
 
 ##### Paxos {#sec:paxos}
 
-- State machine replication (TODO is it ?)
+"Paxos is one of the most widely deployed consensus algorithms today (blockchains excluded).
+Several Google systems use Paxos, including the Chubby [@burrows2006chubby] lock service and the Megastore [5] and Spanner [20] storage systems"
+
+- State machine replication: Executes the same set of commands in the same order, on multiple participants
 - Strong consistent
-- Single-Value, but also multi-value using Multi-Paxos
+- Single-Value, but also multi-value using Multi-Paxos (which is therefore the most commonly used version of Paxos)
 - Had been state of the art for a long time for strong consistent replication
 - Based on distributed consensus
 - original by Leslie Lamport [@lamport1998paxos] and further improvements by himself [@lamport2006fast]
 - although he tried to make it understandable [@lamport2001paxos], it is shown that people of any kind (students, engineers...) still struggle to understand it in its fullest [@ongaro2013raft] 
-- Formally verified using TLA+, as attached to the paper [@lamport2006fast]
-
-#### Other Mentionable Protocols
-
-##### PBFT
-
-##### Chain Replication
-
-[@van2004chain]
+- Formally verified using TLA+, as attached to the paper [@lamport2006fast], and also by thirds for Multi-Paxos [@chand2016formal]
+- handles fail-stop but not Byzantine failures
+- does it has a reconfiguraion protocol?
 
 ##### Viewstamped Replication
 
-ABC
+- State machine replication
+- offers a reconfiguration protocol
+- handles fail-stop but not Byzantine failures
 
-##### Various Blockchain Protocols
+ABC [@oki1988viewstamped], [@liskov2012viewstamped]
 
-PoW, PoS, PoX... all are BFT if conditions apply (for example, no 51% attack) (most important to prevent those failures!)
+##### Practical Byzantine Fault Tolerance (PBFT)
+
+[@castro1999practical]
+
+##### Blockchain Consensus Protocols
+
+Blockchains are distributed systems par excellence... Using strong consistent consensus protocols to ensure every node reads the same... Handling not only fail-stop, but especially byzantine faults is crucial to those consensus protocols to secure a blockchain.
+
+
+PoW (like the Nakamoto Consensus Algorithm that powers Bitcoin [@nakamoto2008bitcoin]), PoS, PoX, PBFT (see previous paragraph and [@li2020scalable])... all are BFT if conditions apply (especially, no 51% attack - remember, you need $2k + 1$ nodes to tolerate $k$ byzantine faulty nodes) (most important to prevent those failures!), BFT State Machine Replication protocols..
 TODO this is nice to have, remove if not enough time to mention this. If yes, reference (https://arxiv.org/pdf/1810.03357.pdf and https://arxiv.org/pdf/1904.04098.pdf)
+
+
+
+[^1]: A _fault_ is the initial root cause, including machine and network problems and software bugs. A _failure_ is the loss of a system service due to a fault that is not properly handled [@farooq2012metrics].

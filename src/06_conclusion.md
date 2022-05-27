@@ -15,6 +15,28 @@ expect that the key ideas in UNISTORE will pave the way for
 practical systems that combine causal and strong consistency
  -->
 
+ 
+<!--
+Also write a discussion:
+Interpretations: what do the results mean?
+Implications: why do the results matter?
+Limitations: what can’t the results tell us?
+Recommendations: what practical actions or scientific studies should follow?
+
+
+Summarise your key findings
+Start this chapter by reiterating your problem statement and research questions and concisely summarising your major findings. Don’t just repeat all the data you have already reported – aim for a clear statement of the overall result that directly answers your main research question. This should be no more than one paragraph.
+
+Examples
+The results indicate that…
+The study demonstrates a correlation between…
+The analysis confirms…
+The data suggests that…
+
+https://www.scribbr.co.uk/thesis-dissertation/discussion/
+https://www.scribbr.co.uk/thesis-dissertation/conclusion/
+-->
+
 - Has negative impact on performance (within the expectations of strong consistency) when scaling vertically
 - Can have a positive impact when scaling horizontally, when partitioning is leveraged in a smart way
 - Is fault-tolerant as Raft...
@@ -47,6 +69,8 @@ The given implementation of the Raft replication protocol has a high cost of rep
 
 - Using Kubernetes
 - Bring it together with Kubernetes Replicas
+- What about failure detection in general?
+- Does it make sense to move failure detection to K18n? Would this just add a new layer of dependency on a management process, that we initially wanted to avoid?
 
 #### Geo-Replication
 

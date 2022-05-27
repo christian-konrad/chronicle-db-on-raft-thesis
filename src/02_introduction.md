@@ -1,6 +1,6 @@
 # Introduction {#sec:introduction}
 
-\pagenumbering{gobble}
+\pagenumbering{arabic}
 <!--- Use \shorthandoff{"} for german documents -->
 
 <!---
@@ -13,6 +13,8 @@ You can use inline comments to organize yourself
 -->
 
 <!--- PARAGRAPH 1 - DESCRIBE IT HERE -->
+
+<!-- Also find inspiration for the intro here http://www.diva-portal.org/smash/get/diva2:24228/FULLTEXT01.pdf -->
 
 \todo{Introduce into the topic of event stores (why/what) and replication (why/what)}
 
@@ -35,6 +37,31 @@ Make sure to address the following:
 -->
 
 \todo{Introduce into research methodology and questions/hypotheses}
+
+<!--
+1.2 Problem Formulation
+This brings us to the subject of this thesis. We study reconciliation algorithms for systems with eventually strict consistency requirements. These
+systems can accept consistency to be temporarily violated during a network
+partition, but require that the system is fully consistent once the system is
+reconciled. Specifically, we are interested in systems where consistency can
+be expressed using data integrity constraints as in the car example above.
+Our main hypothesis is that network partitions can be effectively tolerated by data-centric applications by using an optimistic approach and to
+reconcile conflicts afterwards. Moreover, we theorise that this can be done
+with the help of a general purpose middleware. To support this claim we
+must explore the possible solution space and answer a number of research
+questions:
+• Does acting optimistically during network partitions pay off, even in
+presence of integrity constraints?
+• Which is preferable, state or operation based reconciliation?
+• What can be done to optimise operation based reconciliation?
+• Is it possible and/or worthwhile to serve new incoming operations
+during reconciliation?
+• Can such support be integrated as part of a general middleware?
+Although this thesis concentrates on the reconciliation part of a partitiontolerant middleware, the work is part of a larger context. In the European
+DeDiSys project the goal is to create partition-tolerant middleware to increase the availability for applications.
+-->
+
+"This work tries to find an algorithm that has desirable performance properties for an event store..."
 
 - Explorative Research: No strong first hypothesis; a practical, qualitative approach; the goals are
 
@@ -66,10 +93,6 @@ Make sure to address the following:
 
 See https://nmbu.instructure.com/courses/2280/pages/research-questions-hypotheses-and-thesis-statements?module_item_id=15684
 
-
-
-\pagenumbering{arabic}
-\setcounter{page}{2}
 
 <!--- PARAGRAPH 2 - DESCRIBE YOUR STRUCTURE HERE -->
 Lorem ipsum dolor sit amet, consetetur sadipscing elitr [Section 2](#sec:your-next-section), sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.

@@ -1,7 +1,9 @@
 ## Methodology {#sec:methodology}
 
-TODO put it here or before background?
+\todo{put it here or before background?}
 
+
+\epigraph{To think, you have to write. If you're thinking without writing, you only think you're thinking.}{--- \textup{Leslie Lamport}}
 
 <!-- See https://www.indeed.com/career-advice/career-development/how-to-write-a-methodology -->
 

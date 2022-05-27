@@ -10,9 +10,19 @@ evaluate it
 • caution: each result/graph must be discussed! what’s the reason for this peak or why have you ovserved this effect
 -->
 
-This section covers the evaluation of the implementation of a replicated ChronicleDB event store with Raft presented in this paper. Especially, this section evaluates the cost of replication. Theoretically, the more the number of replicas, the higher the data availability; but the cost of replication (the detrimental in performance) increases at the same time. The challenge of the implementation is to achieve the optimal trade-off between the cost of replication and data access availability.
+In this work, an implementation of the Raft consensus protocol was proposed for replication of ChronicleDB, a high-throughput event store. It has been shown (TODO reference section) that Raft is strongly consistent, so a tradeoff in performance is to be expected. In theory, the larger the number of replicas, the higher the data availability; however, at the same time, the cost of replication (which comes at the expense of performance) increases. This section addresses the evaluation of this implementation, specifically the cost of replication, by quantifying the costs and benefits that come with this approach. The challenge of the implementation is to find an optimal trade-off between the cost of replication and the availability of data.
 
 \todo{Adapt question-style of evaluation from https://software.imdea.org/~gotsman/papers/unistore-atc21.pdf}
+
+
+<!-- 
+TODO measure:
+* Network partition case
+* Performance boost on horizontal scale (= partitioning, feeding in data in multiple groups)
+* Read performance
+-->
+
+<!-- TODO use evaluation style of http://www.diva-portal.org/smash/get/diva2:24228/FULLTEXT01.pdf -->
 
 ## General Performance Considerations
 
@@ -23,6 +33,8 @@ This section covers the evaluation of the implementation of a replicated Chronic
 for availability: both require maintaining replica consistency.
 In general, maintaining strong consistency is achievable but
 expensive"
+
+TODO cite and compare with performance considerations of the raft dissertation https://web.stanford.edu/~ouster/cgi-bin/papers/OngaroPhD.pdf
 
 To evaluate this, the implementation is benchmarked against... as described in the following section.
 

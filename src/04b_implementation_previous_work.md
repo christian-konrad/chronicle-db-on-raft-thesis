@@ -1,4 +1,4 @@
-## Previous Work {#sec:previous-work}
+## Previous Implementations {#sec:previous-work}
 
 \epigraph{If I have seen further it is by standing on the shoulders of Giants.}{--- \textup{Isaac Newton}}
 
@@ -17,6 +17,7 @@ Written by the author of Raft... [@ongaro2015logcabin]
 
 ##### Zookeeper
 
+- Is Primary-Copy Replication (TODO refer to 03a)
 - External agent
 - Provides a risk as a single point of failure
 - Ends up in Primary-Secondary Replication
@@ -53,6 +54,7 @@ Written by the author of Raft... [@ongaro2015logcabin]
 
 - Kind-of Raft
 - Strongly consistent (TODO refer to consistency types in 03a)
+    - Consistent + Partition-Tolerant (CP)
 - Pull-based consensus
 
 TODO rephrase
@@ -89,8 +91,10 @@ Apaache Ratis is the library of choice for the implementation of a replicated ev
 - Apache Spark
 - Apache Flink
 - Apache Cassandra
+    - Availability+Partition Tolerance
 - Redis (https://github.com/RedisLabs/redisraft), still working on it, not production-ready
     - https://redis.com/blog/redisraft-new-strong-consistency-deployment-option/ 
+    - Consistency+P
 
 #### Comparison Results
 

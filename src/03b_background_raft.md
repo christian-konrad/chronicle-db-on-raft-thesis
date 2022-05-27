@@ -26,6 +26,20 @@ There are some other main differences in the protocol, which are handled in [Mai
 
 ... The author of raft even uses a visual and interactive game to teach the protocol (TODO link)
 
+"Every system has a _complexity budget_: the system offers some benefits for its users, but if its complexity outweighs these benefits, then the system is no longer worthwhile."
+
+"Raft appears almost uninteresting to academics. The academic community has not considered understandability per se to be an important contribution; they want novelty in some other dimension. Academia should be more open to work that bridges the gap between theory and practice. This
+type of work may not bring any new functionality in theory, but it does give a larger number of students and practitioners a new capability, or at least substantially reduces their burden." [@ongaro2014consensus]
+
+"Though my ideas and code solved the problems they were meant to address, they introduced an entirely new
+set of problems: they would be difficult to explain, learn, maintain, and extend.
+With Raft, we were intentionally intolerant of complexity and put that to good use. We set out
+to address the inherently complex problem of distributed consensus with the most understandable
+possible solution. Although this required managing a large amount of complexity, it worked towards
+minimizing that complexity for others."
+
+\todo{Refer and cite the raft user study}
+
 ### Main Differences to Paxos {#sec:raft-vs-paxos}
 
 TODO
@@ -54,9 +68,14 @@ See [@garg2010implementing]
 ### The Protocol in Detail
 
 - Messages
+- Random timeout
+- Log compaction / snapshotting 
+\todo{Reference the random timeout thing from 03a, which is one basic requirement for consensus protocols to fulfill the $\left \lceil (n + 1)/2 \right \rceil$ rule as shown}
 - etc from paper
 
 TODO ordering of events... [@lamport1978time]
+
+TODO MTBF [@farooq2012metrics]
 
 > Should put this following sections here or in previous work?
 
@@ -98,11 +117,11 @@ Raft does... but does not...
 
 ### Byzantine Fault Tolerant Raft
 
-TODO see [Types of Possible Failures](#sec:possible-failures) and [Consensus Protocols](#sec:consensus-protocols) for reference
+TODO see [Types of Possible Faults](#sec:possible-faults) and [Consensus Protocols](#sec:consensus-protocols) for reference
 
 There are certain approaches in research on byzantine fault tolerant versions and derivations of Raft... 
 TODO reference/citation of [@clow2017byzantine] [@copeland2016tangaroa]...
-Validation-Based Byzantine Failure Tolerant Raft [@tan2019vbbft]
+Validation-Based Byzantine Fault Tolerant Raft [@tan2019vbbft]
 
 ### Elasticity, Geo-Distribution and Auto-Scaling
 
