@@ -5,18 +5,22 @@ If the race is won by our tools, then systems will eventually become easier to u
 
 \todo{Fix citation reference in quotes/epigraphs}
 
-Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. [@ongaro2013raft] [@ongaro2014consensus]
+This section first provides a general picture of the components and behavior of a Raft network as described by Ongaro
+and Ousterhout in the release paper [@ongaro2013raft] and the dissertation [@ongaro2014consensus]...
 
-- TODO not only reference paper, but also diss
+\todo{Use Raft outline from https://onlinelibrary.wiley.com/doi/pdf/10.1002/spe.3048}
 
 - Based on distributed consensus, strong consistent
 - TODO see and incorporate images of https://www.cs.princeton.edu/courses/archive/fall16/cos418/docs/L13-strong-cap.pdf
 
 - Raft is actually formally proven (TODO reference Proof GitHub Repo)
 
-
 - TODO section on general raft properties
 Suitable for ACID transactional systems...
+
+TODO use cases and applications
+
+TODO Raft is already used in event messaging and logging systems (Kafka, RabbitMQ), NoSQL object stores (MongoDB), distributed relational databases (CockroachDB), process orchestration systems (Camunda Zeebe), key-value stores (etcd), container orchestration (Kubernetes), smart grids [@sakic2017response]...
 
 ### Understandability
 
@@ -25,6 +29,7 @@ Why is there a need for another Consensus Protocol which offers equivalent fault
 There are some other main differences in the protocol, which are handled in [Main Differences to Paxos](#sec:raft-vs-paxos).
 
 ... The author of raft even uses a visual and interactive game to teach the protocol (TODO link)
+- Secret Lives of Data (show images and reference the page)
 
 "Every system has a _complexity budget_: the system offers some benefits for its users, but if its complexity outweighs these benefits, then the system is no longer worthwhile."
 
@@ -55,6 +60,8 @@ See [@garg2010implementing]
 
 ### Log Replication
 
+\todo{Own subsection or part of "The Protocol in Detail"?}
+
 - Describe Log replication in short, reference corresponding section from Background
     - Log replication is... For reference, see... in Raft, log replication looks as follows...
 
@@ -66,6 +73,8 @@ See [@garg2010implementing]
 - TODO? write-ahead log https://martinfowler.com/articles/patterns-of-distributed-systems/wal.html
 
 ### The Protocol in Detail
+
+- leader election, log replication, configuration changes, log compaction
 
 - Messages
 - Random timeout
@@ -100,7 +109,18 @@ delay between replicas.
 
 "Causal consistency is the strongest form of consistency that satisfies low Latency"
 
-### Multi-Raft
+<!--
+- Latency in decision making
+- Low throughput
+- System rigidity
+- Consensus under load is tricky
+-->
+
+### Raft Extensions
+
+This section discusses current Raft extensions, of which some are subject to academia, some others are implemented... that tackle different challenges and shortcomings of the original Raft proposal
+
+#### Multi-Raft
 
 - TODO descrive Weakness of Single-Raft
 
@@ -115,7 +135,7 @@ Raft does... but does not...
 
 - TODO reference to partitioning section in background chapter
 
-### Byzantine Fault Tolerant Raft
+#### Byzantine Fault Tolerant Raft
 
 TODO see [Types of Possible Faults](#sec:possible-faults) and [Consensus Protocols](#sec:consensus-protocols) for reference
 
@@ -123,18 +143,20 @@ There are certain approaches in research on byzantine fault tolerant versions an
 TODO reference/citation of [@clow2017byzantine] [@copeland2016tangaroa]...
 Validation-Based Byzantine Fault Tolerant Raft [@tan2019vbbft]
 
-### Elasticity, Geo-Distribution and Auto-Scaling
+#### Elasticity, Geo-Distribution and Auto-Scaling
 
 The original Raft protocol does not provide lower latency to users by leveraging geo-replication due to its approach of a single leader at a time...
 
+The leader can become a bottleneck that slows down the cluster and constitutes a single point of failure until the election of a new leader. 
+
 See multi-raft and [@xu2019elastic]
 
-### Read Scalability
+#### Read Scalability
 
 Having a single leader has also negative effects on read scalability in general... see [@arora2017leader]
 
 TODO can we merge this and previous sub section?
 
-### Vertical Scalability
+#### Vertical Scalability
 
 One single leader also does not scale with the number of cores and network cards on each machine [@deyerl2019search]

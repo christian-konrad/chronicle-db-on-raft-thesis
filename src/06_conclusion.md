@@ -61,12 +61,14 @@ The given implementation of the Raft replication protocol has a high cost of rep
 
 #### Sharding/Partitioning
 
-- Per time split; Log merge...
+- Per time split; Log merge... 
+    - Like in IoTDB: "data partitions can be defined according to both time slice and time-series ID" [@wang2020iotdb]
 - Allows to increase number of nodes without decreasing throughput
 - Show diagram of further partitioning/sharding techniques (i.e. by timesplit..., reference methods from background chapter here)
 
 #### Elasticity: Auto Scaling and Recovery
 
+- Multi-leader etc., TODO reference to the raft extensions section
 - Using Kubernetes
 - Bring it together with Kubernetes Replicas
 - What about failure detection in general?
@@ -79,6 +81,7 @@ The given implementation of the Raft replication protocol has a high cost of rep
 - Or one could learn from strategies of protocols with weaker consistency [@hsu2021cost] 
 
 #### More Raft Optimizations
+
 - A paper describes a formal mapping of Paxos optimization to Raft with guaranteed correctness... [@wang2019parallels]
 
 ### Distributed Queries
@@ -98,6 +101,17 @@ The given implementation of the Raft replication protocol has a high cost of rep
 - Protobuf must be married with ChronicleDB schemas
 - May infer the one from the other
 - Or may consider Avro as the source of truth for both?
+
+### Framework Choices
+
+At the time of this writing, the Hashicorp Raft implementation in Go [https://github.com/hashicorp/raft] is the most popular, reliable and supported one... due to the characteristics of the Go language and ecosystem which make Go a perfect fit for challenges in distributed systems, there is a strong advice to use this implementation if you want to start with a proven solution... plug'n'play (is it?)... extensible (is it?)
+
+Apache Ratis has support problems... Java makes it somehow inefficient (does it?), but it is very extensible and customizable (big plus) and fits 1:1 in your Java environment (as for ChronicleDB and Spring Boot)...
+
+### Consistency Considerations
+
+- As in InfluxDB, having all data replicated with a consensus protocol may be inpractical and slows down the system
+- As others are doing (Apache IoTDB), one could use different protocols for different parts of the implementation, as such for meta data/cluster management, region management, schemas, data itself... Maybe just use raft for meta data and have primary-copy or another approach for the data itself? Perhaps the user should decide this for themselves based on their consistency requirements?
 
 ### User Friendliness
 

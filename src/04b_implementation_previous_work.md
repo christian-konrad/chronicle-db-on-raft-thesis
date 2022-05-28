@@ -110,7 +110,57 @@ Lorem ipsum...
 
 #### InfluxDB
 
+https://s3.amazonaws.com/vallified/InfluxDBRaft.pdf
+https://www.influxdata.com/blog/influxdb-clustering/
+
+What is stored via consensus?
+Only Metadata:
+
+- Cluster membership
+- Databases
+- Retention Policies
+- Users
+- Continuous Queries
+- Shard Metadata
+
+What is not stored via consensus?
+
+- The time-series data itself, the indexes and schemas
+
+
+To not store the data has been introduced with a newer version, before that, all data went through raft (<= v0.9-rc20)
+    - Potentially high performance
+    - Global schema which meant improved user experience
+    - Easier to reason about when all data in consensus
+- In practice it was inefficient and complex to implement correctly.
+- Approach was abandoned by 0.9.0
+
+Planned design in 0.10.0: Distinct Raft subsystem + data-only nodes
+
+https://www.influxdata.com/blog/multiple-data-center-replication-influxdb/
+
+- primary-copy (?) for  Data Center Replication, Not built-in:
+https://github.com/influxdata/influxdb-relay 
+This project adds a basic high availability layer to InfluxDB. With the right architecture and disaster recovery processes, this achieves a highly available setup.
+
+https://github.com/toni-moreno/syncflux
+
 Lorem ipsum...
+
+#### Apache IoTDB
+
+[@wang2020iotdb]
+
+- https://iotdb.apache.org/
+- Raft (TODO only for meta or also for data?)
+- Meta Group, Data Group
+- https://github.com/apache/iotdb/issues/3954
+- https://github.com/apache/iotdb/tree/master/consensus
+    - It is heavily WIP, but it's raft consensus is built on top of Ratis, same as for our implementation
+    - But they built a layer around it, to be agnostic of the protocol and framework https://github.com/apache/iotdb/pull/5939
+        - https://github.com/apache/iotdb/blob/master/consensus/src/main/java/org/apache/iotdb/consensus/ConsensusFactory.java
+        - One API for all protocols
+    - They aim to use different protocols for different parts of the db (meta, region management, data...)
 
 #### Prometheus
 

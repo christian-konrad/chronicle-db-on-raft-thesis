@@ -20,6 +20,8 @@ Fault tolerance and high availability is a key requirement to those systems... w
 
 low latency and high throughput, while ensuring different correctness constraints... geographically distributed...
 
+In this demonstration, a fault-tolerant ChronicleDB is presented... with Raft... and strong consistent, high available...
+
 TODO this style https://software.imdea.org/~gotsman/papers/unistore-atc21.pdf and find more use-case related reasoning regarding Event Processing, EPA... for example. inspiration from Kafka and Spark
 -->
 

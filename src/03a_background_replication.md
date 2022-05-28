@@ -86,15 +86,17 @@ latency experienced by clients
 
 \epigraph{Anything that can go wrong will go wrong.}{--- \textup{Murphy's Law} \cite{milojicic2002discussion}}
 
-High availability requires that your application can handle node failures without interrupting service. Replicating data between nodes ensures that the data remains accessible to a certain extend.
+High availability requires that your application can handle node failures without interrupting service. 
 
 - Fault tolerance
-  - Against data corruption
-  - Against faulty operations (see byzantine fault in next subchapter)
+  - Against crashes
+  - Against data corruption and faulty operations (byzantine faults)
+
+Replicating data between nodes ensures that the data remains accessible to a certain extend.
 
 See [@cristian1991understanding]
 
-- Example use cases: Aviation Systems, lab measurements with low fault-tolerance...
+- Example use cases of replication for fault tolerance: Aviation Systems, Smart Grids [@sakic2017response], lab measurements with low fault-tolerance...
 
 \todo{Add line wraps after those titles, or use a different approach to enumerate the paragraphs}
 
@@ -132,7 +134,9 @@ Overall, we found that network-partitioning faults lead to silent catastrophic f
 broken locks), with 21% of the failures leaving the system in a lasting erroneous state that persists even after the partition heals. Oddly, it is easy for these
 failures to occur. A majority of the failures required three or fewer frequently used events (e.g., read, and write), 88% of them can be triggered by isolating a single node, and 62% of them were deterministic
 
+##### Disaster Recovery
 
+TODO Disaster Recovery and multi-datacenter replication, which is quite different from fault-tolerance
 
 ### High Availability and Consistency
 
@@ -382,6 +386,8 @@ Byzantine-Fault tolerant (BFT) consensus protocols are naturally Crash-Fault tol
 
 \todo{describe that practical consensus protocols need to incorporate a reconfiguration protocol (and describe what this means)}
 
+TODO describe the situation of weighted quorums, for example as it is in Proof-of-Stake
+
 #### State Machine Replication
 
 State machine replication is... [@schneider1990statemachine] and can be achieved through consensus protocols. 
@@ -434,13 +440,29 @@ TODO there are both BFT and CFT state machine replication protocols:
 - TODO Mention them here or just below?
 -->
 
+#### Read One / Write All (ROWA)
+
+The simplest, yet weakest approach.
+"Update anywhere, anytime, anyhow" - Lazy Group ? 
+- Simplest approach (simpler than primary copy)
+- No availability if one node crashes (cannot write)
+  - strong dependency of a write on the availability of all replicas
+  - As client writes itself, transaction time increases linearly by number of nodes
+- Reading is easy and cheap
+
 #### Primary-Copy Replication
 
-The simplest, yet weakest approach. One primary server, N backup (copy) servers.
+"Update anywhere-anytime-anyway transactional replication has unstable behavior as the workload scales up: a ten-fold increase in nodes and traflc gives a thousand fold increase in deadlocks or reconciliations. Master copy replication (primary copyj schemes reduce this problem." https://dl.acm.org/doi/pdf/10.1145/233269.233330
+
+Another simple, but weak approach. One primary server, N backup (copy) servers.
 
 See section "11.6 Replicated state machines vs. primary copy approach" from https://web.stanford.edu/~ouster/cgi-bin/papers/OngaroPhD.pdf
 
 TODO incorporate the table State-machine vs. Primary-backup at the end of the slides https://www.inf.ufpr.br/aldri/disc/slides/SD712_lect13.pdf
+
+TODO different use cases then consensus: Not primarily for fault-tolerance, but to provide disaster recovery (having backups) or local copies of the data (to improve performance + availability, e.g. for mobile users)
+
+Primary copy server can easily become a bottleneck in the system. It does not scale with the number of nodes and has a detrimental impact especially if faulty behavior appears. What happens if the primary copy server fails? Failure detection mechanisms are required to detect such situations and subsequently select an alternate primary copy server, creating the risk of multiple primary copies when different network partitions occur; a problem that is mitigated in consensus protocols, as described in the corresponding sections.
 
 #### Chain Replication
 
@@ -461,7 +483,7 @@ TODO see https://medium.com/coinmonks/chain-replication-how-to-build-an-effectiv
 
 This subsection provides an overview of concrete, popular replication protocols to the reader. Some of them are used in production for years, while others are subject of academic studies only.
 
-The [following chapter](#sec:raft) will then spend a closer look on Raft, a consensus-based state machine replication protocol. The author has chosen to use Raft for replication of the event store which is the subject of this thesis.
+The [following subchapter](#sec:raft) will then spend a closer look on Raft, a consensus-based state machine replication protocol. The author has chosen to use Raft for replication of the event store which is the subject of this thesis.
 
 ##### Paxos {#sec:paxos}
 
@@ -478,6 +500,10 @@ Several Google systems use Paxos, including the Chubby [@burrows2006chubby] lock
 - Formally verified using TLA+, as attached to the paper [@lamport2006fast], and also by thirds for Multi-Paxos [@chand2016formal]
 - handles fail-stop but not Byzantine failures
 - does it has a reconfiguraion protocol?
+
+##### ZooKeeper Atomic Broadcast (ZAB)
+
+TODO describe zookeeper here in short (mostly just point to references), and cite it in the paragraph on Kafka
 
 ##### Viewstamped Replication
 
@@ -498,7 +524,5 @@ Blockchains are distributed systems par excellence... Using strong consistent co
 
 PoW (like the Nakamoto Consensus Algorithm that powers Bitcoin [@nakamoto2008bitcoin]), PoS, PoX, PBFT (see previous paragraph and [@li2020scalable])... all are BFT if conditions apply (especially, no 51% attack - remember, you need $2k + 1$ nodes to tolerate $k$ byzantine faulty nodes) (most important to prevent those failures!), BFT State Machine Replication protocols..
 TODO this is nice to have, remove if not enough time to mention this. If yes, reference (https://arxiv.org/pdf/1810.03357.pdf and https://arxiv.org/pdf/1904.04098.pdf)
-
-
 
 [^1]: A _fault_ is the initial root cause, including machine and network problems and software bugs. A _failure_ is the loss of a system service due to a fault that is not properly handled [@farooq2012metrics].

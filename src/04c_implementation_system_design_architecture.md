@@ -89,6 +89,10 @@ in order to support zero buffer coping and a light-weighted raft log.
 
 - Describe target package/library ecosystem (replicated event store as lib, consumed by spring)
 
+two separate groups of processes: data nodes and meta nodes. Exposing 3 ports: Data, Metadata/Management and Public (HTTP/REST). Similar to many other solutions like InfluxDB, Apache IoTDB... (but by accident, not intentional :) )
+See https://docs.influxdata.com/enterprise_influxdb/v1.8/concepts/clustering/
+https://iotdb.apache.org/UserGuide/Master/Cluster/Cluster-Setup.html 
+
 <!--
 #### Simplified API for Apache Ratis
 
@@ -146,6 +150,8 @@ in order to support zero buffer coping and a light-weighted raft log.
 - PriorityBlockingQueue for simple load balancing
     - Naive implementation (balanced per absolute # of partitions, not by time splits or per actual load); better partitioning approaches see background#Partitioning and Sharding + conclusion
 - Show diagram of partitioning approach
+- "data partitions can be defined according to both time slice and time-series ID" [@wang2020iotdb]
+- In this implementation, currently only per stream ID
 
 ### Messaging between Raft Nodes using gRPC and Protocol Buffers
 
@@ -158,6 +164,27 @@ in order to support zero buffer coping and a light-weighted raft log.
 - Makes it scalable, modular, message-based instead of monolithic state machines
     - If suitable depends on requirements. If state machine operations should be encapsuled and a closed set, just wrap a StateManager around it and reference it in the MessageExecutors
 - High potential for model based programming / code generation (could generate executors and java message objects from proto+annotations)
+
+### Edge-Cloud Design
+
+TODO what is edge cloud? [@cao2020overview]
+
+\todo{Rephrase; may break it in}
+\pargraph{Terminal layer.} The terminal layer consists of all types of devices connected to the edge network, including mobile terminals and many Internet of Things devices (such as sensors, smartphones, smart cars, cameras, etc.). In the terminal layer, the device is not only a data consumer, but also a data provider. 
+\pargraph{Edge layer.} The edge layer supports the access of terminal devices downward, and stores and computes the data uploaded by terminal devices. Standalone time-series database on industrial PC (= original standalone ChronicleEngine) with EPAs...
+\pargraph{Cloud Layer.} The cloud computing center can permanently store the reported data of the edge computing layer, and it can also complete the analysis tasks that the edge computing layer cannot handle and the processing tasks that integrate the global information. Distributed event store in raft cluster mode
+
+
+TODO draw edge-computing diagram for chronicleDB
+
+\todo{Rephrase}
+- This implementation is designed to fit three deployment models, one for each layer of the edge computing architecture [@cao2020overview]: 
+1. Embedded time-series database with highly efficient file-based storage on edge appliance like Raspberry PI on the _terminal layer_ (= original embedded event store/index)
+2. Standalone time-series database on industrial PC (= original standalone ChronicleEngine) with EPAs... for the _edge layer_
+3. Distributed event store in raft cluster mode for the _cloud layer_
+
+- It therefore has both a standalone, embedded version, i.e. to be deployed directly on the IoT devices to be lightweight and ultra-fast, and the replicated solution to be deployed in the cloud for high-availability, fault-tolerance etc etc that can scale with the number of devices / streams
+- What is currenlty missing is the sync between the embedded and the cloud one (TODO is this ROWA or Primary-Copy?); a good approach would be to have a Event Processing Agent (EPA, TODO reference) in the sense of Complex Event Processing (CEP, [@buchmann2009complex]) in between to aggregate the raw events to useful ones (the output of the sensors ), maybe built with Apache Spark, Kafka, RabbitMQ...
 
 ### Test Application
 
