@@ -170,9 +170,9 @@ https://iotdb.apache.org/UserGuide/Master/Cluster/Cluster-Setup.html
 TODO what is edge cloud? [@cao2020overview]
 
 \todo{Rephrase; may break it in}
-\pargraph{Terminal layer.} The terminal layer consists of all types of devices connected to the edge network, including mobile terminals and many Internet of Things devices (such as sensors, smartphones, smart cars, cameras, etc.). In the terminal layer, the device is not only a data consumer, but also a data provider. 
-\pargraph{Edge layer.} The edge layer supports the access of terminal devices downward, and stores and computes the data uploaded by terminal devices. Standalone time-series database on industrial PC (= original standalone ChronicleEngine) with EPAs...
-\pargraph{Cloud Layer.} The cloud computing center can permanently store the reported data of the edge computing layer, and it can also complete the analysis tasks that the edge computing layer cannot handle and the processing tasks that integrate the global information. Distributed event store in raft cluster mode
+\paragraph{Terminal layer.} The terminal layer consists of all types of devices connected to the edge network, including mobile terminals and many Internet of Things devices (such as sensors, smartphones, smart cars, cameras, etc.). In the terminal layer, the device is not only a data consumer, but also a data provider. 
+\paragraph{Edge layer.} The edge layer supports the access of terminal devices downward, and stores and computes the data uploaded by terminal devices. Standalone time-series database on industrial PC (= original standalone ChronicleEngine) with EPAs...
+\paragraph{Cloud Layer.} The cloud computing center can permanently store the reported data of the edge computing layer, and it can also complete the analysis tasks that the edge computing layer cannot handle and the processing tasks that integrate the global information. Distributed event store in raft cluster mode
 
 
 TODO draw edge-computing diagram for chronicleDB

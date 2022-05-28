@@ -1,1 +1,1 @@
-Copyright 2021 Christian Konrad
+Copyright 2022 Christian Konrad

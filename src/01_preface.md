@@ -4,7 +4,7 @@ subtitle: >
     Log Replication using Raft Consensus Protocol for ChronicleDB, a High-Throughput Event Store\vspace{1ex}
 date: May 15th, 2022\vspace{4ex}
 author: 
-    - Christian Konrad \orcid{0000-0002-2387-9412}
+    - Christian Konrad
 institute: Philipps-Universität Marburg
 header-includes: |    
     \usepackage[utf8]{inputenc}
@@ -96,4 +96,4 @@ hyperrefoptions:
 \begin{tikzpicture}[yscale=-1,transform shape]
 \pic{orcidlogo};
 \end{tikzpicture}
-}{|}}} \href{https://orcid.org/#1}{#1}}
+}{|}}}}
