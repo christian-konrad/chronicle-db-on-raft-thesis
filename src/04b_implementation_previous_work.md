@@ -104,6 +104,11 @@ Lorem ipsum...
 
 Lorem ipsum...
 
+#### EventStoreDB
+
+Consensus; is it raft?
+https://developers.eventstore.com/server/v21.10/cluster.html#cluster-nodes
+
 #### TimescaleDB
 
 Lorem ipsum...

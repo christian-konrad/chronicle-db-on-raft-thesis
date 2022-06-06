@@ -63,11 +63,13 @@ In this section...
 
 Lorem ipsum dolor sit amet,
 
-### High Availability in Event Stores
+### Consistency Choices in Event Stores
+
+#### High Availability
 
 Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.
 
-### Strong Consistency in Event Stores
+#### Strong Consistency
 
 TODO describe transactions in event stores
 TODO describe importance for online analytical processing

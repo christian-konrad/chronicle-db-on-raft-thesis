@@ -31,6 +31,8 @@ there are a lot of requirements to today's distributed systems: They must be abl
  
 For distributed event stores, those requirements are even higher (why?). With modern approaches to replication, it is possible to meet this requirements for both vertical and horizontal scalability...
 
+Various replication algorithms have been proposed to achieve availability under different consistency and fault-tolerance conditions. This work tries to identify such a replication protocol that has the desired performance characteristics for ChronicleDB, a high-throughput event store.
+
 \todo{Better, catchy introduction. See other work for inspiration}
 
 <!--

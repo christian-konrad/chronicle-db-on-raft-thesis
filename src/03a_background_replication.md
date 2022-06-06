@@ -2,14 +2,11 @@
 
 \epigraph{A distributed system is one in which the failure of a computer you didn't even know existed can render your own computer unusable.}{--- \textup{Leslie Lamport} \cite{milojicic2002discussion}}
 
-In this chapter, the ...
-The goal of this section is to give an overview of... so the reader gets a thorough understanding of what replication is, why, where and when it is needed and how replication protocols work.
+This section provides the reader with an overview of the topic of distributed systems, defines the term _replication_, explains why replication is crucial for many of those systems, discusses various replication protocols, and concludes with a literature review of recent research in this area.
 
-Maintaining copies of the data on multiple nodes...
+The goal of this section is to provide the reader with a thorough understanding of what replication is, why, where, and when it is needed, and how replication protocols work.
 
-The following paragraphs examine and explain why replication is neccessary...
-
-<!-- ### why replication is neccessary -->
+<!-- ### why replication is neccessary, and what it is-->
 
 - Describe in short requirements to modern software, platforms and databases
   - Served from the cloud
@@ -22,40 +19,27 @@ The following paragraphs examine and explain why replication is neccessary...
   - Therefore, in fact, modern applications (served on the web but also enterprise and research software , e.g. in compute clusters) are distributed systems most of the times
 - Describe in short todays' challenges of distributed systems
   - TODO find those challenges and differentiate what I've written in the previous paragraph
+  - Maintaining copies of the data on multiple nodes...
 
-"One of the potential benefits of distributed systems is their use in
-providing highly-available services, that is, services that are likely to
-be up and accessible when needed. Availability is essential to many
-computer-based services; for example, in airline reservation systems
-the failure of a single computer can prevent ticket sales for a
-considerable time, causing a loss of revenue and passenger
-goodwill.
-Availability is achieved through replication. By having more than
-one copy of important information, the service continues to be usable
-even when some copies are inaccessible, for example, because of a
-crash of the computer where a copy was stored. Various replication
-algorithms have been proposed to achieve availability. This work tries to find an algorithm that has desirable performance properties for an event store.... "
-
-The following subsections describe replication use cases and the challenges in these particular cases.
+The following subsections describe replication use cases and the challenges in these particular cases, before outlining relevant replication protocols.
 
 \todo{Do we really need an own subsection to explain distributed systems?}
 
 ### Distributed Systems
 
-A distributed system is a collection of autonomous computing elements that appears to its users as a single coherent system [@steen2007distributed].
-
 \todo{Rephrase}
+\todo{Newly introduced words in italic?}
+\todo{Glossary?}
 
-"To achieve availability and horizontal scalability, many modern distributed systems rely on replicated databases, which maintain multiple
-replicas of shared data [@liu2013replication]. Depending on the replication protocol, the data is accessible to clients at any of the replicas, and these replicas communicate changes to each other using message passing."
+A distributed system is a collection of autonomous computing elements that appears to its users as a single coherent system [@steen2007distributed]. To achieve this behavior, such a system needs to offer certain levels of _availability_, _consistency_, _scalability_ and _fault-tolerance_; therefore, many modern distributed systems rely heavily on replicated data stores that maintain multiple replicas of shared data [@liu2013replication]. Depending on the replication protocol, the data is accessible to clients at any of the replicas, and these replicas communicate changes to each other using message passing.
 
-To achieve high availability and horizontal scalability, many modern distributed systems rely on replicated databases that maintain multiple
-replicas of shared data [@liu2013replication]. Depending on the replication protocol, the data is accessible to clients at each of the replicas, and these replicas communicate changes to each other using message passing.
+Thus, a distributed database is a distributed system that provides read and write access to data. Replication in these databases takes place to varying degrees: from simple replication of metadata and current system state to full replication of all payload data, depending on the requirements and characteristics of the system.
 
-A distributed database therefore is a distributed system designed to provide read/write access to data.
+(TODO microsrvices)s
+In complex distributed systems, there are multiple replicated services working together with different availability and consistency characteristics. Ensuring that these systems and services can work together reliably is the topic of service orchestration - which then needs to be replicated, too - (TODO camunda ref of raft) which is not discussed in this work.
 
 Example use cases for replication in distributed systems are large-scale software-as-a-service applications with data replicated across data centers in geographically distinct locations [@mkandla2021evaluation], applications for mobile devices that keep replicas locally to support fast and offline access, key-value stores that act as a book keeper for shared cluster meta data [@] or social networks where user content is to be distributed to billions of other users, to mention a few.
-
+- TODO ticket reservation system
 - TODO distributed kv store
 - TODO social network replication (see fb research paper)
 
@@ -142,6 +126,18 @@ TODO Disaster Recovery and multi-datacenter replication, which is quite differen
 ### High Availability and Consistency
 
 \todo{Rephrase}
+
+"One of the benefits of distributed systems is their use in
+providing highly-available services, that is, services that are likely to
+be up and accessible when needed. Availability is essential to many
+computer-based services; for example, in airline reservation systems
+the failure of a single computer can prevent ticket sales for a
+considerable time, causing a loss of revenue and passenger
+goodwill.
+Availability is achieved through replication. By having more than
+one copy of important information, the service continues to be usable
+even when some copies are inaccessible, for example, because of a
+crash of the computer where a copy was stored."
 
 "Building reliable distributed systems at a worldwide scale demands trade-offs between consistency and availability. Consistency is a property of the distributed system which ensures that every node or replica has the same view of data at a given time, irrespective of which client has updated the data. Trading some consistency for availability can oftentimes lead to dramatic improvements in scalability [@pritchett2008base].
 
@@ -276,6 +272,27 @@ The next subsections describe the different categories of replication protocols 
 
 <!--
 TODO The first studies on consensus protocols happened in the field of distributed, asynchronous systems of processes, but is also applicable to large-scale distributed systems of today
+-->
+
+"Consensus is a fundamental problem in fault-tolerant systems: how can servers reach agreement
+on shared state, even in the face of failures? This problem arises in a wide variety of systems that
+need to provide high levels of availability and cannot compromise on consistency; thus, consensus
+is used in virtually all consistent large-scale storage systems."
+
+<!--
+Raft diss:
+Consensus algorithms for practical systems typically have the following properties:
+• They ensure safety (never returning an incorrect result) under all non-Byzantine conditions,
+including network delays, partitions, and packet loss, duplication, and reordering.
+• They are fully functional (available) as long as any majority of the servers are operational
+and can communicate with each other and with clients. Thus, a typical cluster of five servers
+can tolerate the failure of any two servers. Servers are assumed to fail by stopping; they may
+later recover from state on stable storage and rejoin the cluster.
+• They do not depend on timing to ensure the consistency of the logs: faulty clocks and extreme
+message delays can, at worst, cause availability problems. That is, they maintain safety under
+an asynchronous model [71], in which messages and processors proceed at arbitrary speeds.
+• In the common case, a command can complete as soon as a majority of the cluster has responded to a single round of remote procedure calls; a minority of slow servers need not
+impact overall system performance.
 -->
 
 "A consensus protocol enables a system of n asynchronous processes, some of which are faulty, to reach agreement." [@bracha1983resilient]
@@ -508,7 +525,8 @@ TODO describe zookeeper here in short (mostly just point to references), and cit
 
 ##### Viewstamped Replication
 
-- State machine replication
+- Primary-Copy https://pmg.csail.mit.edu/vr/oki88vr-abstract.html
+- State machine replication?????
 - offers a reconfiguration protocol
 - handles fail-stop but not Byzantine failures
 
