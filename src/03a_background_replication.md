@@ -3,6 +3,7 @@
 \epigraph{A distributed system is one in which the failure of a computer you didn't even know existed can render your own computer unusable.}{--- \textup{Leslie Lamport} \cite{milojicic2002discussion}}
 
 In this chapter, the ...
+The goal of this section is to give an overview of... so the reader gets a thorough understanding of what replication is, why, where and when it is needed and how replication protocols work.
 
 Maintaining copies of the data on multiple nodes...
 

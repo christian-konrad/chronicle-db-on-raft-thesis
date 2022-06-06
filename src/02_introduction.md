@@ -155,11 +155,5 @@ In keeping with that specificity, we use event-store-specific metrics (event thr
 -->
 
 <!--- PARAGRAPH 2 - DESCRIBE YOUR STRUCTURE HERE -->
-Lorem ipsum dolor sit amet, consetetur sadipscing elitr [Section 2](#sec:your-next-section), sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.
-
-<!--
-The remainder of this work is organized as follows: Section 2 describes the general architecture of our implementation; Section 3 recalls the essence of the Raft algorithm, and describes our main implementation choices; Section 4 does
-the same for the Byzantine-tolerant extension of it; Section 5presents our empirical evaluation method, and illustrates the
-results we obtained from it; Section 6discusses related work; Section 7 draws conclusions from this work, and outlines
-the lessons that can be learned from it.
--->
+The remainder of this work is structured as follows: [Chapter 1](#sec:background) introduces the reader to the research context of this work, examines the Raft Consensus Protocol and the ChronicleDB event store, and discusses recent literature in this area.
+[Chapter 2](#sec:implementation) describes the methodology underlying this research, presents the main implementation choices and compares recent work. [Chapter 3](#sec:evaluation) then illustrates the results of the evaluation of the implementation. [Chapter 4](#sec:conclusion) finally draws conclusions from this work and outlines recommendations, key learnings, weaknesses of this approach and future challenges.
