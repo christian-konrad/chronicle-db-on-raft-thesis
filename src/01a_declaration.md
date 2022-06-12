@@ -26,7 +26,7 @@ Alle Ausführungen, die wörtlich oder sinngemäß übernommen wurden, sind als 
 ![](images/signature.png){ width=100px }
 
 \noindent
-\theauthor \newline
+\theauthor \orcid{0000-0002-2387-9412} \newline
 Marburg, \thedate
 
 \cleardoublepage
