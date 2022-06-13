@@ -12,6 +12,10 @@ You can use inline comments to organize yourself
 - [ ] Your next TODO
 -->
 
+Lorem ipsum...
+
+## Motivation
+
 <!--- PARAGRAPH 1 - DESCRIBE IT HERE -->
 
 <!-- Also find inspiration for the intro here http://www.diva-portal.org/smash/get/diva2:24228/FULLTEXT01.pdf -->
@@ -76,6 +80,8 @@ Make sure to address the following:
 • Strategy: the way you will address the problem
 -->
 
+## Problem Formulation
+
 \todo{Introduce into research methodology and questions/hypotheses}
 
 <!--
@@ -101,7 +107,7 @@ Although this thesis concentrates on the reconciliation part of a partitiontoler
 DeDiSys project the goal is to create partition-tolerant middleware to increase the availability for applications.
 -->
 
-"This work tries to find an algorithm that has desirable performance properties for an event store..."
+This brings us to the subject of this thesis. We try to find and evaluate an algorithm that has the desirable performance properties for an event store with defined requirements. To find such an algorithm, we must explore the possible solution space and answer a number of research questions:
 
 - Explorative Research: No strong first hypothesis; a practical, qualitative approach; the goals are
 
@@ -150,12 +156,25 @@ game feedback.
 • Our code is available in open source in the public domain, at https://github.com/cornacchia/go-raft-multiplayer-poc
 -->
 
+## Contribution
 
-<!--
 To the best knowledge, this work is the first attempt published in academia focusing on applying the Raft consensus protocol to event stores. There are a few event stores and time series databases used in industry that leverage Raft to achieve fault-tolerance and scalability (InfluxDB, IoTDB), but replication and consensus where only mentioned as a side note in academic research on those systems. 
-In keeping with that specificity, we use event-store-specific metrics (event throughput, query speed) to study the scalability of alternative network architectures as the number of nodes increase.
--->
+
+In this thesis we discuss and analyse several different replication algorithms to find the one that fits our requirements for an event store. The contributions are:
+
+* A discussion of...
+
+\todo{This bullet point}
+
+* An implementation of a replicated ChronicleDB event store based on Apache Ratis [@konrad2022chroniclecloud], to serve as a learning base for evaluating the consistency model and replication protocol that we found most useful. The code is available in open source in the public domain, at https://github.com/christian-konrad/raft-log-replication-demo
+
+\todo{Update repo link(s)}
+
+* Benchmark-based performance evaluations of the implementation on event-store-specific metrics (event throughput, query speed) to study the throughput and scalability of network architectures with different numbers of nodes.
 
 <!--- PARAGRAPH 2 - DESCRIBE YOUR STRUCTURE HERE -->
+
+## Outline
+
 The remainder of this work is structured as follows: [Chapter 1](#sec:background) introduces the reader to the research context of this work, examines the Raft Consensus Protocol and the ChronicleDB event store, and discusses recent literature in this area.
 [Chapter 2](#sec:implementation) describes the methodology underlying this research, presents the main implementation choices and compares recent work. [Chapter 3](#sec:evaluation) then illustrates the results of the evaluation of the implementation. [Chapter 4](#sec:conclusion) finally draws conclusions from this work and outlines recommendations, key learnings, weaknesses of this approach and future challenges.
