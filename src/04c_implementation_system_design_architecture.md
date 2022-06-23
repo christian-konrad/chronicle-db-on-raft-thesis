@@ -169,6 +169,8 @@ https://iotdb.apache.org/UserGuide/Master/Cluster/Cluster-Setup.html
 
 TODO what is edge cloud? [@cao2020overview]
 
+\todo{System design illustration of embedded dbs + edge + cloud cluster}
+
 \todo{Rephrase; may break it in}
 \paragraph{Terminal layer.} The terminal layer consists of all types of devices connected to the edge network, including mobile terminals and many Internet of Things devices (such as sensors, smartphones, smart cars, cameras, etc.). In the terminal layer, the device is not only a data consumer, but also a data provider. 
 \paragraph{Edge layer.} The edge layer supports the access of terminal devices downward, and stores and computes the data uploaded by terminal devices. Standalone time-series database on industrial PC (= original standalone ChronicleEngine) with EPAs...

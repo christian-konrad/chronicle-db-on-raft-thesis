@@ -14,6 +14,7 @@ In this work, an implementation of the Raft consensus protocol was proposed for 
 
 \todo{Adapt question-style of evaluation from https://software.imdea.org/~gotsman/papers/unistore-atc21.pdf}
 
+\todo{If time, construct simulation of edge-computing with standalone nodes pushing to replicated cluster}
 
 <!-- 
 TODO measure:
