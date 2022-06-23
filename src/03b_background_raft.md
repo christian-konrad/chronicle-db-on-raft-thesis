@@ -56,7 +56,8 @@ See [@garg2010implementing]
 - Describe State Machine replication again very briefly and reference the full corresponding section from Background
     - State Machine replication is... For reference, see... in Raft, State Machine replication looks as follows...
 - Describe State Machine in Raft
-- show diagrams (redraw original paper diagrams of state machine)
+
+\todo{Show diagrams (redraw original paper diagrams of state machine)}
 
 ### Log Replication
 
@@ -72,6 +73,8 @@ See [@garg2010implementing]
 
 - TODO? write-ahead log https://martinfowler.com/articles/patterns-of-distributed-systems/wal.html
 
+\todo{Show diagrams (redraw original paper diagrams of state machine)}
+
 ### The Protocol in Detail
 
 - leader election, log replication, configuration changes, log compaction
@@ -81,6 +84,8 @@ See [@garg2010implementing]
 - Log compaction / snapshotting 
 \todo{Reference the random timeout thing from 03a, which is one basic requirement for consensus protocols to fulfill the $\left \lceil (n + 1)/2 \right \rceil$ rule as shown}
 - etc from paper
+
+\todo{Show diagrams (redraw original paper diagrams of state machine)}
 
 TODO ordering of events... [@lamport1978time]
 

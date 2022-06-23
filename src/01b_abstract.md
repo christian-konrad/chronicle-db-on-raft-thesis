@@ -6,12 +6,15 @@
 
 \todo{Write abstract}
 
-about 1/2 page:
-(1) Motivation (Why do we care?)
-(2) Problem statement (What problem are we trying to solve?)
-(3) Approach (How did we go about it)
-(4) Results (What's the answer?)
-(5) Conclusion (What are the implications of the answer?)
+About 1/2 page:
+- (1) Motivation (Why do we care?)
+- (2) Problem statement (What problem are we trying to solve?)
+- (3) Approach (How did we go about it)
+- (4) Results (What's the answer?)
+- (5) Conclusion (What are the implications of the answer?)
+
+\end{otherlanguage*}
+
 
 <!--
 Modern applications (?) like IoT... ingesting sensoric data... and analyzing those data... rely on event stores to store and process events in real time... 
@@ -27,15 +30,13 @@ TODO this style https://software.imdea.org/~gotsman/papers/unistore-atc21.pdf an
 
 <!-- Also find inspiration for the abstract here http://www.diva-portal.org/smash/get/diva2:24228/FULLTEXT01.pdf -->
 
-\end{otherlanguage*}
-
 \pagebreak
 
 \chapter*{Zusammenfassung}
 
 \begin{otherlanguage*}{ngerman}
 
-- Same in german
+Abstract in german
 
 \end{otherlanguage*}
 
