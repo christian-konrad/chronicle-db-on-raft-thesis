@@ -7,8 +7,6 @@
 
 This section provides the reader with an overview of the topic of distributed systems, defines the term _replication_, explains why replication is crucial for many of those systems, discusses various replication protocols, and concludes with a literature review of recent research in this area. The goal of this section is to provide the reader with a thorough understanding of what replication is, why, where, and when it is needed, and how replication protocols work.
 
-\todo{Rephrase}
-\todo{Newly introduced words in italic?}
 \todo{Glossary?}
 
 A _distributed system_ is a collection of autonomous computing elements that appears to its users as a single coherent system [@steen2007distributed]. To achieve this behavior, such a system needs to offer certain levels of _availability_, _consistency_, _scalability_ and _fault-tolerance_; therefore, many modern distributed systems rely heavily on replicated data stores that maintain multiple replicas of shared data [@liu2013replication]. Depending on the replication protocol, the data is accessible to clients at any of the replicas, and these replicas communicate changes to each other using message passing.
@@ -25,58 +23,27 @@ The following subsections describe replication use cases and the challenges in t
 
 ### Horizontal Scalability
 
-Standalone applications can benefit from scaling up the hardware and leveraging concurrency techniques/multithreading behavior (in this case we speak of _vertical scalability_), but only to a certain physical hardware limit (such as CPU cores, network cards or shared memory). Approaching this limit, these applications and services can no longer be scaled economically or at all, as the hardware costs increase dramatically.
+\todo{Verify phrasing of this subsection}
 
-To scale beyond this limit, a system must be designed to be _horizontally scalable_, that is, to be distributable across multiple computing nodes (servers). Ideally, the amount of nodes scales with the amount of users, but to achieve this, certain decisions must be made regarding [consistency models](#sec:consistency) and [partitioning](#sec:partitioning). Legacy vertically scalable applications cannot be made horizontally scalable without rethinking the system design, which includes replication and message passing protocols between the nodes to which the application data is distributed.
+Standalone applications can benefit from _scaling up_ the hardware and leveraging concurrency techniques/multithreading behavior (in this case we speak of _vertical scalability_), but only to a certain physical hardware limit (such as CPU cores, network cards or shared memory). Approaching this limit, these applications and services can no longer be scaled economically or at all, as the hardware costs increase dramatically. In addition, applications running on only one single node pose the risk of a single point of failure, which we want to counter with replication.
+
+To scale beyond this limit, a system must be designed to be _horizontally scalable_, that is, to be distributable across multiple computing nodes/servers (also known as to _scale out_). Ideally, the amount of nodes scales with the amount of users, but to achieve this, certain decisions must be made regarding [consistency models](#sec:consistency) and [partitioning](#sec:partitioning). Legacy vertically scalable applications cannot be made horizontally scalable without rethinking the system design, which includes replication and message passing protocols between the nodes to which the application data is distributed.
 
 With vertical scaling, when you host a data store on a single server and it becomes too large to be handled efficiently, you identify the hardware bottlenecks and upgrade. With horizontal scaling instead, a new node is added and the data is partitioned and split between the old and new nodes.
 
 \todo{Illustration of vert. vs horz. scalaing}
 
-TODO this does not always come with linear scaling; linear scaling is true if user data is distinct (e.g. one stream or table per user), but not when a growing number of users access the same stream/table  
+With an increasing number of users served, the number of nodes in a horizontally scalable system grows. In the ideal case, the number of nodes required to keep the perceived performance for users constant increases linearly with the number of distinct data entities served (such as tables or data streams with distinct schemas) [@williams2004web]; in other words, the transaction rate grows linearly with the computational power of the cluster. This is not neccessarily the case when a increasing number of users access the same stream/table or inter-node/inter-partition transactions are executed. In the latter case, vertical scaling or advanced partitioning techniques [@aaqib2019efficient] still come handy. In practise, many applications achieve near-linear scalability.
+
+\todo{NTH: show chart and math for near-linear scalability if time}
 
 \todo{Chart: vertical vs horicontal scalability (i.e. the zeebe one)}
 
-<!--
+Chart from https://www.liquidweb.com/blog/horizontal-vs-vertical-scaling/
 
-Advantages of horizontal scaling
-Scaling is easier from a hardware perspective - All horizontal scaling requires you to do is add additional machines to your current pool. It eliminates the need to analyze which system specifications you need to upgrade.
-Fewer periods of downtime - Because you’re adding a machine, you don’t have to switch the old machine off while scaling. If done effectively, there may never be a need for downtime and clients are less likely to be impacted.
-Increased resilience and fault tolerance - Relying on a single node for all your data and operations puts you at a high risk of losing it all when it fails. Distributing it among several nodes saves you from losing it all. 
-Increased performance - If you are using horizontal scaling to manage your network traffic, it allows for more endpoints for connections, considering that the load will be delegated among multiple machines.     
-Disadvantages of horizontal scaling
-Increased complexity of maintenance and operation - Multiple servers are harder to maintain than a single server is. Additionally, you will need to add software for load balancing and possibly virtualization. Backing up your machines may also become a little more complex. You will need to ensure that nodes synchronize and communicate effectively. 
-Increased Initial costs - Adding new servers is far more expensive than upgrading old ones.   
-Advantages of vertical scaling
-Cost-effective - Upgrading a pre-existing server costs less than purchasing a new one. Additionally, you are less likely to add new backup and virtualization software when scaling vertically. Maintenance costs may potentially remain the same too.
-Less complex process communication - When a single node handles all the layers of your services, it will not have to synchronize and communicate with other machines to work. This may result in faster responses.
-Less complicated maintenance - Not only is maintenance cheaper but it is less complex because of the number of nodes you will need to manage. 
-Less need for software changes - You are less likely to change how the software on a server works or how it is implemented.         
-Disadvantages of vertical scaling
-Higher possibility for downtime - Unless you have a backup server that can handle operations and requests, you will need some considerable downtime to upgrade your machine. 
-Single point of failure - Having all your operations on a single server increases the risk of losing all your data if a hardware or software failure was to occur. 
-Upgrade limitations - There is a limitation to how much you can upgrade a machine. Every machine has its threshold for RAM, storage, and processing power. 
+Opting in for horizontal scaling is beneficial for large-scale cloud and edge applications as it is easier to add new nodes to a system instead of scaling up existing ones, even if the initial costs are higher as the infrastructure and algorithms must be implemented in first place.
 
-
--->
-
-
-"C. Replication for Scalability
-Replication is not only used to achieve high availability,
-but also to make a system more scalable, i.e., to improve
-ability of the system to meet increasing performance demands in order to provide acceptable level of response time.
-Imagine a situation, when a system operates under so high
-workload that goes beyond the system’s capability to handle
-it. In such situation, either system performance degrades
-significantly or the system becomes unavailable. There are
-two general solutions for such scenario: vertical scaling, i.e.,
-scaling up, and horizontal scaling, i.e., scaling out.
-For vertical scaling, data served on a single server [@liu2013replication]"
-
-
-- Nodes accessible from different geographic regions, providing lower latencies to users by serving data from nodes closer to the user...
-
-replication allows making the service horizontally scalable, i.e., improving service throughput. Apart from this, in some cases, replication allows also to improve access latency and hence the service quality. When concerning about service latency, it is always desirable to place service replicas in close proximity to its clients. This allows reducing the request round-trip time and hence the latency experienced by clients
+The system design that enables horizontal scalability is also a key requirement for replication. To achieve fault tolerance and availability through replication, it is required to store replicas of a dataset on multiple nodes, therefore the book keeping and message passing infrastructure that is neccessary for partitioning is also a basic requirement for replication protocols [@liu2013replication].
 
 ### Safety and Reliability
 
@@ -263,9 +230,10 @@ TODO diagrams, also my own ones from PPT
 
 Is this geographic replication?
 
+When concerning about service latency, it is always desirable to place service replicas in close proximity to its clients. This allows reducing the request round-trip time and hence the latency experienced by clients
+
 Providing lower latencies to users by serving data from nearby nodes...
 
-Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.
 
 ### Edge Computing
 
