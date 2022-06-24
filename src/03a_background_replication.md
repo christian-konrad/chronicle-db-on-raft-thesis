@@ -1,52 +1,65 @@
 ## Replication {#sec:why-replication}
 
-\epigraph{A distributed system is one in which the failure of a computer you didn't even know existed can render your own computer unusable.}{--- \textup{Leslie Lamport} \cite{milojicic2002discussion}}
-
-This section provides the reader with an overview of the topic of distributed systems, defines the term _replication_, explains why replication is crucial for many of those systems, discusses various replication protocols, and concludes with a literature review of recent research in this area.
-
-The goal of this section is to provide the reader with a thorough understanding of what replication is, why, where, and when it is needed, and how replication protocols work.
+\epigraph{A distributed system is one in which the failure of a computer you didn't even know existed can render your own computer unusable.}{--- \textup{Leslie Lamport}}
+<!-- [@milojicic2002discussion] -->
 
 <!-- ### why replication is neccessary, and what it is-->
 
-- Describe in short requirements to modern software, platforms and databases
-  - Served from the cloud
-  - Must be high available, fast (independent of geographic region)
-  - Must be horizontal scalable (explain the term here)
-    - Multiple loads in parallel without throughput detrementation
-    - Standalone apps could benefit from multithreaded/concurrency, but only to a certain limit (CPU cores, shared memory etc.)) 
-  - Must be fault-tolerant. Consistency is important
-    - May reference https://gousios.org/courses/bigdata/dist-databases.html#:~:text=Replication%3A%20Keep%20a%20copy%20of,the%20partitions%20to%20different%20nodes. ?
-  - Therefore, in fact, modern applications (served on the web but also enterprise and research software , e.g. in compute clusters) are distributed systems most of the times
-- Describe in short todays' challenges of distributed systems
-  - TODO find those challenges and differentiate what I've written in the previous paragraph
-  - Maintaining copies of the data on multiple nodes...
-
-The following subsections describe replication use cases and the challenges in these particular cases, before outlining relevant replication protocols.
-
-\todo{Do we really need an own subsection to explain distributed systems?}
-
-### Distributed Systems
+This section provides the reader with an overview of the topic of distributed systems, defines the term _replication_, explains why replication is crucial for many of those systems, discusses various replication protocols, and concludes with a literature review of recent research in this area. The goal of this section is to provide the reader with a thorough understanding of what replication is, why, where, and when it is needed, and how replication protocols work.
 
 \todo{Rephrase}
 \todo{Newly introduced words in italic?}
 \todo{Glossary?}
 
-A distributed system is a collection of autonomous computing elements that appears to its users as a single coherent system [@steen2007distributed]. To achieve this behavior, such a system needs to offer certain levels of _availability_, _consistency_, _scalability_ and _fault-tolerance_; therefore, many modern distributed systems rely heavily on replicated data stores that maintain multiple replicas of shared data [@liu2013replication]. Depending on the replication protocol, the data is accessible to clients at any of the replicas, and these replicas communicate changes to each other using message passing.
+A _distributed system_ is a collection of autonomous computing elements that appears to its users as a single coherent system [@steen2007distributed]. To achieve this behavior, such a system needs to offer certain levels of _availability_, _consistency_, _scalability_ and _fault-tolerance_; therefore, many modern distributed systems rely heavily on replicated data stores that maintain multiple replicas of shared data [@liu2013replication]. Depending on the replication protocol, the data is accessible to clients at any of the replicas, and these replicas communicate changes to each other using message passing.
 
 Thus, a distributed database is a distributed system that provides read and write access to data. Replication in these databases takes place to varying degrees: from simple replication of metadata and current system state to full replication of all payload data, depending on the requirements and characteristics of the system.
 
-(TODO microsrvices)s
-In complex distributed systems, there are multiple replicated services working together with different availability and consistency characteristics. Ensuring that these systems and services can work together reliably is the topic of service orchestration - which then needs to be replicated, too - (TODO camunda ref of raft) which is not discussed in this work.
+Many modern applications, especially those served from the cloud, are inherently distributed. With edge computing, such applications can be distributed not only to nodes in one or more clusters serving many clients, but also to all of those clients participating in the edge-cloud network. Users of cloud applications expect the same experience independent of their geographic region and also regardless of the amount of data they produce and consume.
 
-Example use cases for replication in distributed systems are large-scale software-as-a-service applications with data replicated across data centers in geographically distinct locations [@mkandla2021evaluation], applications for mobile devices that keep replicas locally to support fast and offline access, key-value stores that act as a book keeper for shared cluster meta data [@] or social networks where user content is to be distributed to billions of other users, to mention a few.
-- TODO ticket reservation system
-- TODO distributed kv store
-- TODO social network replication (see fb research paper)
+In complex distributed systems, there are multiple interoperating replicated _(micro)services_ with different availability and consistency characteristics. Ensuring that these systems and services can reliably work together is the topic of container orchestration (e.g., through Kubernetes [@kubernetes2022github]) and service composition [@nikoo2020survey; @camunda2022zeebe]—which need to be replicated, too—which we will not discuss in this work.
 
+Example use cases for replication in distributed systems (additionally to those mentioned in the [Introduction](#sec:introduction)) include large-scale software-as-a-service applications with data replicated across data centers in geographically distinct locations [@mkandla2021evaluation], applications for mobile clients that keep replicas near the user's location to support fast and efficient access [@silva2022geo], key-value stores that act as bookkeepers for shared cluster metadata [@etcd2022], highly available domain name systems (DNS) [@bi2020craft], blockchains and all their various use cases (see [Blockchain Consensus Protocols](#sec:blockchain-consensus)), or social networks where user content is to be distributed cost-effectively to millions of other users [@khalajzadeh2017cost], to name a few.
+
+The following subsections describe replication use cases and the challenges in these particular cases, before outlining relevant replication protocols.
 
 ### Horizontal Scalability
 
-- Nodes accessible from different geographic regions, providing lower latencies to users by serving data from nodes closer to the user...
+Standalone applications can benefit from scaling up the hardware and leveraging concurrency techniques/multithreading behavior (in this case we speak of _vertical scalability_), but only to a certain physical hardware limit (such as CPU cores, network cards or shared memory). Approaching this limit, these applications and services can no longer be scaled economically or at all, as the hardware costs increase dramatically.
+
+To scale beyond this limit, a system must be designed to be _horizontally scalable_, that is, to be distributable across multiple computing nodes (servers). Ideally, the amount of nodes scales with the amount of users, but to achieve this, certain decisions must be made regarding [consistency models](#sec:consistency) and [partitioning](#sec:partitioning). Legacy vertically scalable applications cannot be made horizontally scalable without rethinking the system design, which includes replication and message passing protocols between the nodes to which the application data is distributed.
+
+With vertical scaling, when you host a data store on a single server and it becomes too large to be handled efficiently, you identify the hardware bottlenecks and upgrade. With horizontal scaling instead, a new node is added and the data is partitioned and split between the old and new nodes.
+
+\todo{Illustration of vert. vs horz. scalaing}
+
+TODO this does not always come with linear scaling; linear scaling is true if user data is distinct (e.g. one stream or table per user), but not when a growing number of users access the same stream/table  
+
+\todo{Chart: vertical vs horicontal scalability (i.e. the zeebe one)}
+
+<!--
+
+Advantages of horizontal scaling
+Scaling is easier from a hardware perspective - All horizontal scaling requires you to do is add additional machines to your current pool. It eliminates the need to analyze which system specifications you need to upgrade.
+Fewer periods of downtime - Because you’re adding a machine, you don’t have to switch the old machine off while scaling. If done effectively, there may never be a need for downtime and clients are less likely to be impacted.
+Increased resilience and fault tolerance - Relying on a single node for all your data and operations puts you at a high risk of losing it all when it fails. Distributing it among several nodes saves you from losing it all. 
+Increased performance - If you are using horizontal scaling to manage your network traffic, it allows for more endpoints for connections, considering that the load will be delegated among multiple machines.     
+Disadvantages of horizontal scaling
+Increased complexity of maintenance and operation - Multiple servers are harder to maintain than a single server is. Additionally, you will need to add software for load balancing and possibly virtualization. Backing up your machines may also become a little more complex. You will need to ensure that nodes synchronize and communicate effectively. 
+Increased Initial costs - Adding new servers is far more expensive than upgrading old ones.   
+Advantages of vertical scaling
+Cost-effective - Upgrading a pre-existing server costs less than purchasing a new one. Additionally, you are less likely to add new backup and virtualization software when scaling vertically. Maintenance costs may potentially remain the same too.
+Less complex process communication - When a single node handles all the layers of your services, it will not have to synchronize and communicate with other machines to work. This may result in faster responses.
+Less complicated maintenance - Not only is maintenance cheaper but it is less complex because of the number of nodes you will need to manage. 
+Less need for software changes - You are less likely to change how the software on a server works or how it is implemented.         
+Disadvantages of vertical scaling
+Higher possibility for downtime - Unless you have a backup server that can handle operations and requests, you will need some considerable downtime to upgrade your machine. 
+Single point of failure - Having all your operations on a single server increases the risk of losing all your data if a hardware or software failure was to occur. 
+Upgrade limitations - There is a limitation to how much you can upgrade a machine. Every machine has its threshold for RAM, storage, and processing power. 
+
+
+-->
+
 
 "C. Replication for Scalability
 Replication is not only used to achieve high availability,
@@ -60,16 +73,14 @@ two general solutions for such scenario: vertical scaling, i.e.,
 scaling up, and horizontal scaling, i.e., scaling out.
 For vertical scaling, data served on a single server [@liu2013replication]"
 
-replication allows making the service horizontally scalable, i.e., improving service throughput. Apart from this, in some cases, replication allows also to
-improve access latency and hence the service quality. When
-concerning about service latency, it is always desirable to
-place service replicas in close proximity to its clients. This
-allows reducing the request round-trip time and hence the
-latency experienced by clients
+
+- Nodes accessible from different geographic regions, providing lower latencies to users by serving data from nodes closer to the user...
+
+replication allows making the service horizontally scalable, i.e., improving service throughput. Apart from this, in some cases, replication allows also to improve access latency and hence the service quality. When concerning about service latency, it is always desirable to place service replicas in close proximity to its clients. This allows reducing the request round-trip time and hence the latency experienced by clients
 
 ### Safety and Reliability
 
-\epigraph{Anything that can go wrong will go wrong.}{--- \textup{Murphy's Law} \cite{milojicic2002discussion}}
+\epigraph{Anything that can go wrong will go wrong.}{--- \textup{Murphy's Law}}
 
 High availability requires that your application can handle node failures without interrupting service. 
 
@@ -123,7 +134,7 @@ failures to occur. A majority of the failures required three or fewer frequently
 
 TODO Disaster Recovery and multi-datacenter replication, which is quite different from fault-tolerance
 
-### High Availability and Consistency
+### High Availability and Consistency {#sec:consistency}
 
 \todo{Rephrase}
 
@@ -182,6 +193,8 @@ even makes it unavailable if network connections between replicas fail (= networ
 - TODO list applications
 - Client-centric
 "This model states that all updates will propagate through the system and all replicas will gradually become consistent, after all updates have stopped for some time [56, 60]. Although this model does not provide concrete consistency guarantees, it is advocated as a solution for many practical situations [10–12, 24, 60] and has been implemented by several distributed storage systems [21, 28, 35, 43]."
+- Can increase performance dramatically; see for example kubernetes made eventual consistent instead of strong to meet edge-computing requirements [@jeffery2021rearchitecting]
+- Not always neccessary; good system design allows even strong consistent services to work at the edge 
 
 **Causal Consistency** - [@shen2015causal]
 - Data-centric
@@ -226,7 +239,7 @@ The CALM theorem (CALM stands for...) is a critic on the CAP theorem that says..
 [@hellerstein2019keeping]
 
 
-### Partitioning and Sharding
+### Partitioning and Sharding {#sec:partitioning}
 
 - https://dimosr.github.io/partitioning-and-replication/ 
 - https://dev.mysql.com/doc/refman/5.7/en/replication-features-partitioning.html
@@ -237,7 +250,7 @@ The CALM theorem (CALM stands for...) is a critic on the CAP theorem that says..
   - Explain horizontal scal.
 
 - Various Partitioning strategies 
-  - Reference hashing, Cassandra strategies, time split strategies etc. here
+  - Reference hashing, Consistent hashing (Cassandra strategy), time split strategies etc. here
 - Strategies can also support geograhical scalability, see following subchapter
 
 TODO obsidian notes here
@@ -258,7 +271,21 @@ Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod 
 
 \todo{Very brief explanation (copy from later sections)}
 
+- Strong concistency can be a problem
+- Good system design can help (see next subsection) or using another consistency layer [@jeffery2021rearchitecting]
+
 ### Performance-Tradeoff Mitigation
+
+- As mentioned, strong concistency can be a problem for performance as with higher cluster sizes, offering higher availability, write request latency
+significantly increases and throughput decreases similarly (TODO refer to evaluation results)
+- Many possible solutions:
+  - Weaker consistency
+  - Partial replication
+    - Only metadata (TODO refer to InfluxDB)
+    - Other/causal+ (see next paragraph)
+  - Sharding + partitioning
+    - Leveraging time splits
+  - Multi-layer design (full replicated in the cloud, standalone on the edge...)
 
 #### Partial Replication
 
@@ -540,7 +567,7 @@ ABC [@oki1988viewstamped], [@liskov2012viewstamped]
 
 [@castro1999practical]
 
-##### Blockchain Consensus Protocols
+##### Blockchain Consensus Protocols {#sec:blockchain-consensus}
 
 Blockchains are distributed systems par excellence... Using strong consistent consensus protocols to ensure every node reads the same... Handling not only fail-stop, but especially byzantine faults is crucial to those consensus protocols to secure a blockchain.
 

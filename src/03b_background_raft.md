@@ -1,7 +1,9 @@
 ## Raft, an Understandable Consensus Algorithm {#sec:raft}
 
 \epigraph{There is a race between the increasing complexity of the systems we build and our ability to develop intellectual tools for understanding their complexity. 
-If the race is won by our tools, then systems will eventually become easier to use and more reliable. If not, they will continue to become harder to use and less reliable [...].}{--- \textup{Leslie Lamport} \cite{lamport1992distributed}}
+If the race is won by our tools, then systems will eventually become easier to use and more reliable. If not, they will continue to become harder to use and less reliable [...].}{--- \textup{Leslie Lamport}}
+
+<!--  \cite{lamport1992distributed} -->
 
 \todo{Fix citation reference in quotes/epigraphs}
 
@@ -165,3 +167,5 @@ TODO can we merge this and previous sub section?
 #### Vertical Scalability
 
 One single leader also does not scale with the number of cores and network cards on each machine [@deyerl2019search]
+
+TODO if time: DepFast https://tianyin.github.io/pub/depfast-atc.pdf

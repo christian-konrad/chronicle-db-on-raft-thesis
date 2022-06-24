@@ -28,6 +28,7 @@ Developed architecture / system design / implementation: 1/3
 - Building it from ground up makes sense if you want full control and adjust the protocol to perfectly fit your use case (TODO find and cite the paper/tool that mentioned that, it must have been mongo or couchbase)
 - Adjusting the protocols allows you to tickle out the last ounce of performance, but oftentimes under the cost of losing the formal verification (TODO reference to raft verification mention in 03b)
 - This thesis is about a proof that it works, so we use something existant to leverage implementation power of the OOS community and save time to build the proof
+- We use Java for simplicity, as ChronicleDB is written in Java. For best performance and future-proof support (at the time of this writing), it is recommended to implement the library yourself or to use one of the popular Golang implementations: etcd/raft or hashicorp/raft. One could even use the Gorum framework in Golang (with some adjustments as in [@pedersen2018analysis])
 - It is also possible to build upon a library / an API and also leveraging the library in a way that allows you to maximize throughput
 - TODO List other libraries in short
 
