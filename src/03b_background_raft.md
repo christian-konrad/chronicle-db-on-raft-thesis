@@ -91,7 +91,7 @@ See [@garg2010implementing]
 
 TODO ordering of events... [@lamport1978time]
 
-TODO MTBF [@farooq2012metrics]
+TODO MTBF (TODO reference to 03a) - Leader election is the aspect of Raft where timing is most critical. Raft will be able to elect and maintain a steady leader as long as the system satisfies the following timing requirement: $\textrm{broadcastTime} \ll \textrm{electionTimeout} \ll \textrm{MTBF}$
 
 > Should put this following sections here or in previous work?
 
@@ -123,9 +123,9 @@ delay between replicas.
 - Consensus under load is tricky
 -->
 
-### Raft Extensions
+### Possible Raft Extensions
 
-This section discusses current Raft extensions, of which some are subject to academia, some others are implemented... that tackle different challenges and shortcomings of the original Raft proposal
+This section discusses recently published Raft extensions, of which some are subject to academia, some others are implemented... that tackle different challenges and shortcomings of the original Raft proposal
 
 #### Multi-Raft
 
@@ -169,3 +169,8 @@ TODO can we merge this and previous sub section?
 One single leader also does not scale with the number of cores and network cards on each machine [@deyerl2019search]
 
 TODO if time: DepFast https://tianyin.github.io/pub/depfast-atc.pdf
+
+#### Leaderless Raft
+
+Lorem ipsum TODO find paper
+

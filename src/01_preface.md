@@ -23,6 +23,7 @@ header-includes: |
     \usepackage{tikz}
     \usetikzlibrary{shapes,arrows,positioning,calc,fit,babel}
     \usepackage{adjustbox}
+    \usepackage{enumitem}
     \usepackage{tikzpeople}
     \usepackage{pifont,mdframed}
     \usepackage{listings}

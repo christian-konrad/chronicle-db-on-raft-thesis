@@ -49,9 +49,55 @@ The system design that enables horizontal scalability is also a key requirement 
 
 \epigraph{Anything that can go wrong will go wrong.}{--- \textup{Murphy's Law}}
 
-To achieve high availability in a system, it requires that your application can handle node failures without interrupting service. In large distributed systems, faults will happen - they are unevitable. A system that can tolerate a certain amount of faults is called _fault-tolerant_.
-(This sound quite redundant)
+Modern real-time distributed systems are expected to be reliable, i.e., to function as expected without interruption, and to be safe, i.e., not to cause catastrophic accidents even if a subsystem misbehaves. For a distributed system to be both reliable and secure, it must be designed to be _fault-tolerant_, i.e., the application must be able to cope with node failures without interrupting service. In addition, it must also be able to withstand faults without operating incorrectly, i.e., responding to user requests with erroneous or malicious content. In large distributed systems, faults will happen - they are unevitable. There is no system that is 100% fault-tolerant. A system that can tolerate at least $k$ faulty nodes is called $k$-_fault-tolerant_.
+
 \todo{Cite for unevitable faults}
+
+To understand how a system can be designed to be both reliable and secure, we review the definitions of reliability and security [@mulazzani1985reliability; @farooq2012metrics]:
+
+\todo{If sufficient time, use actual definition formatting for things like this instead of just paragraphs}
+
+\paragraph{Reliability.} The _reliability_ of a system is the probability that its functions will execute successfully under a given set of environmental conditions (operational profile[^operational-profile]) and over a given time period $t$, denoted by $R(t)$. Here $R(t) = P(T > t), t \geq 0$ where $T$ is a random variable denoting the time to failure. This function is also known as the _survival function_.
+
+<!-- TODO May show a typical survival function as in https://en.wikipedia.org/wiki/Survival_function -->
+
+[^operational-profile]: TODO lorem ipsum...
+
+There are also other dimensions of interest to express the reliability of a system:
+
+\begin{enumerate}[label=(\arabic*)]
+  \item The probability of failure-free operation over a specified time interval, as in above definition.
+  \item The expected duration of failure-free operation.
+  \item The expected number of failures per time interval (failure intensity).
+\end{enumerate}
+
+The second can be measured using the _Mean Time Between Failures_ (MTBF). The MTBF is a common and important measure and is especially critical for consensus protocols, a particular class of replication protocols, since the MTBF of a single node must be estimated in advance when defining the protocol's timing criteria,  which will be shown later in [Section 1.2](#sec:raft) when we describe the replication protocol of choice of this work. The MTBF itself is a combined metric: it is the sum of the _Mean Time To Failure_ (MTTF) and the _Mean Time To Repair_ (MTTR).
+
+The MTTF describes the average time a system is operational, therefore the average time between a succesful system start and a failure:
+
+$$ \textrm{MTTF} = \sum \frac{t_{\textrm{down}} - t_{\textrm{up}}}{n} $$ 
+
+where $t_{\textrm{down}}$ is the start of the downtime after a failure, $t_{\textrm{up}}$ the start of the uptime before that failure and $n$ the number of failures.
+
+This only describes the runtime: the repair time, including failure detection, reboot, error fixing and network reconfigurations are described by the MTTR. In some literature, the average amount of time it takes to detect a failure is additionally extracted as a dedicated metric, the _Mean Time To Detect_ (MTTD).
+
+$$ \textrm{MTBF} = \textrm{MTTF} + \textrm{MTTR} + \textrm{MTTD} $$
+
+<!-- TODO Draw relation between the metrics this https://www.researchgate.net/profile/Orogun-Adebola/publication/340902878/figure/fig1/AS:883945164009472@1587760358165/Relationships-between-MTBF-MTTF-and-MTTR.jpg or like this https://i0.wp.com/www.researchgate.net/profile/Seongwoo_Woo4/publication/312022469/figure/fig27/AS:445885806059521@1483318868156/A-schematic-diagram-of-MTTF-MTTR-and-MTBF.png?w=584&ssl=1 -->
+
+Actually, the MTBF can also be expressed as an integral over the reliability function $R(t)$ [@birolini2013reliability], which illustrates the relation between the two metrics:
+
+$$ \textrm{MTBF} = \int_{0}^{\infty} R(t) dt $$
+
+One of the most important design techniques to achieve reliability, both in hardware and software, is redundancy [@cristian1991understanding]. There are two main patterns to achieve redundancy: retry and replication. Retry is _redundancy in time_, while replication is _redundancy in space_. Using a retry strategy, a _failure detector_ oftentimes is just a timeout. In this casemm the MTTR is the timeout interval plus the retry time. In replication, timeouts are also used to detect dead nodes (assuming a fail-stop failure model, as described in the following paragraphs) so they can be rebooted in the background or the network can be reconfigured (by the network itself or an external book keeper or orchestrator), commonly covered by the rules of the replication protocol and oftentimes without having a perceivable impact on reliability and availability for the user.
+
+\paragraph{Safety.} The safety of a system is the probability that no catastrophic accidents will occur during system operation over a specified period of time. Safety looks at the consequences and possible accidents, and how to deal with it.
+
+A high degree of reliability, while necessary, is not sufficient to ensure safety.
+
+Safety is an important requirement especially for critical infrastructure applications. Safety means that the system behavior is as expected and not faulty or even malicious...
+
+\todo{Use https://people.cs.rutgers.edu/~pxk/rutgers/notes/content/fault-tolerance-slides.pdf}
 
 <!--
 TODO naive system availability calc. also cite this from reliable source 
@@ -61,17 +107,6 @@ Pn: probability that n servers fail= 1 – Pn= availability of service.
 e.g. P = 5%, n = 3 => service available 99.875% of the time
 -->
 
-- Fault tolerance
-  - Against crashes
-  - Against data corruption and faulty operations (byzantine faults)
-
-Replicating data between nodes ensures that the data remains accessible to a certain extend.
-
-See [@cristian1991understanding]
-
-- Example use cases of replication for fault tolerance: Aviation Systems, Smart Grids [@sakic2017response], lab measurements with low fault-tolerance...
-
-\todo{Add line wraps after those titles, or use a different approach to enumerate the paragraphs}
 
 #### Types of Possible Faults {#sec:possible-faults}
 
@@ -84,7 +119,9 @@ can be categorized based on time as below:
 system to halt.
 -->
 
-To describe a fault-tolerant approach that is useful, it must be specified which faults[^1] the system can tolerate. No system can tolerate all kinds of faults (e.g. if all nodes crash permanently), so we need a model that describes the set of faults allowed. There are different types of such faults and two major models to describe them [@bracha1983resilient]:
+To describe a fault-tolerant approach that is useful, it must be specified which faults[^faults] the system can tolerate. No system can tolerate all kinds of faults (e.g. if all nodes crash permanently), so we need a model that describes the set of faults allowed. There are different types of such faults and two major models to describe them [@bracha1983resilient]:
+
+[^faults]: A _fault_ is the initial root cause, including machine and network problems and software bugs. A _failure_ is the loss of a system service due to a fault that is not properly handled [@farooq2012metrics]. The probability of a fault manifesting itself as a failure is not uniform: only a few faults actually cause a system failure, and the actual system downtime is caused by an even smaller group of faults. When thinking about fault detection, it is therefore important to identify and focus on this small, but significant group of faults.
 
 \paragraph{Crash Failure/Fail-Stop.} Processes with fail-stop behaviour simply "die" on a fault, i.e. they stop participating in the protocol [@schlichting1983fail]. Such a process stops automatically in response to an internal fault even before the effects of this fault become visible. In asynchronous systems, there is no way to distinguish between a dead process and a merely slow process. In such a system, a process may even appear to have failed because the network connection to it is slow or partitioned. However, designing a system as a fail-stop system helps mitigate long-term faulty behavior and can improve the overall fault-tolerance, performance and usability by making a few assumptions [@candea2003crash]: one approach to assuming such a failure is to send and receive heartbeats and conclude that the absence of heartbeats within a certain period of time means that a process has died. False detections of processes that are thought to be dead but are in fact just slow are therefore possible but acceptable as long as they are reasonable in terms of performance. With a growing number of processes involved in a system, such failure detection approaches can become slower and  lead to more false assumptions, so more advanced error detection methods come into play, for example based on gossiping [@renesse1998gossip] or _unreliable failure detectors_ as in the Chandra–Toueg consensus algorithm [@chandra1996unreliable].
 
@@ -100,16 +137,15 @@ The _Byzantine Generals Problem_ is a classic problem in distributed systems tha
   - Byzantine Fault vs Fail Stop
   - Instruction Failures on CPU, RAM Failures, even Bitwise Failures in Cables (quote the one example here I found recently)
 
-\todo{Find paper with proof, especially for the byzantine case}
-A system of $n$ replicas is considered to be fault-tolerant (or _$k$-resilient_) if no more than $k$ replicas become faulty:
-- Byzantine failure: $2k + 1$
-- Fail-stop failure: $k + 1$
+\todo{Cite papers with proof, especially for the byzantine case}
 
+A system of $n$ replicas is considered to be fault-tolerant (or $k$-_resilient_) if no more than $k$ replicas become faulty:
+- Byzantine failure: $n = 2k + 1$, as while $k$ nodes generate false replies, $k+1$ nodes will still provide a majority vote
+- Fail-stop failure: $n = k + 1$, as $k$ nodes can fail and one will still be working
 
-All fail-stop problems are in the space of byzantine problems, too. 
-/todo{Proof}
+\todo{What about network partitioning here? May describe it below. If network is partitioned and k nodes fail, at least one partition is dead... etc}
 
-/todo{Note boxes?}
+This also shows that all fail-stop problems are in the space of byzantine problems, too.
 
 Note that not all authors agree to the binary model of fail-stop vs. byzantine faults, claiming that the fail-stop model is too simple to be sufficient to model the behavior of many systems, while the byzantine model is too generalistic, thus too far away from practical application, and so is byzantine fault-tolerance hard to achieve. At least two other fault models are subject of the literature: the _fail-stutter_ fault model [@arpaci2001fail] is an attempt to provide a middle ground model between these two extremes which also allows for _performance faults_, and the _silent-fail-stutter_ fault model tries to extend it furthermore [@kola2005faults]. Despit their usefulness, both models are not quite popular and research on replication protocols does not take those into account, therefore we won't pay too much attention on them in this work.
 
@@ -138,10 +174,11 @@ https://availability.sre.xyz/
 
 \todo{Availability vs reliability}
 
-
-
-
 \todo{Rephrase}
+
+High availability is... reliability...
+
+The common way to achieve high availability is through the replication of data in multiple service replicas. High availability comes hand-in-hand with fault-tolerance, as services remain operational in case of failures as clients can be relayed to other working replicas. 
 
 "One of the benefits of distributed systems is their use in
 providing highly-available services, that is, services that are likely to
@@ -150,15 +187,14 @@ computer-based services; for example, in airline reservation systems
 the failure of a single computer can prevent ticket sales for a
 considerable time, causing a loss of revenue and passenger
 goodwill.
-Availability is achieved through replication. By having more than
+Availability is achieved through replication[^load-balancing]. By having more than
 one copy of important information, the service continues to be usable
 even when some copies are inaccessible, for example, because of a
 crash of the computer where a copy was stored."
 
-\todo{Infobox}
-Load balancing is another technique for achieving high availability through service replication. Since this work only deals with data replication, this topic is not covered here.
+[^load-balancing]: Load balancing is another technique for achieving high availability through service replication. Since this work only deals with data replication, this topic is not covered here (although some session data must be replicated between these services if they are not stateless in the first place).
 
-"Building reliable distributed systems at a worldwide scale demands trade-offs between consistency and availability. Consistency is a property of the distributed system which ensures that every node or replica has the same view of data at a given time, irrespective of which client has updated the data. Trading some consistency for availability can oftentimes lead to dramatic improvements in scalability [@pritchett2008base].
+Building scalable and reliable distributed systems requires a trade-off between consistency and availability. Consistency is a property of the distributed system that ensures that every node or replica has the same view of the data at a given point in time, regardless of which client updated the data. Deciding to trade some consistency for availability can often lead to dramatic improvements in scalability [@pritchett2008base].
 
 Consistency is an ambiguous term in data systems: in the sense of the ACID model (Atomic, Consistent, Isolated and Durable), it is a very different property than the one described in CAP. In the distributed systems literature in general, consistency is understood as a spectrum of models with different guarantees and correctness properties, as well as various constraints on performance.
 
@@ -275,6 +311,12 @@ When concerning about service latency, it is always desirable to place service r
 
 Providing lower latencies to users by serving data from nearby nodes...
 
+\todo{Rephrase}
+The replication performed by modern Internet services spans across several
+geographical locations (geo-replication). This allows for increased availability
+and low latency, since clients can communicate with the closest geo-graphical
+replica. 
+
 
 ### Edge Computing
 
@@ -299,6 +341,10 @@ significantly increases and throughput decreases similarly (TODO refer to evalua
 #### Partial Replication
 
 TODO [@shen2015causal]
+
+###  Error Correcting Codes
+
+TODO only a short excursion
 
 ### Replication Protocols
 
@@ -355,7 +401,7 @@ Bracha et al. consider protocols that may never terminate, "but this would occur
 
 \todo{Reference the random timeout thing later in raft, which is one basic characteristic}
 
-\todo{Relation to Atomic Broadcasts (Equivalency)?}
+\todo{Relation to Atomic Broadcasts (Equivalency to Byzanzine Fault Tolerant Consensus)?}
 
 <!--
 in systems with crash failures, atomic broadcast and consensus are equivalent problems. 
@@ -491,7 +537,6 @@ TODO cite the slides for the State-Machine Approach for fault-tolerance https://
 TODO there are both BFT and CFT state machine replication protocols: 
 "Recent advances in permissioned blockchains [58, 111, 124], firewalls [20, 56], and SCADA systems [9, 92] have shown that Byzantine fault-tolerant (BFT) state-machine replication [106] is not a concept of solely academic interest but a problem of high relevance in practice. [@distler2021byzantine]"
 
-
 <!-- https://en.wikipedia.org/wiki/State_machine_replication -->
 
 <!--
@@ -581,12 +626,67 @@ ABC [@oki1988viewstamped], [@liskov2012viewstamped]
 
 [@castro1999practical]
 
+<!-- 700BFT,  Query/Update (Q/U) and Hybrid Quorum (HQ) -->
+
+##### Leaderless Byzantine State Machine Replication {#sec:leaderless}
+SMR in general means that there is a single leader (as in Paxos and Raft...)...
+
+
+Geo-replication... Due to their reliance on a leader replica, classical SMR protocols offer
+limited scalability and availability under a geo-replicated setting. To solve this problem, recent protocols follow instead a leaderless approach, in which each replica is able
+to make progress using a quorum of its peers. These new leaderless protocols
+are complex and each one presents an ad-hoc approach to leaderlessness.
+
+there are multi-leader approaches (TODO reference multi-leader raft) and most recent literature deals with leaderless SMR like Tempo [@enes2021tempo] or Wintermute [@rezende2021leaderless]...
+
+Leaderless SMR shows its strengths especially when used in blockchains... high cost of replication... especially when strong consistent... see [Blockchain Consensus Protocols](#sec:blockchain-consensus)
+
 ##### Blockchain Consensus Protocols {#sec:blockchain-consensus}
+
+In recent years, the problem of byzantine fault tolerant consensus has raised significantly more attention due to the widespread success of blockchains and blockchain-based applications, especially cryptocurrencies such as Bitcoin, which successfully solved the problem in a public setting without a central authority...
 
 Blockchains are distributed systems par excellence... Using strong consistent consensus protocols to ensure every node reads the same... Handling not only fail-stop, but especially byzantine faults is crucial to those consensus protocols to secure a blockchain.
 
+<!-- From https://tel.archives-ouvertes.fr/tel-03584254/document p24:
+
+In more detail the Bitcoin protocol works as follows: Processes communicate
+via reliable FIFO authenticated channels (implemented with TCP), thus modeling
+a partially synchronous system [58]. When a transaction is sent by a client it
+is placed in a shared pool, processes called miners collectively run a repeated
+consensus protocol to select which transaction will be appended to the ledger.
+In this consensus protocol, miners solve a cryptographic puzzle (proof-of-work)
+to produce a valid block of transactions (i.e. miners are basically going through
+a voting process, where they vote with their CPU power for valid blocks). This
+proof-of-work procedure is computationally expensive (therefore, economically
+expensive as well) to curb the effectiveness of Sybil attacks.
+The advantage of using this approach is that it scales well with the numbers
+of miners if one consider the system’s safety, since the more miners there are, the
+more secure the service becomes (i.e. it gets increasingly more expensive to do
+attacks). The downside is that Nakamoto’s consensus it is not strictly speaking
+consensus. It can be the case that two miners concurrently solve the puzzle and
+then append blocks to the blockchain in a way that neither block precedes the
+other. This is called in the Bitcoin community as a fork. Typically, processes
+continue to build on the block with the longest chain, that is, the one which has
+more work done.
+Dealing with forks highlight the disadvantages of the protocol, for instance: it
+takes a waiting time of about 10 minutes to grow the chain by one block and from
+an application point of view, waiting a few blocks is required (6 are recommended
+in Bitcoin [26]) to guarantee that the transaction remains in the authoritative
+chain. Therefore, the possibility of forks affects the consistency guarantees and
+throughput of transactions (about 3 to 10 transactions per second in Bitcoin).
+Many papers [11, 66, 110, 73] have been published with the intent of formalizing PoW protocols like Bitcoin and studying its consistency guarantees. In [66]
+the authors provide one of the first formalizations of the Bitcoin protocol and
+show that under synchronous environment assumptions the protocol guarantees
+whp. an eventual consistent prefix. More broadly, in [11] the authors introduce the notion of Eventual Prefix and show that Bitcoin and other permissionless protocols abide to it. In [73, 72] the authors argue that Bitcoin implements
+Monotonic Prefix Consistency whp.
+
+-->
 
 PoW (like the Nakamoto Consensus Algorithm that powers Bitcoin [@nakamoto2008bitcoin]), PoS, PoX, PBFT (see previous paragraph and [@li2020scalable])... all are BFT if conditions apply (especially, no 51% attack - remember, you need $2k + 1$ nodes to tolerate $k$ byzantine faulty nodes) (most important to prevent those failures!), BFT State Machine Replication protocols..
+
+As blockchains typically have hundreds to hundred of thousands of replicas and need to provide high levels of consistency, classic single-leader state machine protocols are not applicable here, as they will dramatically slow down the whole chain due to their cost of replication.
+
+
+
 TODO this is nice to have, remove if not enough time to mention this. If yes, reference (https://arxiv.org/pdf/1810.03357.pdf and https://arxiv.org/pdf/1904.04098.pdf)
 
-[^1]: A _fault_ is the initial root cause, including machine and network problems and software bugs. A _failure_ is the loss of a system service due to a fault that is not properly handled [@farooq2012metrics].

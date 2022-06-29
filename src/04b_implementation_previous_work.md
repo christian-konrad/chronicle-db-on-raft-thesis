@@ -6,6 +6,14 @@
 
 ### Criteria for Review and Comparison
 
+#### Why not a Leaderless Protocol?
+
+- TODO reference to (#sec:leaderless)
+- Not crucial for replication for fault-tolerance
+- ChronicleDB is distributed, but not decentralized
+- Only a small replication factor needed compared to massive georeplicated systems (blockchains etc.)
+- Understandability favorable over extreme replica node scalability
+
 ### Popular Applications of Replication Protocols
 
 #### LogCabin
