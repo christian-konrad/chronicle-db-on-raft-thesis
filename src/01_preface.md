@@ -45,6 +45,7 @@ header-includes: |
     \usepackage{lmodern}
     \usepackage{helvet}
     \usepackage[bitstream-charter,sfscaled=false]{mathdesign}
+    \usepackage{mathtools}
     \lstset{
       columns=fullflexible,
       frame=single,

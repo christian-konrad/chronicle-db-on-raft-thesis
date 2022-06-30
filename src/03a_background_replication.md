@@ -49,7 +49,7 @@ The system design that enables horizontal scalability is also a key requirement 
 
 \epigraph{Anything that can go wrong will go wrong.}{--- \textup{Murphy's Law}}
 
-Modern real-time distributed systems are expected to be reliable, i.e., to function as expected without interruption, and to be safe, i.e., not to cause catastrophic accidents even if a subsystem misbehaves. For a distributed system to be both reliable and secure, it must be designed to be _fault-tolerant_, i.e., the application must be able to cope with node failures without interrupting service. In addition, it must also be able to withstand faults without operating incorrectly, i.e., responding to user requests with erroneous or malicious content. In large distributed systems, faults will happen - they are unevitable. There is no system that is 100% fault-tolerant. A system that can tolerate at least $k$ faulty nodes is called $k$-_fault-tolerant_.
+Modern real-time distributed systems are expected to be reliable, i.e., to function as expected without interruption, and to be safe, i.e., not to cause catastrophic accidents even if a subsystem misbehaves. For a distributed system to be both reliable and secure, it must be designed to be _fault-tolerant_, i.e., the application must be able to cope with node failures without interrupting service. In addition, it must also be able to withstand faults without operating incorrectly, i.e., responding to user requests with erroneous or malicious content. In large distributed systems, faults will happen - they are unevitable. Therefore, fault-tolerance is the realization and acknowledgement that there will be faults in a system. There is no system that is 100% fault-tolerant. A system that can tolerate at least $k$ faulty nodes is called $k$-_fault-tolerant_.
 
 \todo{Cite for unevitable faults}
 
@@ -59,9 +59,9 @@ To understand how a system can be designed to be both reliable and secure, we re
 
 \paragraph{Reliability.} The _reliability_ of a system is the probability that its functions will execute successfully under a given set of environmental conditions (operational profile[^operational-profile]) and over a given time period $t$, denoted by $R(t)$. Here $R(t) = P(T > t), t \geq 0$ where $T$ is a random variable denoting the time to failure. This function is also known as the _survival function_.
 
-<!-- TODO May show a typical survival function as in https://en.wikipedia.org/wiki/Survival_function -->
+<!-- TODO May show a typical survival function as in https://en.wikipedia.org/wiki/Survival_function or https://www.researchgate.net/publication/328822214/figure/fig3/AS:963470338043934@1606720637597/The-reliability-function-of-the-seller-The-thick-line-illustrates-the-reliability.png -->
 
-[^operational-profile]: TODO lorem ipsum...
+[^operational-profile]: An operational profile is a quantitative characterization of how a system will be operated by actual users [@musa1993operational]. Different users using the same system in different ways may experience different levels of reliability. An operational profile shows how to increase productivity and reliability by allowing us to quickly find the faults that impact the system reliability mostly and by finding the right test coverage.
 
 There are also other dimensions of interest to express the reliability of a system:
 
@@ -75,27 +75,48 @@ The second can be measured using the _Mean Time Between Failures_ (MTBF). The MT
 
 The MTTF describes the average time a system is operational, therefore the average time between a succesful system start and a failure:
 
-$$ \textrm{MTTF} = \sum \frac{t_{\textrm{down}} - t_{\textrm{up}}}{n} $$ 
+$$ \textrm{MTTF} \coloneqq \sum \frac{t_{\textrm{down}} - t_{\textrm{up}}}{n} $$ 
 
 where $t_{\textrm{down}}$ is the start of the downtime after a failure, $t_{\textrm{up}}$ the start of the uptime before that failure and $n$ the number of failures.
 
 This only describes the runtime: the repair time, including failure detection, reboot, error fixing and network reconfigurations are described by the MTTR. In some literature, the average amount of time it takes to detect a failure is additionally extracted as a dedicated metric, the _Mean Time To Detect_ (MTTD).
 
-$$ \textrm{MTBF} = \textrm{MTTF} + \textrm{MTTR} + \textrm{MTTD} $$
-
-<!-- TODO Draw relation between the metrics this https://www.researchgate.net/profile/Orogun-Adebola/publication/340902878/figure/fig1/AS:883945164009472@1587760358165/Relationships-between-MTBF-MTTF-and-MTTR.jpg or like this https://i0.wp.com/www.researchgate.net/profile/Seongwoo_Woo4/publication/312022469/figure/fig27/AS:445885806059521@1483318868156/A-schematic-diagram-of-MTTF-MTTR-and-MTBF.png?w=584&ssl=1 -->
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=1.2\textwidth]{images/mtbf_relation.pdf}
+  \caption{Relation of the Mean Time Between Failure (MTBF) and other reliability metrics}
+  \label{fig:mtbf-relation}
+\end{figure}
 
 Actually, the MTBF can also be expressed as an integral over the reliability function $R(t)$ [@birolini2013reliability], which illustrates the relation between the two metrics:
 
 $$ \textrm{MTBF} = \int_{0}^{\infty} R(t) dt $$
 
-One of the most important design techniques to achieve reliability, both in hardware and software, is redundancy [@cristian1991understanding]. There are two main patterns to achieve redundancy: retry and replication. Retry is _redundancy in time_, while replication is _redundancy in space_. Using a retry strategy, a _failure detector_ oftentimes is just a timeout. In this casemm the MTTR is the timeout interval plus the retry time. In replication, timeouts are also used to detect dead nodes (assuming a fail-stop failure model, as described in the following paragraphs) so they can be rebooted in the background or the network can be reconfigured (by the network itself or an external book keeper or orchestrator), commonly covered by the rules of the replication protocol and oftentimes without having a perceivable impact on reliability and availability for the user.
+One of the most important design techniques to achieve reliability, both in hardware and software, is redundancy [@cristian1991understanding]. There are two main patterns to achieve redundancy: retry and replication. Retry is _redundancy in time_, while replication is _redundancy in space_. Using a retry strategy, a _failure detector_ oftentimes is just a timeout. In this case, the MTTD is the timeout interval while the MTTR is the retry time. In replication, timeouts are also used to detect dead nodes (assuming a fail-stop failure model, as described in the following paragraphs) so they can be rebooted in the background or the network can be reconfigured (by the network itself or an external book keeper or orchestrator), commonly covered by the rules of the replication protocol and oftentimes without having a perceivable impact on reliability and availability for the user.
 
-\paragraph{Safety.} The safety of a system is the probability that no catastrophic accidents will occur during system operation over a specified period of time. Safety looks at the consequences and possible accidents, and how to deal with it.
+\paragraph{Safety.} The safety of a system is the probability that no undesirable behavior or even catastrophic accidents will occur during system operation over a specified period of time. Safety looks at the consequences and possible accidents, and how to deal with it.
 
-A high degree of reliability, while necessary, is not sufficient to ensure safety.
+Safety is an important requirement especially for critical infrastructure applications. Safety means that the system behavior is as expected, and no faulty or even malicious results are returned.
 
-Safety is an important requirement especially for critical infrastructure applications. Safety means that the system behavior is as expected and not faulty or even malicious...
+A high degree of reliability, while necessary, is not sufficient to ensure safety. In fact, there can even be a tradeoff between safety and reliability. To understand this, we need a different way to model reliability and safety. We look at the probabilities of three possible types of responses to a client request to the system:
+
+- The probability of a _good response_ $p_g$, which is as intended based on the problem (not only to the specification, as it could be faulty) and delivers a correct value in a timely manner. 
+- The probability of a _faulty response_ $p_f$, meaning that the system responded but returned an erroneous or malicious result instead of the intended result (i.e. a _byzanthine fault_, as described later in [Types of Possible Faults](#sec:possible-faults)).
+- The probability of _no response_ $p_n$, due to a system crash or under other _fail-stop_ conditions, as described later.
+
+With these probabilities, we can then have a simplified model for reliability:
+
+$$ R \coloneqq 1 - p_n - a \cdot p_f, \quad 0 \leq a \leq 1 $$
+
+where $a$ is the fault detection factor, denoting the rate of faulty results detected by the system (and resulting in a fail-stop, i.e. the faulty results are not returned). A system, where faulty responses are not detected, can be therefore perceived as more reliable (as the user may not be able to dinstinguish faulty and intended results), while this can pose a severe safety threat. Take for example a banking transaction. With a bank transfer, safety is more important than reliability, which means in case of a fault, no money should be transferred at all, instead of sending the wrong amount of money or even to the wrong account (or to the sneaky hacker trying to steal your money).
+
+On the other hand, safety can then be modeled as
+
+$$ S \coloneqq 1 - b \cdot p_f - c \cdot p_n, \quad 0 \leq b,c \leq 1 $$
+
+where $b$ and $c$ are the probabilities that a faulty and no-response event, respectively, will cause undesired behavior or even disastrous consequences to the user. Oftentimes, we have systems where $b \gg c \approx 0$, which means that the safety depends on correct, as-intended results, such as in the bank transfer example.
+
+#### Types of Possible Faults {#sec:possible-faults}
 
 \todo{Use https://people.cs.rutgers.edu/~pxk/rutgers/notes/content/fault-tolerance-slides.pdf}
 
@@ -106,9 +127,6 @@ e.g. P = 5% => service is available 95% of the time.
 Pn: probability that n servers fail= 1 – Pn= availability of service.
 e.g. P = 5%, n = 3 => service available 99.875% of the time
 -->
-
-
-#### Types of Possible Faults {#sec:possible-faults}
 
 <!--
  Fault in the system
@@ -129,7 +147,7 @@ To describe a fault-tolerant approach that is useful, it must be specified which
 
 Examples for faults causing such a fail-stop failure in a distributed system are Operating System (OS) crashes, application crashes, and hardware crashes. 
 
-\paragraph{Byzantine Faults.} Instead of crashing, faulty processes can also send arbitrary or even malicious messages to other processes, containing contradictory or conflicting data. The effect of the fault becomes visible (while being hard to detect) and, if not handled properly, can negatively impact the future behavior of the faulty system, resulting in a _byzantine failure_. Byzantine failures are far more disruptive to a system, as these faults can result in silent data corruption leaving users with possibly incorrect results. Such faults can only be detected under certain circumstances (see later section)...
+\paragraph{Byzantine Faults.} Instead of crashing, faulty processes can also send arbitrary or even malicious messages to other processes, containing contradictory or conflicting data. The effect of the fault becomes visible (while being hard to detect and to distinguish from an intended response) and, if not handled properly, can negatively impact the future behavior of the faulty system, resulting in a _byzantine failure_. Byzantine failures compromise the safety of a system far more, as these faults can result in silent data corruption leaving users with possibly incorrect results. . Such faults can only be detected under certain circumstances (see later section)...
 \todo{Rephrase}
 \todo{Illustration for byzantine generals problem}
 The _Byzantine Generals Problem_ is a classic problem in distributed systems that is not as easy to implement, adapt, and understand as it might seem to a systems architect [@lamport1982byzantine]
