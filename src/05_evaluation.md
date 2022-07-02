@@ -12,6 +12,19 @@ evaluate it
 
 In this work, an implementation of the Raft consensus protocol was proposed for replication of ChronicleDB, a high-throughput event store. It has been shown (TODO reference section) that Raft is strongly consistent, so a tradeoff in performance is to be expected. In theory, the larger the number of replicas, the higher the data availability; however, at the same time, the cost of replication (which comes at the expense of performance) increases. This section addresses the evaluation of this implementation, specifically the cost of replication, by quantifying the costs and benefits that come with this approach. The challenge of the implementation is to find an optimal trade-off between the cost of replication and the availability of data.
 
+
+TODO measure all of the following dependability properties:
+
+- Availability: readiness for correct service
+- Reliability: continuity of correct service,
+- Safety: absence of catastrophic consequences on the user(s) and the
+environment,
+- Confidentiality: absence of unauthorised disclosure of information,
+- Integrity: absence of improper system state alterations,
+- Maintainability: ability to undergo repairs and modifications.
+
+TODO plot a reliability function! As of https://www.researchgate.net/figure/Comparison-of-experimentally-observed-and-modeled-RAFT-performance-with-clusters-of_fig4_321140059
+
 \todo{Adapt question-style of evaluation from https://software.imdea.org/~gotsman/papers/unistore-atc21.pdf}
 
 \todo{If time, construct simulation of edge-computing with standalone nodes pushing to replicated cluster}

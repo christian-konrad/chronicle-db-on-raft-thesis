@@ -19,7 +19,7 @@ In complex distributed systems, there are multiple interoperating replicated _(m
 
 Example use cases for replication in distributed systems (additionally to those mentioned in the [Introduction](#sec:introduction)) include large-scale software-as-a-service applications with data replicated across data centers in geographically distinct locations [@mkandla2021evaluation], applications for mobile clients that keep replicas near the user's location to support fast and efficient access [@silva2022geo], key-value stores that act as bookkeepers for shared cluster metadata [@etcd2022], highly available domain name systems (DNS) [@bi2020craft], blockchains and all their various use cases (see [Blockchain Consensus Protocols](#sec:blockchain-consensus)), or social networks where user content is to be distributed cost-effectively to millions of other users [@khalajzadeh2017cost], to name a few.
 
-The following subsections describe replication use cases and the challenges in these particular cases, before outlining relevant replication protocols.
+The following subsections describe the fundamental concepts of _dependable_ distributed systems, as well as use cases for replication and the challenges in these particular cases, before outlining relevant replication protocols.
 
 ### Horizontal Scalability
 
@@ -51,15 +51,13 @@ The system design that enables horizontal scalability is also a key requirement 
 
 Modern real-time distributed systems are expected to be reliable, i.e., to function as expected without interruption, and to be safe, i.e., not to cause catastrophic accidents even if a subsystem misbehaves. For a distributed system to be both reliable and secure, it must be designed to be _fault-tolerant_, i.e., the application must be able to cope with node failures without interrupting service. In addition, it must also be able to withstand faults without operating incorrectly, i.e., responding to user requests with erroneous or malicious content. In large distributed systems, faults will happen - they are unevitable. Therefore, fault-tolerance is the realization and acknowledgement that there will be faults in a system. There is no system that is 100% fault-tolerant. A system that can tolerate at least $k$ faulty nodes is called $k$-_fault-tolerant_.
 
-\todo{Cite for unevitable faults}
+\todo{K-fault-tolerance formatted as a definition?}
 
 To understand how a system can be designed to be both reliable and secure, we review the definitions of reliability and security [@mulazzani1985reliability; @farooq2012metrics]:
 
 \todo{If sufficient time, use actual definition formatting for things like this instead of just paragraphs}
 
 \paragraph{Reliability.} The _reliability_ of a system is the probability that its functions will execute successfully under a given set of environmental conditions (operational profile[^operational-profile]) and over a given time period $t$, denoted by $R(t)$. Here $R(t) = P(T > t), t \geq 0$ where $T$ is a random variable denoting the time to failure. This function is also known as the _survival function_.
-
-<!-- TODO May show a typical survival function as in https://en.wikipedia.org/wiki/Survival_function or https://www.researchgate.net/publication/328822214/figure/fig3/AS:963470338043934@1606720637597/The-reliability-function-of-the-seller-The-thick-line-illustrates-the-reliability.png -->
 
 [^operational-profile]: An operational profile is a quantitative characterization of how a system will be operated by actual users [@musa1993operational]. Different users using the same system in different ways may experience different levels of reliability. An operational profile shows how to increase productivity and reliability by allowing us to quickly find the faults that impact the system reliability mostly and by finding the right test coverage.
 
@@ -92,6 +90,13 @@ Actually, the MTBF can also be expressed as an integral over the reliability fun
 
 $$ \textrm{MTBF} = \int_{0}^{\infty} R(t) dt $$
 
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.6\textwidth]{images/mtbf-r-curve.pdf}
+  \caption{A curve for a typical $R$ function, illustrating the relation between the $R$ and MTBF metric}
+  \label{fig:mtbf-r-curve}
+\end{figure}
+
 One of the most important design techniques to achieve reliability, both in hardware and software, is redundancy [@cristian1991understanding]. There are two main patterns to achieve redundancy: retry and replication. Retry is _redundancy in time_, while replication is _redundancy in space_. Using a retry strategy, a _failure detector_ oftentimes is just a timeout. In this case, the MTTD is the timeout interval while the MTTR is the retry time. In replication, timeouts are also used to detect dead nodes (assuming a fail-stop failure model, as described in the following paragraphs) so they can be rebooted in the background or the network can be reconfigured (by the network itself or an external book keeper or orchestrator), commonly covered by the rules of the replication protocol and oftentimes without having a perceivable impact on reliability and availability for the user.
 
 \paragraph{Safety.} The safety of a system is the probability that no undesirable behavior or even catastrophic accidents will occur during system operation over a specified period of time. Safety looks at the consequences and possible accidents, and how to deal with it.
@@ -101,7 +106,7 @@ Safety is an important requirement especially for critical infrastructure applic
 A high degree of reliability, while necessary, is not sufficient to ensure safety. In fact, there can even be a tradeoff between safety and reliability. To understand this, we need a different way to model reliability and safety. We look at the probabilities of three possible types of responses to a client request to the system:
 
 - The probability of a _good response_ $p_g$, which is as intended based on the problem (not only to the specification, as it could be faulty) and delivers a correct value in a timely manner. 
-- The probability of a _faulty response_ $p_f$, meaning that the system responded but returned an erroneous or malicious result instead of the intended result (i.e. a _byzanthine fault_, as described later in [Types of Possible Faults](#sec:possible-faults)).
+- The probability of a _faulty response_ $p_f$, meaning that the system responded but returned an erroneous or malicious result instead of the intended result (i.e. a _byzanthine fault_, as described later in [the subsection on Types of Possible Faults](#sec:possible-faults)).
 - The probability of _no response_ $p_n$, due to a system crash or under other _fail-stop_ conditions, as described later.
 
 With these probabilities, we can then have a simplified model for reliability:
@@ -118,9 +123,133 @@ where $b$ and $c$ are the probabilities that a faulty and no-response event, res
 
 #### Types of Possible Faults {#sec:possible-faults}
 
-\todo{Use https://people.cs.rutgers.edu/~pxk/rutgers/notes/content/fault-tolerance-slides.pdf}
+On the one hand, faults[^faults] can be categorized by the nature of their timing:
+
+- **Transient faults**: These faults occur once and then disappear. For example, a network request that timed out but succeeded after a retry.
+- **Intermittent faults**: These faults occur many times in an irregular fashion and are hard to repeat reliably. Often, several different events must occur at the same time to contribute to and cause such a fault, so that the fault appears random; as a result, it is more complicated to perform a root cause analysis for such faults.
+- **Permanent faults**: These faults are persistent and either make the system halt (fail-stop) or cause ongoing faulty behavior of the system. These faults persist until they are actively fixed, but since they are permanent, their detection is more straightforward than that of intermittent errors.
+
+Studies have shown that intermittent and transient failures cause a significant portion of downtime in large scale distributed systems [@candea2003crash].
+
+[^faults]: A _fault_ is the initial root cause, including machine and network problems and software bugs. A _failure_ is the loss of a system service due to a fault that is not properly handled [@farooq2012metrics]. The probability of a fault manifesting itself as a failure is not uniform: only a few faults actually cause a system failure, and the actual system downtime is caused by an even smaller group of faults. When thinking about fault detection, it is therefore important to identify and focus on this small, but significant group of faults.
+
+On the other hand, we need to categorize faults in such a way that we can decide which and how many faults a system should tolerate and how we want to implement this fault-tolerant behavior while still having a useful and maintainable system. No system can tolerate all kinds of faults (e.g. if all nodes crash permanently), so we need a model that describes the set of faults allowed. There are different types of such faults and two major models to describe them [@bracha1983resilient]:
+
+\paragraph{Crash Failure/Fail-Stop.} Processes with fail-stop behaviour simply "die" on a fault, i.e. they stop participating in the protocol [@schlichting1983fail]. Such a process stops automatically in response to an internal fault even before the effects of this fault become visible. In asynchronous systems, there is no way to distinguish between a dead process and a merely slow process. In such a system, a process may even appear to have failed because the network connection to it is slow or partitioned. However, designing a system as a fail-stop system helps mitigate long-term faulty behavior and can improve the overall fault-tolerance, performance and usability by making a few assumptions [@candea2003crash]: one approach to assuming such a failure is to send and receive heartbeats and conclude that the absence of heartbeats within a certain period of time means that a process has died. False detections of processes that are thought to be dead but are in fact just slow are therefore possible but acceptable as long as they are reasonable in terms of performance. With a growing number of processes involved in a system, such failure detection approaches can become slower and  lead to more false assumptions, so more advanced error detection methods come into play, for example based on gossiping [@renesse1998gossip] or _unreliable failure detectors_ as in the Chandra–Toueg consensus algorithm [@chandra1996unreliable].
+
+Examples for faults causing such a fail-stop failure in a distributed system are Operating System (OS) crashes, application crashes, and hardware crashes. As shown before, intermittent and transient failures, if not handled properly, are responsible for a huge portion of downtime of systems. Because they can lead to unexpected behavior if not properly detected, most systems are designed to _fail gracefully_ in the event of such failures, e.g., through proper code design that always throws a runtime exception that is caught by the application runner and forces a reboot (or other strategies, such as a network reconfiguration in consensus protocols). Candea et al. suggest designing systems to be crash-only in the event of faults [@candea2003crash] as they have shown that a reboot can actually safe time, since faults are oftentimes resolved by a reboot, and the time to reboot (the MTTR) can be shorter than the downtime or slowdown of the system caused by the fault itself. In modern service-oriented approaches, a suitable strategy is to simply "throw away" a faulty node while at the same time reinitialising a new one, rather than directly mitigating the cause of the fault, especially for stateless services. In consensus protocols, shutting down a faulty node and initializing a fresh new node is effective as well because the new node's data can be initialized in the background using snapshotting without affecting the performance of the entire cluster, as we show later in the corresponding section. 
+
+\paragraph{Byzantine Faults.} Instead of crashing, faulty processes can also send arbitrary or even malicious messages to other processes, containing contradictory or conflicting data. Even a bitwise failure in a network cable can cause such a fault. The effect of the fault becomes visible (while being hard to detect and to distinguish from an intended response) and, if not handled properly, can negatively impact the future behavior of the faulty system, resulting in a _byzantine failure_. Byzantine failures compromise the safety of a system far more, as these faults can result in silent data corruption leaving users with possibly incorrect results. A detector for such faults is difficult to create, especially since some faults can only be detected at all under certain circumstances. There is no generic approach to detect such faults in single-node systems. (TODO is this true? What about checksums?) Even worse, numerous security attacks can be modeled as Byzantine failures, such as censorship, freeloading or misdirection. Systems can be protected with _Byzantine fault tolerance_ (BFT) techniques (as we will show later in the [subsection on Consensus Protocols](#sec:consensus-protocols)) by _masking_ a limited number of Byzantine failures. This work focuses on _failure masking_, which makes a service fault-tolerant, while it is also worthwhile for the reader to look at _fault detection and correction_ techniques[^fault-detection]. 
+
+[^fault-detection]: There is not much literature on the subject of byzantine fault detection. The best known approach is the PeerReview detection algorithm [@haeberlen2006case], which extends the Chandra–Toueg consensus algorithm mentioned earlier. A very recent approach that outperforms PeerReview for transactional databases is Scalar DL [@yamada2022scalar]. Due to some limitations of fault detection, especially in terms of safety characteristics, but also scalability, failure masking (i.e., byzantine fault-tolerance via consensus protocols) remains the most common and studied approach.
+
+In a naive approach, under the assumption that all nodes process the same commands in the same order, a system of $n$ replicas is considered to be fault-tolerant (or $k$-_resilient_) if no more than $k$ replicas become faulty:
+
+- Fail-stop failure: $n \geq k + 1$, as $k$ nodes can fail and one will still be working,
+- Byzantine failure: $n \geq 2k + 1$, as while $k$ nodes generate false replies, the remaining $k+1$ nodes will still provide a majority vote.
+
+This naive approach does not incorporate timing characteristics in messaging between the nodes of the system and the risk of network partitioning. To ensure that all nodes process the same commands in the same order, they need to reach consensus on which command to execute next. This is explained in detail in the [subsection on Consensus Protocols](#sec:consensus-protocols)), but here's the short version. $n$ nodes are needed to reach consensus in case of $k$ faulty replicas:
+
+- Fail-stop failure: $n \geq 2k + 1$,
+- Byzantine failure: $n \geq 3k + 1$.
+
+This also shows that all fail-stop problems are in the space of byzantine problems, too, therefore, a $k$-byzantine-fault-tolerant system is automatically $k$-crash-fault-tolerant.
+
+Note that not all authors agree to the binary model of fail-stop vs. byzantine faults, claiming that the fail-stop model is too simple to be sufficient to model the behavior of many systems, while the byzantine model is too generalistic, thus too far away from practical application, and so is byzantine fault-tolerance hard to achieve. At least two other fault models are subject of the literature: the _fail-stutter_ fault model [@arpaci2001fail] is an attempt to provide a middle ground model between these two extremes which also allows for _performance faults_, and the _silent-fail-stutter_ fault model tries to extend it furthermore [@kola2005faults]. Despit their usefulness, both models are not quite popular and research on replication protocols does not take those into account, therefore we won't pay too much attention on them in this work. The relation of all this different fault models is shown in figure \ref{fig:error-classes-venn}.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=1.2\textwidth]{images/error-classes-venn.pdf}
+  \caption{Relation of the different fault models}
+  \label{fig:error-classes-venn}
+\end{figure}
+
+#### Partition-Tolerance
+
+In addition to the discussed types of faults, there is also the risk of _network partitioning_. There are various types of network partitions, including complete, partial and simplex partitions. In figure \ref{fig:error-classes-venn}, all three are shown for reference. In (a), TODO ...Network partitioning events can be of a temporary or persistent nature, depending on the original fault that caused them, but also on the strategies used to resolve them. In large-scale distributed systems, network partitioning is to be expected. Particularly in massive-scale distributed systems like blockchains, network partitioning is part of the design.
+
+\todo{Describe the partitioning types}
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=1.2\textwidth]{images/partitioning-all.pdf}
+  \caption{Possible network partitioning types. (a) Complete partition/split brain, (b) partial partition, (c) simplex partition.}
+  \label{fig:partitioning-types}
+\end{figure}
+
+If not handled correctly, the partitioning can lead to Byzantine behavior once the partitioning is resolved again. Alquraan et al. found that network-partitioning faults lead to silent catastrophic failures, such as data loss, data corruption, data unavailability, and broken locks, while in 21% of failures, the system remains in a persistent faulty state that persists even after partitioning is resolved [@alquraan2018analysis]. Those faults occur easily and frequently: in 2016, a partitioning happened once every two weeks at Google [@govindan2016evolve] and in 2011, 70% of the downtime of Microsoft's data centers where caused by network partitioning [@gill2011understanding]. Even partial partioning causes a large number of failures (due to bad system design), which may be suprising as there is still a functioning route for messages to pass through the network.
+
+For a replication protocol to be truly fault-tolerant for large-scale or geographically distributed systems, partitioning must be considered, as it is unavoidable, even partial partitioning as it has been shown. In consensus protocols, this is a mandatory requirement. Container orchestration services like Kubernetes help in resolving partitioning by _network reconfiguration_ if they detect node failures and partitioning, which must be taken into account be the consensus protocl.
+
+- network connections between replica nodes fail
+- Show examples like in https://kriha.de/docs/seminars/distributedsystemsmaster/reliability/reliability.pdf or in official Raft Interactive Diagram
+\todo{Is network partitioning fail-stop or byzantine? Or something else?}
+[https://www.usenix.org/system/files/osdi18-alquraan.pdf]
+
+TODO describe the need for network reconfiguration after partitioning in some protocols
+
+
+<!-- TODO Nice-to-have, only when time left
+##### Disaster Recovery
+
+TODO Disaster Recovery and multi-datacenter replication, which is quite different from fault-tolerance
+-->
+
+### High Availability and Consistency {#sec:consistency}
+
+\todo{System availability calc}
+https://www.fiixsoftware.com/glossary/system-availability/
+https://availability.sre.xyz/ 
+
+
+To understand what availability means, it is worth reviewing the definitions of availability and discussing them in the context of the other related concepts we have already addressed in the previous subsection, namely reliability and safety. These concepts are summarized under the term _dependability_. 
+
+Dependability is defined as the ability to deliver service that can justifiably be trusted. A more precise definition is also given as the ability of a
+system to avoid failures that are more frequent or more sever and outage
+durations that are longer than is acceptable to the user(s).
+
+The full set of requirements for dependability in distributed systems, as defined by Avizienis et al., is as follows [@avizienis2004basic]:
+
+- **Availability**: readiness for correct service,
+- **Reliability**: continuity of correct service,
+- **Safety**: absence of catastrophic consequences on the user(s) and the environment,
+- **Integrity**: absence of improper system state alterations,
+- **Maintainability**: ability to undergo modifications and repairs.
+
+As we already discussed reliability, the difference between availability and reliability is as follows:
+Availability is related to the proportion of time that a system is operational
+whereas reliability is related to the length of operational periods [@asplund2007restoring].
+
+For example, a service that goes down for one second every fifteen minutes provides
+reasonable availability (99.9%) but very low reliability.
+
+TODO availability calc from file:///Users/christian.konrad/Documents/Paper/style%20inspiration/FULLTEXT01%20(3).pdf and https://u.cs.biu.ac.il/~franka2/download/ds590/pdfs/chp08.pdf
+
+
+Class	Availability	Annual Downtime
+Continuous	100%	0
+Fault Tolerant	99.999%	5 minutes
+Fault Resilient	99.99%	53 minutes
+High Availability	99.9%	8.3 hours
+Normal Availability	99 - 99.5%	44-87 hours
 
 <!--
+
+Availability is typically measured by the percentage of time that a system is available to users. A system that’s available
+99.999% of the time (referred to as “five nines”) will, on average, experience at most 55.6 minutes of downtime per year.
+This includes planned (hardware and software upgrades) and unplanned (network outages, hardware failures, fires, power
+outages, earthquakes) downtime.
+Five nines is the classic standard of availability for telephony. It includes redundant processors, backup generators, and
+earthquake-resilient installation. If all that happens you your system is that you lose power for a day, your reliability is at
+99.7%.
+
+
+
+A. A. Helal, B. K. Bhargava, and A. A. Heddaya. Replication Techniques in Distributed Systems. Kluwer Academic Publishers, Norwell,
+MA, USA, 1996.
+Helal et al. [49] summarise some of the definitions for availability
+
+
 TODO naive system availability calc. also cite this from reliable source 
 P: probability that one server fails= 1 – P= availability of service.
 e.g. P = 5% => service is available 95% of the time.
@@ -128,67 +257,8 @@ Pn: probability that n servers fail= 1 – Pn= availability of service.
 e.g. P = 5%, n = 3 => service available 99.875% of the time
 -->
 
-<!--
- Fault in the system
-can be categorized based on time as below:
-•	 Transient: This type of fault occurs once and disappear
-•	 Intermittent: This type of fault occurs many time in an irregular way
-•	 Permanent: This is the fault that is permanent and brings
-system to halt.
--->
+https://people.cs.rutgers.edu/~pxk/rutgers/notes/content/fault-tolerance-slides.pdf 
 
-To describe a fault-tolerant approach that is useful, it must be specified which faults[^faults] the system can tolerate. No system can tolerate all kinds of faults (e.g. if all nodes crash permanently), so we need a model that describes the set of faults allowed. There are different types of such faults and two major models to describe them [@bracha1983resilient]:
-
-[^faults]: A _fault_ is the initial root cause, including machine and network problems and software bugs. A _failure_ is the loss of a system service due to a fault that is not properly handled [@farooq2012metrics]. The probability of a fault manifesting itself as a failure is not uniform: only a few faults actually cause a system failure, and the actual system downtime is caused by an even smaller group of faults. When thinking about fault detection, it is therefore important to identify and focus on this small, but significant group of faults.
-
-\paragraph{Crash Failure/Fail-Stop.} Processes with fail-stop behaviour simply "die" on a fault, i.e. they stop participating in the protocol [@schlichting1983fail]. Such a process stops automatically in response to an internal fault even before the effects of this fault become visible. In asynchronous systems, there is no way to distinguish between a dead process and a merely slow process. In such a system, a process may even appear to have failed because the network connection to it is slow or partitioned. However, designing a system as a fail-stop system helps mitigate long-term faulty behavior and can improve the overall fault-tolerance, performance and usability by making a few assumptions [@candea2003crash]: one approach to assuming such a failure is to send and receive heartbeats and conclude that the absence of heartbeats within a certain period of time means that a process has died. False detections of processes that are thought to be dead but are in fact just slow are therefore possible but acceptable as long as they are reasonable in terms of performance. With a growing number of processes involved in a system, such failure detection approaches can become slower and  lead to more false assumptions, so more advanced error detection methods come into play, for example based on gossiping [@renesse1998gossip] or _unreliable failure detectors_ as in the Chandra–Toueg consensus algorithm [@chandra1996unreliable].
-
-"Studies have shown that a main source of downtime in large scale software systems is caused by intermittent or transient bugs" [@candea2003crash]
-
-Examples for faults causing such a fail-stop failure in a distributed system are Operating System (OS) crashes, application crashes, and hardware crashes. 
-
-\paragraph{Byzantine Faults.} Instead of crashing, faulty processes can also send arbitrary or even malicious messages to other processes, containing contradictory or conflicting data. The effect of the fault becomes visible (while being hard to detect and to distinguish from an intended response) and, if not handled properly, can negatively impact the future behavior of the faulty system, resulting in a _byzantine failure_. Byzantine failures compromise the safety of a system far more, as these faults can result in silent data corruption leaving users with possibly incorrect results. . Such faults can only be detected under certain circumstances (see later section)...
-\todo{Rephrase}
-\todo{Illustration for byzantine generals problem}
-The _Byzantine Generals Problem_ is a classic problem in distributed systems that is not as easy to implement, adapt, and understand as it might seem to a systems architect [@lamport1982byzantine]
-- Not finding Consensus
-  - Byzantine Fault vs Fail Stop
-  - Instruction Failures on CPU, RAM Failures, even Bitwise Failures in Cables (quote the one example here I found recently)
-
-\todo{Cite papers with proof, especially for the byzantine case}
-
-A system of $n$ replicas is considered to be fault-tolerant (or $k$-_resilient_) if no more than $k$ replicas become faulty:
-- Byzantine failure: $n = 2k + 1$, as while $k$ nodes generate false replies, $k+1$ nodes will still provide a majority vote
-- Fail-stop failure: $n = k + 1$, as $k$ nodes can fail and one will still be working
-
-\todo{What about network partitioning here? May describe it below. If network is partitioned and k nodes fail, at least one partition is dead... etc}
-
-This also shows that all fail-stop problems are in the space of byzantine problems, too.
-
-Note that not all authors agree to the binary model of fail-stop vs. byzantine faults, claiming that the fail-stop model is too simple to be sufficient to model the behavior of many systems, while the byzantine model is too generalistic, thus too far away from practical application, and so is byzantine fault-tolerance hard to achieve. At least two other fault models are subject of the literature: the _fail-stutter_ fault model [@arpaci2001fail] is an attempt to provide a middle ground model between these two extremes which also allows for _performance faults_, and the _silent-fail-stutter_ fault model tries to extend it furthermore [@kola2005faults]. Despit their usefulness, both models are not quite popular and research on replication protocols does not take those into account, therefore we won't pay too much attention on them in this work.
-
-/todo{This image https://www.researchgate.net/profile/George-Kola/publication/220768708/figure/fig2/AS:667611377459203@1536182364193/Different-fault-models-and-their-relation.png}
-
-There is also the case of **Network Partitioning**, which can lead to byzantine-like behavior once the partitioning is resolved again.
-- network connections between replica nodes fail
-- Show examples like in https://kriha.de/docs/seminars/distributedsystemsmaster/reliability/reliability.pdf or in official Raft Interactive Diagram
-\todo{Is network partitioning fail-stop or byzantine? Or something else?}
-[https://www.usenix.org/system/files/osdi18-alquraan.pdf]
-
-Catastrophic failures manifest easily:
-Overall, we found that network-partitioning faults lead to silent catastrophic failures (e.g., data loss, data corruption, data unavailability, and
-broken locks), with 21% of the failures leaving the system in a lasting erroneous state that persists even after the partition heals. Oddly, it is easy for these
-failures to occur. A majority of the failures required three or fewer frequently used events (e.g., read, and write), 88% of them can be triggered by isolating a single node, and 62% of them were deterministic
-
-##### Disaster Recovery
-
-TODO Disaster Recovery and multi-datacenter replication, which is quite different from fault-tolerance
-
-### High Availability and Consistency {#sec:consistency}
-
-\todo{System availability calc}
-https://www.fiixsoftware.com/glossary/system-availability/
-https://availability.sre.xyz/ 
 
 \todo{Availability vs reliability}
 
@@ -287,10 +357,12 @@ Why can't we always have strong consistency? The CAP theorem (CAP stands for Con
 
 TODO draw and show the diagram
 
+TODO also this https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSLf5rylrAHnisE9SVugRCqKIdJu63fiiWkFXPIydsz_8HmSOp-Afwe0IySCaR_ow3GlUM&usqp=CAU
+
 Traditional, non-distributed relational database management systems (RDBMS) support both consistency and availability (as there is either one single node available or none), while they do not support partition tolerance, which is mandatory for distributed databases. 
 \todo{Source for RDBMS, clustering etc}
 
-In general, partition tolerance should always be guaranteed in distributed systems (as described above in the [types of possible faults](#sec:possible-faults)). Therefore, the tradeoff is to be made between consistency and availability in the case of a network partition. Eric Brewer revisited his thoughts on the theorem, stating that tradeoffs are possible for all three dimensions of the theorem: by explicitly handling partitions, both consistency and availability can be optimized [@brewer2012cap].
+In general, partition tolerance should always be guaranteed in distributed systems (as described above in the [Types of Possible Faults](#sec:possible-faults)). Therefore, the tradeoff is to be made between consistency and availability in the case of a network partition. Eric Brewer revisited his thoughts on the theorem, stating that tradeoffs are possible for all three dimensions of the theorem: by explicitly handling partitions, both consistency and availability can be optimized [@brewer2012cap].
 
 The theorem is often interpreted as a proof that eventually consistent databases have better availability properties than strongly consistent databases. There is sound critic that in practice this is only true under certain circumstances: the reasoning for consistency tradeoffs in practical systems should be made more carefully and strong consistency can be reached in more real-world applications then the CAP theorem would allow [@kleppmann2015critique].
 
@@ -343,7 +415,9 @@ replica.
 - Strong concistency can be a problem
 - Good system design can help (see next subsection) or using another consistency layer [@jeffery2021rearchitecting]
 
-### Performance-Tradeoff Mitigation
+### Cost of Replication
+
+As far as we now discussed the benefits of replication for failure management, for Performance enhancements by reducing latency in edge computing and geographically distributed networks, and to increase dependability in general, we need to discuss the _Cost of Replication_. Dependent on the level of fault-tolerance, the consistency decisions and the selected protocol itself, the performance, especially for write operations, can decrease dramatically. We briefly discuss appropriate strategies for a performance-tradeoff mitigation in this case.
 
 - As mentioned, strong concistency can be a problem for performance as with higher cluster sizes, offering higher availability, write request latency
 significantly increases and throughput decreases similarly (TODO refer to evaluation results)
@@ -378,10 +452,7 @@ The next subsections describe the different categories of replication protocols 
 TODO The first studies on consensus protocols happened in the field of distributed, asynchronous systems of processes, but is also applicable to large-scale distributed systems of today
 -->
 
-"Consensus is a fundamental problem in fault-tolerant systems: how can servers reach agreement
-on shared state, even in the face of failures? This problem arises in a wide variety of systems that
-need to provide high levels of availability and cannot compromise on consistency; thus, consensus
-is used in virtually all consistent large-scale storage systems."
+"Consensus is a fundamental problem in fault-tolerant systems: how can servers reach agreement on shared state, even in the face of failures? This problem arises in a wide variety of systems that need to provide high levels of availability and cannot compromise on consistency; thus, consensus is used in virtually all consistent large-scale storage systems."
 
 <!--
 Raft diss:
@@ -401,6 +472,8 @@ impact overall system performance.
 
 "A consensus protocol enables a system of n asynchronous processes, some of which are faulty, to reach agreement." [@bracha1983resilient]
 
+"As already defined in ... A protocol is k-fault tolerant if in the presence of up to k faulty processes it reaches agreement with probability 1."
+
 "Each process starts with some initial value. At the conclusion of the protocol all the working nodes must agree on the same value. "
 
 - achieve overall system reliability in the presence of a number of faulty processes
@@ -409,15 +482,9 @@ impact overall system performance.
 
 \todo{Rephrase}
 
-Certain different variations of how to understand a consensus protocol appear in the literature. They differ in the assumed properties of the messaging system, in the type of errors allowed to the processes, and in the notion of what a solution is. 
-Fischer et al. investigated deterministic protocols that always terminate within a finite number of steps and showed that "every protocol for this problem has the possibility of nontermination, even with only one faulty process [@fischer1985impossibility]." This is based on the failure detection problem discussed earlier in [types of possible faults](#sec:possible-faults): in such a system, a crashed process cannot be distinguished from a very slow one.
+Certain different variations of how to understand a consensus protocol appear in the literature. They differ in the assumed properties of the messaging system, in the type of errors allowed to the processes, and in the notion of what a solution is. Most notable is the differentiation between _consensus protocols for asynchronous and synchronous message-passing systems_. Fischer et al. have proven in the famous _FLP impossibility result_ (called after their authors) that a deterministic consensus algorithm for achieving consensus in a fully asynchronous distributed system is impossible if even a single node crashes in a fail-stop manner [@fischer1985impossibility]. They investigated deterministic protocols that always terminate within a finite number of steps and showed that "every protocol for this problem has the possibility of nontermination, even with only one faulty process." This is based on the failure detection problem discussed earlier in the [subsection on Types of Possible Faults](#sec:possible-faults): in such a system, a crashed process cannot be distinguished from a very slow one.
 
-<!-- TODO: bring this and the upper and lower paragraphs into context again
-Theorem: In a purely asynchronous distributed system, the consensus problem is impossible to solve if even a single process crashes [@fischer1985impossibility]. -->
-
-Bracha et al. consider protocols that may never terminate, "but this would occur with probability 0, and the expected termination time is finite. Therefore, they terminate within finite time with probability 1 under certain assumptions on the behavior of the system" [@bracha1983resilient]. This can be achieved by adding characteristics of randomness to the protocol, such as random retry timeouts for failed messages, or by the application of _unreliable failure detectors_ as in the Chandra–Toueg consensus algorithm [@chandra1996unreliable].
-
-\todo{Reference the random timeout thing later in raft, which is one basic characteristic}
+As pessimistic as this may sound, it can easily be mitigated by adding nondeterminism to a protocol. Bracha et al. consider protocols that may never terminate, "but this would occur with probability 0, and the expected termination time is finite. Therefore, they terminate within finite time with probability 1 under certain assumptions on the behavior of the system" [@bracha1983resilient]. This can be achieved by adding characteristics of randomness to the protocol, such as random retry timeouts for failed messages, or by the application of _unreliable failure detectors_ as in the Chandra–Toueg consensus algorithm [@chandra1996unreliable]. Additionally, adding pseudo-synchronous behavior like in Raft (which is described in detail in the [following section](#sec:raft)), where all messaging goes in rounds by enforcing an enumeration by terms and indexes, removes the initial problem of asynchronous consensus.
 
 \todo{Relation to Atomic Broadcasts (Equivalency to Byzanzine Fault Tolerant Consensus)?}
 
@@ -475,6 +542,11 @@ For Fail-Stop failure model...
 
 \todo{Re-Research and rephrase}
 
+<!--
+ Termination: All non-faulty processes must eventually decide on a value
+• Agreement: All non-faulty processes agreee on same value
+• Validity: Agreed upon value must be the same as the initial proposed “source” value -->
+
 **Termination**
 Eventually, every correct process decides some value.
 **Integrity**
@@ -484,12 +556,16 @@ Every correct process must agree on the same value."
 
 For a faulty system to still be able to reach consensus, even more nodes are required than initially for a system to be [fault-tolerant](#sec:possible-faults):
 
-$\left \lceil (n + 1)/2 \right \rceil$ correct processes are necessary and sufficient to reach agreement [@bracha1983resilient].
+$\left \lceil (n + 1)/2 \right \rceil$ correct processes are necessary and sufficient to reach agreement [@bracha1983resilient], or in other words $n \geq 2k + 1$ where $k$ is the number of crashed processes and $n$ the number of total processes/nodes needed to tolerate this number of faulty nodes.
 
-"there is no consensus protocol for the fail-stop case that always terminates within a bounded number of steps" [@bracha1983resilient]
-\todo{Is this of interest for this work?}
+"there is no consensus protocol for the fail-stop case that always terminates within a bounded number of steps" [@bracha1983resilient] as shown above... need randomness 
 
 **Byzantine-Fault Tolerant (BFT) Consensus Protocols**
+
+
+\todo{Illustration for byzantine generals problem like in https://www.sciencedirect.com/topics/computer-science/byzantine-fault}
+
+The _Byzantine Generals Problem_ is a classic problem in distributed systems that is not as easy to implement, adapt, and understand as it might seem to a systems architect [@lamport1982byzantine]
 
 BFT consensus is defined by the following four requirements:
 
@@ -500,7 +576,7 @@ BFT consensus is defined by the following four requirements:
 **Validity**: If every process begins with the same input $x$, then $y = x$.
 **Integrity**: Every non-faulty process' decision and the consensus value $y$ must have been proposed by some nonfaulty process.
 
-For any consensus protocol to attain these BFT requirements, $\left \lceil (2n + 1)/3 \right \rceil$ correct processes/nodes are necessary and sufficient to reach agreement, or in other words $N \geq 3f + 1$ where $f$ is the number of Byzantine processes and $N$ the number of total processes/nodes needed to tolerate this number of faulty nodes. This fundamental result was first proved by Pease, Lamport et al. [@pease1980faults] and later adapted to the BFT consensus framework [@bracha1983resilient].
+For any consensus protocol to attain these BFT requirements, $\left \lceil (2n + 1)/3 \right \rceil$ correct processes/nodes are necessary and sufficient to reach agreement, or in other words $n \geq 3k + 1$ where $f$ is the number of Byzantine processes and $n$ the number of total processes/nodes needed to tolerate this number of faulty nodes. This fundamental result was first proved by Pease, Lamport et al. [@pease1980faults] and later adapted to the BFT consensus framework [@bracha1983resilient].
 
 \todo{Chart on byzantine quorums from https://www.cs.princeton.edu/courses/archive/fall16/cos418/docs/L9-bft.pdf}
 
@@ -514,6 +590,10 @@ Byzantine-Fault tolerant (BFT) consensus protocols are naturally Crash-Fault tol
 \todo{describe that practical consensus protocols need to incorporate a reconfiguration protocol (and describe what this means)}
 
 TODO describe the situation of weighted quorums, for example as it is in Proof-of-Stake
+
+TODO describe reconfiguration after network partitions
+
+TODO typically communicate with a heartbeat (see HA clusters)
 
 #### State Machine Replication
 

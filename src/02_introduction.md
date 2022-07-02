@@ -36,11 +36,11 @@ Fortunately, several replication algorithms have already been proposed to achiev
 <!-- Introduce into research methodology and questions/hypotheses -->
 <!-- DONE -->
 
-This brings us to the subject of this thesis. We try to find and evaluate an algorithm that has the desirable performance properties for an event store with defined requirements. To find such an algorithm, we use an explorative research approach including both quantitative and qualitative methods to discover the possible solution space:
+This brings us to the subject of this thesis. We try to find and evaluate an algorithm that has the desirable performance properties for an event store with defined dependability requirements. To find such an algorithm, we use an explorative research approach including both quantitative and qualitative methods to discover the possible solution space:
 
-- Identification of a consistency model suitable for an event store with a specific set of requirements and differentiation from other consistency models including a detailed discussion of the advantages and disadvantages of the models in question.
+- Identification of a consistency model suitable for an event store with a specific set of dependability requirements and differentiation from other consistency models including a detailed discussion of the advantages and disadvantages of the models in question.
 - Identification and justification of a replication protocol suitable for an event store that satisfies the characteristic requirements of the selected consistency model, including a differentiation from other replication techniques.
-- Investigation and quantitative analysis of the performance trade-off of an implementation of the chosen replication protocol in an event store to make it fault-tolerant and horizontally scalable, compared with the expected trade-off.
+- Investigation and quantitative analysis of the performance trade-off of an implementation of the chosen replication protocol in an event store to meet the given dependability requirements, including fault-tolerance and horizontal scalability, compared with the expected trade-off, as well as an examination of the dependability properties themselves.
 
 Additionally, the results of this work serve as a plausible grounded theory about providing such a replication layer, to build new hypotheses and opportunities on. Therefore, we answer the following research questions:
 

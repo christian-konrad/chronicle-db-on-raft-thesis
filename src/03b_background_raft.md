@@ -82,7 +82,9 @@ See [@garg2010implementing]
 - leader election, log replication, configuration changes, log compaction
 
 - Messages
-- Random timeout
+- Message synchonisation/enumeration (TODO reference to (#sec:consensus-protocols))
+- Random timeout 
+\todo{Reference the random timeout thing from sec consensus-protocols which is one basic characteristic}
 - Log compaction / snapshotting 
 \todo{Reference the random timeout thing from 03a, which is one basic requirement for consensus protocols to fulfill the $\left \lceil (n + 1)/2 \right \rceil$ rule as shown}
 - etc from paper
@@ -94,6 +96,14 @@ TODO ordering of events... [@lamport1978time]
 TODO MTBF (TODO reference to 03a) - Leader election is the aspect of Raft where timing is most critical. Raft will be able to elect and maintain a steady leader as long as the system satisfies the following timing requirement: $\textrm{broadcastTime} \ll \textrm{electionTimeout} \ll \textrm{MTBF}$
 
 > Should put this following sections here or in previous work?
+
+TODO Network reconfiguration and fail-stop on faults: "Also in consensus protocols, shutting down a faulty node and initializing a fresh new one is effective as the data of the new node can be initialized using snapshotting in the background without impacting the whole cluster performance, as we show later in the corresponding section."
+
+TODO partition-tolerance
+
+### Expected Dependability Properties
+
+Lorem ipsum...
 
 ### Cost of Replication
 
