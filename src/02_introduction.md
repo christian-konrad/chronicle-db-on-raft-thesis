@@ -67,6 +67,8 @@ In this thesis we discuss and analyse several different replication algorithms t
 
 - A thorough discussion of consistency models and replication protocols for an edge-cloud ready event store with the capability to ingest very high throughputs. A state-of-the-art replication protocol is then selected to handle this requirements in a future-proof way.
 
+- A systematic review of previous implementations of replication protocols, focusing on decisions related to consistency, dependability, levels of data replicated, and the replication protocols chosen.
+
 - An implementation of a replicated ChronicleDB event store based on Apache Ratis [@konrad2022chroniclecloud], to serve as a learning base for evaluating the consistency model and replication protocol that we found most useful. The code is available in open source in the public domain, at https://github.com/christian-konrad/raft-log-replication-demo.
 
 \todo{Update repo link(s)}

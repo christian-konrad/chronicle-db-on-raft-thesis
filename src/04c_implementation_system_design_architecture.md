@@ -74,6 +74,7 @@ in order to support zero buffer coping and a light-weighted raft log.
 ### Requirements
 
 - List of all requirements/use cases
+- TODO table showing consistency decision, dependability requirements...
 
 ### Overall Architecture & Design
 
@@ -81,7 +82,7 @@ in order to support zero buffer coping and a light-weighted raft log.
 
 - Stack:
     - Protocol Implementation: Apache Ratis
-    - Messaging Implementation: Google Protocol Buffers / gRPC
+    - Messaging Implementation: Google Protocol Buffers / gRPC (TODO cite both)
     - Event Store: Standalone/Embedded ChronicleDB Event Store + ChronicleEngine
 
 - pretty architecture diagrams
@@ -109,7 +110,7 @@ https://iotdb.apache.org/UserGuide/Master/Cluster/Cluster-Setup.html
 - Similar to LogCabin (see previous work)
 - The management quorum
 - Bookkeeping of available nodes and balancing partitions
-- Heartbeats and health checks
+- Heartbeats, health checks (failure detections) and timeouts
 - Registering of Partitions for StateMachines
 - Additional RaftServer (with own port)
 - Explain how to startup the cluster similar to https://github.com/logcabin/logcabin/blob/master/README.md

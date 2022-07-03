@@ -59,6 +59,14 @@ The given implementation of the Raft replication protocol has a high cost of rep
 
 ### Horizontal Scalability
 
+#### Multiple Consistency Levels
+
+- Let user decide
+- Metadata (book keeper) always strong consistent
+- But let user decide on consistency level for data
+- Similar to Kafka
+- So it is suitable to architect an edge-cloud system design with multiple different consistency levels to fit the edge levels best 
+
 #### Sharding/Partitioning
 
 - Per time split; Log merge... 
@@ -77,8 +85,9 @@ The given implementation of the Raft replication protocol has a high cost of rep
 #### Geo-Replication
 
 - In it's given implementation not suitable for geo-replication (TODO reference to 03b) due to it's single-leader characteristic
-- There are different solution proposals for that like multi-raft, multi-leader raft... (TODO reference those from 03b)
-- Or one could learn from strategies of protocols with weaker consistency [@hsu2021cost] 
+- But can be simply adressed using data mirroring 
+- ? There are different solution proposals for that like multi-raft, multi-leader raft... (TODO reference those from 03b)
+- ? Or one could learn from strategies of protocols with weaker consistency [@hsu2021cost] 
 
 #### More Raft Optimizations
 

@@ -166,9 +166,7 @@ Note that not all authors agree to the binary model of fail-stop vs. byzantine f
 
 #### Partition-Tolerance
 
-In addition to the discussed types of faults, there is also the risk of _network partitioning_. There are various types of network partitions, including complete, partial and simplex partitions. In figure \ref{fig:error-classes-venn}, all three are shown for reference. In (a), TODO ...Network partitioning events can be of a temporary or persistent nature, depending on the original fault that caused them, but also on the strategies used to resolve them. In large-scale distributed systems, network partitioning is to be expected. Particularly in massive-scale distributed systems like blockchains, network partitioning is part of the design.
-
-\todo{Describe the partitioning types}
+In addition to the discussed types of faults, there is also the risk of _network partitioning_. There are various types of network partitions, including complete, partial and simplex partitions. In figure \ref{fig:error-classes-venn}, all three are shown for reference. In (a), we have a complete partitioning of the network, resulting in a split into two disconnected groups, also known as a _split brain_. In (b), not all nodes are affected by the partitioning, so there is at least one route between all nodes, which is called _partial partition_. In (c), there is a _simplex partition_, in which messages can only flow in one direction. Network partitioning events can be of a temporary or persistent nature, depending on the original fault that caused them, but also on the strategies used to resolve them. In large-scale distributed systems, network partitioning is to be expected. Particularly in massive-scale distributed systems like blockchains, network partitioning is part of the design.
 
 \begin{figure}[h]
   \centering
@@ -179,9 +177,8 @@ In addition to the discussed types of faults, there is also the risk of _network
 
 If not handled correctly, the partitioning can lead to Byzantine behavior once the partitioning is resolved again. Alquraan et al. found that network-partitioning faults lead to silent catastrophic failures, such as data loss, data corruption, data unavailability, and broken locks, while in 21% of failures, the system remains in a persistent faulty state that persists even after partitioning is resolved [@alquraan2018analysis]. Those faults occur easily and frequently: in 2016, a partitioning happened once every two weeks at Google [@govindan2016evolve] and in 2011, 70% of the downtime of Microsoft's data centers where caused by network partitioning [@gill2011understanding]. Even partial partioning causes a large number of failures (due to bad system design), which may be suprising as there is still a functioning route for messages to pass through the network.
 
-For a replication protocol to be truly fault-tolerant for large-scale or geographically distributed systems, partitioning must be considered, as it is unavoidable, even partial partitioning as it has been shown. In consensus protocols, this is a mandatory requirement. Container orchestration services like Kubernetes help in resolving partitioning by _network reconfiguration_ if they detect node failures and partitioning, which must be taken into account be the consensus protocl.
+Partition-tolerance is in general a must-have for a distributed system. In the case of partitioning, users and clients expect the system to still be available and reliable, without compromising the safety by subsequent faulty behavior. The don't want to experience the interruption by the partitioning at all. For a replication protocol to be truly fault-tolerant for large-scale or geographically distributed systems, partitioning must be considered, as it is unavoidable, even partial partitioning as it has been shown. In consensus protocols, this is a mandatory requirement. Container orchestration services like Kubernetes help in resolving partitioning by _network reconfiguration_ if they detect node failures and partitioning, which must be taken into account be the consensus protocol.
 
-- network connections between replica nodes fail
 - Show examples like in https://kriha.de/docs/seminars/distributedsystemsmaster/reliability/reliability.pdf or in official Raft Interactive Diagram
 \todo{Is network partitioning fail-stop or byzantine? Or something else?}
 [https://www.usenix.org/system/files/osdi18-alquraan.pdf]
@@ -317,16 +314,17 @@ even makes it unavailable if network connections between replicas fail (= networ
 
 "For this reason, modern replicated databases often eschew synchronisation completely; such databases are commonly dubbed eventually consistent [47]. In these databases, a replica performs an operation requested by a client locally without any synchronisation with other replicas and immediately returns to the client; the effect of the operation is propagated to the other replicas only eventually. This may lead to anomalies—behaviours deviating from strong consistency"
 
-**Weak Consistency** - 
-- Data-centric
-"As its name indicates, weak consistency offers the lowest possible ordering guarantee, since it allows data to be written across multiple nodes and always returns the version that the system first finds. This means that there is no guarantee that the system will eventually become consistent."
-
 **Eventual Consistency** - [@vogels2009eventually]
+"strong consistency is the most expensive one to achieve. This is mainly due to the requirements for a 2 phase commit (2PC) type of distributed transaction. 2PC transactions have poor performance, limited scalability and require tight coupling of services. modern microservice architectures oftentimes chose eventual consistency for the consistency outcome"
 - TODO list applications
 - Client-centric
 "This model states that all updates will propagate through the system and all replicas will gradually become consistent, after all updates have stopped for some time [56, 60]. Although this model does not provide concrete consistency guarantees, it is advocated as a solution for many practical situations [10–12, 24, 60] and has been implemented by several distributed storage systems [21, 28, 35, 43]."
 - Can increase performance dramatically; see for example kubernetes made eventual consistent instead of strong to meet edge-computing requirements [@jeffery2021rearchitecting]
 - Not always neccessary; good system design allows even strong consistent services to work at the edge 
+
+**Weak Consistency** - 
+- Data-centric
+"As its name indicates, weak consistency offers the lowest possible ordering guarantee, since it allows data to be written across multiple nodes and always returns the version that the system first finds. This means that there is no guarantee that the system will eventually become consistent."
 
 **Causal Consistency** - [@shen2015causal]
 - Data-centric
@@ -393,9 +391,15 @@ TODO compare with replication, show later how multi-raft supports both
 
 TODO diagrams, also my own ones from PPT
 
-### Cross-Cluster Replication
+### Geo-Replication
 
-Is this geographic replication?
+The replication techniques discussed so far in this work describe the replication of data within a single cluster to improve the dependability of the system. To improve performance when accessing the system and data from different geographical regions and to hedge against geographical limited disasters, data can be further replicated across clusters using _data mirroring_ techniques, which is referenced as _cross-cluster replication_.
+
+TODO more from https://kafka.apache.org/documentation/#georeplication
+- Also for feeding edge cluster data into one central cloud cluster
+- In general, this is solved by simply cloning the full data in the background, either hot (while the primary cluster is still running) or cold (when the cluster is shutdown, to produce a reliable cold backup)
+
+
 
 When concerning about service latency, it is always desirable to place service replicas in close proximity to its clients. This allows reducing the request round-trip time and hence the latency experienced by clients
 

@@ -35,7 +35,7 @@ header-includes: |
     \setlength\epigraphwidth{8cm}
     \setlength\epigraphrule{0pt}
     \usepackage[raggedright]{titlesec}
-    \usepackage[font={small},justification=centering]{caption}
+    \usepackage[font={small}]{caption}
     \usepackage{glossaries}
     \usepackage{titling}
     \usepackage{todonotes}
@@ -46,6 +46,9 @@ header-includes: |
     \usepackage{helvet}
     \usepackage[bitstream-charter,sfscaled=false]{mathdesign}
     \usepackage{mathtools}
+    \usepackage{makecell}
+    \renewcommand\theadfont{\normalsize}
+    \renewcommand\theadfont{\bfseries}
     \lstset{
       columns=fullflexible,
       frame=single,
