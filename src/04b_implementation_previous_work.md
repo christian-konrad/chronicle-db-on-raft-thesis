@@ -6,6 +6,8 @@
 
 ### Criteria for Review and Comparison
 
+TODO everything that narrows the scope here
+
 #### Why not a Leaderless Protocol?
 
 - TODO reference to (#sec:leaderless)
@@ -16,8 +18,18 @@
 
 ### Popular Applications of Replication Protocols
 
+TODO from [@gotsman2016cause]: Tools that allow the user to choose the consistency level
+Large-scale distributed systems often rely on replicated databases
+that allow a programmer to request different data consistency guarantees for different operations, and thereby control their performance. Using such databases is far from trivial: requesting stronger
+consistency in too many places may hurt performance, and requesting it in too few places may violate correctness.
+
+in general, NoSQL is mostly eventual (but see mongodb as a counterexample)
+
 \todo{Add all the others here, but prepare them in excel for convenience}
 \todo{May split in metadata and payload consistencvy}
+\todo{Also consider this categorizing https://www.researchgate.net/profile/Michael-Lang-28/publication/282761553/figure/tbl1/AS:668236437790738@1536331390709/Representative-System-Services-Categorized-Through-the-Taxonomy.png}
+
+Also look at https://www.researchgate.net/figure/Consistency-models-comparison_tbl1_331104869
 
 \begin{table}[h!]
     \caption{The list of systems studied in this work, and their primary dependability and consistency properties}
@@ -27,15 +39,17 @@
         \thead{System} & \thead{Consistency Model} & \thead{Data Level} & \thead{Replication Protocol} \\
         \midrule
         LogCabin & Strong & All (but small amounts) & Raft \\
-        Apache Kafka & User Setting & All (? Meta Strong + Data Eventual?) & Raft-like \\
+        Apache Kafka & User Choice & All (? Meta Strong + Data Eventual?) & Raft-like \\
         Zookeeper & Strong & All (It keeps metadata only) & Primary-Copy \\
         MongoDB & Strong & TODO & Pull-Based Consensus (Raft-like) \\
-        AAA & - & - \\
+        Redis & Eventual, Strong is WIP & All & CRDTs, Master-Replica, Raft is WIP \\
         AAA & - & - \\
         \bottomrule
     \end{tabular}    
     \label{table:systems-studied}
 \end{table}
+
+TODO also a CAP triangle with classification of the databases like in http://dx.doi.org/10.3390/fi11020043 
 
 #### LogCabin
 
@@ -73,7 +87,7 @@ Wait for a replica in the ISR to come back to life and choose this replica as th
 Choose the first replica (not necessarily in the ISR) that comes back to life as the leader.
 This is a simple tradeoff between availability and consistency. If we wait for replicas in the ISR, then we will remain unavailable as long as those replicas are down. If such replicas were destroyed or their data was lost, then we are permanently down. If, on the other hand, a non-in-sync replica comes back to life and we allow it to become leader, then its log becomes the source of truth even though it is not guaranteed to have every committed message. By default from version 0.11.0.0, Kafka chooses the first strategy and favor waiting for a consistent replica. This behavior can be changed using configuration property unclean.leader.election.enable, to support use cases where uptime is preferable to consistency.
 
-This dilemma is not specific to Kafka. It exists in any quorum-based scheme. For example in a majority voting scheme, if a majority of servers suffer a permanent failure, then you must either choose to lose 100% of your data or violate consistency by taking what remains on an existing server as your new source of truth.
+This dilemma is not specific to Kafka. It exists in any quorum-based scheme. For example in a majority voting scheme, if a majority of servers suffer a permanent failure, then you must either choose to lose 100 % of your data or violate consistency by taking what remains on an existing server as your new source of truth.
 
 Availability and Durability Guarantees
 When writing to Kafka, producers can choose whether they wait for the message to be acknowledged by 0,1 or all (-1) replicas. Note that "acknowledgement by all replicas" does not guarantee that the full set of assigned replicas have received the message. By default, when acks=all, acknowledgement happens as soon as all the current in-sync replicas have received the message. For example, if a topic is configured with only two replicas and one fails (i.e., only one in sync replica remains), then writes that specify acks=all will succeed. However, these writes could be lost if the remaining replica also fails. Although this ensures maximum availability of the partition, this behavior may be undesirable to some users who prefer durability over availability. Therefore, we provide two topic-level configurations that can be used to prefer message durability over availability:
@@ -145,6 +159,7 @@ Apaache Ratis is the library of choice for the implementation of a replicated ev
 - Redis (https://github.com/RedisLabs/redisraft), still working on it, not production-ready
     - https://redis.com/blog/redisraft-new-strong-consistency-deployment-option/ 
     - Consistency+P
+     distributed, in-memory key–value database, cache and message broker,
 
 #### Comparison Results
 

@@ -9,15 +9,20 @@ Developed architecture / system design / implementation: 1/3
 
 - This section is about the solution design and implementation
 - First list high-level requirements (strong consistency, availability, fault-tolerance...) just reference the previous chapters
-    - TODO describe that I opted for strong consistency here [@gotsman2016cause]
-    - in background or later in implementation?
+    - TODO describe that I opted for strong consistency here [@gotsman2016cause]    
     - TODO describe my reasoning for this
+    - Reference Calm
     - if possible (and tradeoff ok), strong consistency is always prefered
     - Many other db vendors provide strong consistency (anecdotal proven that it works, TODO reference previous work)
         - Especially with raft or similar protocols
         - Even in high throughput scenarios
         - Multiple strategies to solve throughput issues like multi-raft + partiioning, less replicas for the write partition (time split) but increase replica count for read-only splits (easy as those only few OOO inserts into old splits does not affect whole performance when looking at the big picture)
 - Then detailed requirements (how the user interacts with it, requirements to the API, infra and tech requirements)
+
+- TODO show table of the different dependability levels that are minimum for this
+
+- TODO show why not a CRDT or using optimistic replication (even if we could achieve optimistic repl with "conflict" resolution via OOO (there are no real conflicts due to no random writes, so mention this "no-conflict other then OOO case" here)); show why strong consistency; why raft
+- explain scalability issues and why they aren't that bad and how to tackle them
 
 - Then show design: What platform, what libraries (reference next ratis section)...
 

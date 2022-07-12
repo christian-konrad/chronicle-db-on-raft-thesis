@@ -41,7 +41,7 @@ https://www.scribbr.co.uk/thesis-dissertation/conclusion/
 - Can have a positive impact when scaling horizontally, when partitioning is leveraged in a smart way
 - Is fault-tolerant as Raft...
 - Raft formally proven
-    - If ratis is 100% following raft protocol and therefore formally correct still to be confirmed
+    - If ratis is 100 % following raft protocol and therefore formally correct still to be confirmed
 - Possible to build a strong-consistent event store with great availability
 - TODO
 
@@ -57,15 +57,34 @@ The given implementation of the Raft replication protocol has a high cost of rep
 
 \epigraph{Strive for progress, not perfection.}
 
-### Horizontal Scalability
+
+### Consistency Considerations
+
+- As in InfluxDB, having all data replicated with a consensus protocol may be inpractical and slows down the system
+- As others are doing (Apache IoTDB), one could use different protocols for different parts of the implementation, as such for meta data/cluster management, region management, schemas, data itself... Maybe just use raft for meta data and have primary-copy or another approach for the data itself? Perhaps the user should decide this for themselves based on their consistency requirements?
 
 #### Multiple Consistency Levels
 
-- Let user decide
+- We could limit consensus to critical parts, like creating and evolving an event schema. (All clients agree to simultaneously make the change.), updating meta data and the quorum itself
+- We could also just let database user (= developer) decide
+- We have seen both approaches in other db vendors, as well as fully strong consistently replicated dbs
+- Partial replication and geo-replication
+- If serving data to only a portion of users, not all data need to be replicated into all locations
 - Metadata (book keeper) always strong consistent
 - But let user decide on consistency level for data
 - Similar to Kafka
 - So it is suitable to architect an edge-cloud system design with multiple different consistency levels to fit the edge levels best 
+
+
+<!-- TODO CRDTs do not seem to be suitable. Redis say they can be used for Multi-region IoT data ingest, but I think this will slow the event store down too much by idempotency and so on. But what about SECROs?
+And: Can't we transform the whole ChronicleDB TAB+ tree into a CRDT like with causal trees? http://archagon.net/blog/2018/03/24/data-laced-with-history/#causal-trees-in-depth Can we make all operations idempotent and commutative? 
+---
+It could also be considered to implement the event store as an CRDT instead of applying consensus, limiting its consistency to strong eventual consistency. This implementation would be feasible to be used on the edge in edge-cloud networks, beeing able to ingest high volumes of events while providing high availability, while feeding them into a central cluster and merging them. But in this case, the overall performance of the event store will be compromised, as this requires out-of-order merging. Efficient merging strategies need to be discovered to allow for such a CRDT implementation.
+-->
+
+### Horizontal Scalability
+
+There are also other strategies to improve the throughput that do not violate correctness and consistency guarantees...
 
 #### Sharding/Partitioning
 
@@ -116,11 +135,6 @@ The given implementation of the Raft replication protocol has a high cost of rep
 At the time of this writing, the Hashicorp Raft implementation in Go [https://github.com/hashicorp/raft] is the most popular, reliable and supported one... due to the characteristics of the Go language and ecosystem which make Go a perfect fit for challenges in distributed systems, there is a strong advice to use this implementation if you want to start with a proven solution... plug'n'play (is it?)... extensible (is it?)
 
 Apache Ratis has support problems... Java makes it somehow inefficient (does it?), but it is very extensible and customizable (big plus) and fits 1:1 in your Java environment (as for ChronicleDB and Spring Boot)...
-
-### Consistency Considerations
-
-- As in InfluxDB, having all data replicated with a consensus protocol may be inpractical and slows down the system
-- As others are doing (Apache IoTDB), one could use different protocols for different parts of the implementation, as such for meta data/cluster management, region management, schemas, data itself... Maybe just use raft for meta data and have primary-copy or another approach for the data itself? Perhaps the user should decide this for themselves based on their consistency requirements?
 
 ### User Friendliness
 

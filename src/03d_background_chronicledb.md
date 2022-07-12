@@ -12,6 +12,8 @@ Lorem ipsum [@seidemann2019chronicledb]
 ### TAB+ Tree Index
 
 - Time splits
+- Time complexity: For append only and random write (= OOO merge)
+- TODO argument why a CRDT won't work because merge is too expensive 
 
 ### Segmented Block Storage
 

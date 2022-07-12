@@ -40,6 +40,7 @@ header-includes: |
     \usepackage{titling}
     \usepackage{todonotes}
     \usepackage{booktabs}
+    \usepackage{tabularx}
     \usepackage{draftwatermark}    	
     \SetWatermarkColor[gray]{0.95}
     \usepackage{lmodern}

@@ -36,7 +36,7 @@ Fortunately, several replication algorithms have already been proposed to achiev
 <!-- Introduce into research methodology and questions/hypotheses -->
 <!-- DONE -->
 
-This brings us to the subject of this thesis. We try to find and evaluate an algorithm that has the desirable performance properties for an event store with defined dependability requirements. To find such an algorithm, we use an explorative research approach including both quantitative and qualitative methods to discover the possible solution space:
+This brings us to the subject of this thesis. We try to find and evaluate an replication algorithm that has the desirable performance properties for an event store with defined dependability requirements. To find such an algorithm, we use an explorative research approach including both quantitative and qualitative methods to discover the possible solution space:
 
 - Identification of a consistency model suitable for an event store with a specific set of dependability requirements and differentiation from other consistency models including a detailed discussion of the advantages and disadvantages of the models in question.
 - Identification and justification of a replication protocol suitable for an event store that satisfies the characteristic requirements of the selected consistency model, including a differentiation from other replication techniques.
@@ -61,7 +61,9 @@ Positive findings from this research work would provide worthwhile benefits to d
 
 <!-- What are the contributions of this work? -->
 
-To the best knowledge, this work is the first attempt published in academia focusing on applying the Raft consensus protocol to event stores. There are a few event stores and time series databases used in industry that leverage Raft to achieve fault-tolerance and scalability (InfluxDB, IoTDB), but replication and consensus where only mentioned as a side note in academic research on those systems. 
+To the best knowledge, this work is the first attempt published in academia focusing on applying the Raft consensus protocol to event stores. There are a few event stores and time series databases used in industry that leverage Raft to achieve fault-tolerance and scalability (InfluxDB, IoTDB), but replication and consensus were only mentioned as a side note in academic research on those systems. 
+
+\todo{cite the side notes}
 
 In this thesis we discuss and analyse several different replication algorithms to find the one that fits our requirements for an event store. The contributions are:
 

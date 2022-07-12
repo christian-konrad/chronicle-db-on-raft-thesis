@@ -54,6 +54,8 @@ To evaluate this, the implementation is benchmarked against... as described in t
 
 ## Setup for Comparison
 
+TODO do it like in the koerber_diss.pdf  but also with the synthetic data
+
 - Local Environment (Single Machine, Many Nodes (3, 4, 6))
 - AWS, (Kubernetes, Docker?)
 - Parameters to set for health checks (measure how long does it take for a regular node to start up)

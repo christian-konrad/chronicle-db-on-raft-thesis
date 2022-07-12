@@ -82,7 +82,7 @@ See [@garg2010implementing]
 - leader election, log replication, configuration changes, log compaction
 
 - Messages
-- Message synchonisation/enumeration (TODO reference to (#sec:consensus-protocols))
+- Message clock synchonisation/enumeration with term:index (TODO reference to (#sec:consensus-protocols))
 - Random timeout 
 \todo{Reference the random timeout thing from sec consensus-protocols which is one basic characteristic}
 - Log compaction / snapshotting 
@@ -99,7 +99,7 @@ TODO MTBF (TODO reference to 03a) - Leader election is the aspect of Raft where 
 
 TODO Network reconfiguration and fail-stop on faults: "Also in consensus protocols, shutting down a faulty node and initializing a fresh new one is effective as the data of the new node can be initialized using snapshotting in the background without impacting the whole cluster performance, as we show later in the corresponding section."
 
-TODO partition-tolerance
+TODO partition-tolerance: Even while strong-consistent, raft also is ...
 
 ### Expected Dependability Properties
 
