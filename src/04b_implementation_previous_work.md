@@ -34,7 +34,8 @@ Also look at https://www.researchgate.net/figure/Consistency-models-comparison_t
 \begin{table}[h!]
     \caption{The list of systems studied in this work, and their primary dependability and consistency properties}
     \centering
-    \begin{tabular}{l c c l} 
+    \def\arraystretch{1.5}
+    \begin{tabularx}{\textwidth}{>{\bfseries}l X X X} 
         \toprule
         \thead{System} & \thead{Consistency Model} & \thead{Data Level} & \thead{Replication Protocol} \\
         \midrule
@@ -45,11 +46,18 @@ Also look at https://www.researchgate.net/figure/Consistency-models-comparison_t
         Redis & Eventual, Strong is WIP & All & CRDTs, Master-Replica, Raft is WIP \\
         AAA & - & - \\
         \bottomrule
-    \end{tabular}    
+    \end{tabularx}    
     \label{table:systems-studied}
 \end{table}
 
-TODO also a CAP triangle with classification of the databases like in http://dx.doi.org/10.3390/fi11020043 
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.65\textwidth]{images/CAP-dbs.pdf}
+  \caption{Illustration of the CAP theorem}
+  \label{fig:cap-dbs}
+\end{figure}
+
+TODO many of these systems allow their users to decide for the consistency model and therefore for the availability-consistency (and the latency-consistency, considering the PACELC theorem) trade-off.
 
 #### LogCabin
 
@@ -85,7 +93,7 @@ However a practical system needs to do something reasonable when all the replica
 
 Wait for a replica in the ISR to come back to life and choose this replica as the leader (hopefully it still has all its data).
 Choose the first replica (not necessarily in the ISR) that comes back to life as the leader.
-This is a simple tradeoff between availability and consistency. If we wait for replicas in the ISR, then we will remain unavailable as long as those replicas are down. If such replicas were destroyed or their data was lost, then we are permanently down. If, on the other hand, a non-in-sync replica comes back to life and we allow it to become leader, then its log becomes the source of truth even though it is not guaranteed to have every committed message. By default from version 0.11.0.0, Kafka chooses the first strategy and favor waiting for a consistent replica. This behavior can be changed using configuration property unclean.leader.election.enable, to support use cases where uptime is preferable to consistency.
+This is a simple trade-off between availability and consistency. If we wait for replicas in the ISR, then we will remain unavailable as long as those replicas are down. If such replicas were destroyed or their data was lost, then we are permanently down. If, on the other hand, a non-in-sync replica comes back to life and we allow it to become leader, then its log becomes the source of truth even though it is not guaranteed to have every committed message. By default from version 0.11.0.0, Kafka chooses the first strategy and favor waiting for a consistent replica. This behavior can be changed using configuration property unclean.leader.election.enable, to support use cases where uptime is preferable to consistency.
 
 This dilemma is not specific to Kafka. It exists in any quorum-based scheme. For example in a majority voting scheme, if a majority of servers suffer a permanent failure, then you must either choose to lose 100 % of your data or violate consistency by taking what remains on an existing server as your new source of truth.
 
@@ -99,6 +107,7 @@ Specify a minimum ISR size - the partition will only accept writes if the size o
 #### CockroachDB
 
 - Raft
+- NewSQL: Offering benefits of distributed systems with scalable OLTP while still providing ACID capability for relational databases [@pavlo2016s]
 
 #### Camunda Zeebe
 
@@ -114,12 +123,27 @@ Specify a minimum ISR size - the partition will only accept writes if the size o
 
 - Some-kind-of Raft
 
+#### Fauna
+
+"Why Strong Consistency Matters with Event-driven Architectures"
+
+https://fauna.com/blog/why-strong-consistency-with-event-driven
+
+"ACID compliance ensures consistency your app can depend on. Real-time event streaming powers rich, interactive applications."
+
+https://fauna.com/solutions#edge-computing
+
+"Use it with edge computing vendors such as Cloudflare, Fastly, or Azion to offer rich, low latency experiences for users everywhere."
+
 #### MongoDB
 
 - Kind-of Raft
 - Strongly consistent (TODO refer to consistency types in 03a)
     - Consistent + Partition-Tolerant (CP)
 - Pull-based consensus
+- User can decide: Also supports causal consistency (https://www.mongodb.com/docs/manual/core/read-isolation-consistency-recency/#causal-consistency)
+
+PACELC: MongoDB can be classified as a PA/EC system. In the baseline case, the system guarantees reads and writes to be consistent.
 
 TODO rephrase
 
@@ -135,6 +159,8 @@ from the primary to other replicas. This flexible data transmission topology ena
 desired by our users since it has an edge on performance and
 monetary cost [@zhou2021fault]."
 
+"MongoDB is strongly consistent by default: reads and writes are performed across the primary member of a replica set. Applications can optionally read from secondary replicas where the data is eventually consistent by default."
+
 #### etcd / Kubernetes
 
 - Raft
@@ -145,13 +171,32 @@ Apache Ozone is a... [@apache2022ozone]
 The replication layer of Apache Ozone is built upon Apache Ratis, a library for..., []
 Apaache Ratis is the library of choice for the implementation of a replicated event store presented in the next chapter.
 
+#### Azure Cosmos DB
+
+- Configurable
+- Azure Cosmos DB offers five(!) well-defined levels. From strongest to weakest, the levels are:
+
+- Strong
+- Bounded staleness
+- Session
+- Consistent prefix
+- Eventual
+- https://docs.microsoft.com/en-us/azure/cosmos-db/consistency-levels
+
+"With Azure Cosmos DB, developers do not have to settle for extreme consistency choices (strong vs. eventual consistency). It offers 5 well-defined consistency choices - strong, bounded-staleness, session, consistent-prefix and eventual – so you can select the consistency model that is just right for your app."
+
+- TLA+ spec proven: https://github.com/Azure/azure-cosmos-tla
+- Leslie Lamport co-authoring: https://www.youtube.com/watch?v=kYX6UrY_ooA
+
+"Extreme aggressive SLA"
+
 #### Other Mentionable Implementations
 
 > TODO should summarize, not an own section per tool
 
 - Hadoop
 - Neo4j
-- Couchbase
+- Couchbase (Also NewSQL)
 - Apache Spark
 - Apache Flink
 - Apache Cassandra

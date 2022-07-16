@@ -48,6 +48,7 @@ header-includes: |
     \usepackage[bitstream-charter,sfscaled=false]{mathdesign}
     \usepackage{mathtools}
     \usepackage{makecell}
+    \usepackage{float}
     \renewcommand\theadfont{\normalsize}
     \renewcommand\theadfont{\bfseries}
     \lstset{

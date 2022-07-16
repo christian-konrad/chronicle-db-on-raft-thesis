@@ -5,13 +5,13 @@
 
 <!-- ### why replication is neccessary, and what it is-->
 
-This section provides the reader with an overview of the topic of distributed systems, defines the term _replication_, explains why replication is crucial for many of those systems, discusses various replication protocols, and concludes with a literature review of recent research in this area. The goal of this section is to provide the reader with a thorough understanding of what replication is, why, where, and when it is needed, and how replication protocols work.
+This section provides the reader with an overview of the topic of _distributed database systems_ (DDBS), defines the term _replication_, explains why replication is crucial for many of those systems, discusses various replication protocols, and concludes with a literature review of recent research in this area. The goal of this section is to provide the reader with a thorough understanding of what replication is, why, where, and when it is needed, and how replication protocols work.
 
 \todo{Glossary?}
 
 A _distributed system_ is a collection of autonomous computing elements that appears to its users as a single coherent system [@steen2007distributed]. To achieve this behavior, such a system needs to offer certain levels of _availability_, _consistency_, _scalability_ and _fault-tolerance_; therefore, many modern distributed systems rely heavily on replicated data stores that maintain multiple replicas of shared data [@liu2013replication]. Depending on the replication protocol, the data is accessible to clients at any of the replicas, and these replicas communicate changes to each other using message passing.
 
-Thus, a distributed database is a distributed system that provides read and write access to data. Replication in these databases takes place to varying degrees: from simple replication of metadata and current system state to full replication of all payload data, depending on the requirements and characteristics of the system.
+Thus, a distributed database system is a distributed system that provides read and write access to data. Replication in these databases takes place to varying degrees: from simple replication of metadata and current system state to full replication of all payload data, depending on the requirements and characteristics of the system.
 
 Many modern applications, especially those served from the cloud, are inherently distributed. With edge computing, such applications can be distributed not only to nodes in one or more clusters serving many clients, but also to all of those clients participating in the edge-cloud network. Users of cloud applications expect the same experience independent of their geographic region and also regardless of the amount of data they produce and consume.
 
@@ -46,7 +46,7 @@ Opting in for horizontal scaling is beneficial for large-scale cloud and edge ap
 
 The system design that enables horizontal scalability is also a key requirement for replication. To achieve fault tolerance and availability through replication, it is required to store replicas of a dataset on multiple nodes, therefore the book keeping and message passing infrastructure that is neccessary for partitioning is also a basic requirement for replication protocols [@liu2013replication].
 
-### Safety and Reliability
+### Safety and Reliability {#sec:safety-reliability}
 
 \epigraph{Anything that can go wrong will go wrong.}{--- \textup{Murphy's Law}}
 
@@ -110,7 +110,7 @@ One of the most important design techniques to achieve reliability, both in hard
 
 Safety is an important requirement especially for critical infrastructure applications. Safety means that the system behavior is as expected, and no faulty or even malicious results are returned.
 
-A high degree of reliability, while necessary, is not sufficient to ensure safety. In fact, there can even be a tradeoff between safety and reliability. To understand this, we need a different way to model reliability and safety. We look at the probabilities of three possible types of responses to a client request to the system:
+A high degree of reliability, while necessary, is not sufficient to ensure safety. In fact, there can even be a trade-off between safety and reliability. To understand this, we need a different way to model reliability and safety. We look at the probabilities of three possible types of responses to a client request to the system:
 
 - The probability of a _good response_ $p_g$, which is as intended based on the problem (not only to the specification, as it could be faulty) and delivers a correct value in a timely manner. 
 - The probability of a _faulty response_ $p_f$, meaning that the system responded but returned an erroneous or malicious result instead of the intended result (i.e. a _byzanthine fault_, as described later in [the subsection on Types of Possible Faults](#sec:possible-faults)).
@@ -188,7 +188,7 @@ Partition-tolerance is in general a must-have for a distributed system. In the c
 
 #### Disaster Recovery
 
-Another type of failure that is important to address are _disasters_ in the data center. _Disaster recovery_ includes all actions taken when a primary system fails in such a way that it cannot be restored for some time, including the recovery of data and services at a secondary, surviving site. One important disaster recovery measure is _geo-replication_, which can be used to manage disasters of the type that render data centers unavailable due to, for example, a natural disaster such as a flood or earthquake. Geo-replication is discussed in more detail [later in this paper](#sec:geo-replication). Since disaster recovery is a complex subject area of its own that goes beyond the application of replication mechanisms, it is not discussed in detail in this thesis (apart from geo-replication).
+Another type of failure that is important to address are _disasters_ in the data center. _Disaster recovery_ includes all actions taken when a primary system fails in such a way that it cannot be restored for some time, including the recovery of data and services at a secondary, surviving site. One important disaster recovery measure is _geo-replication_, which can be used to manage disasters of the type that render data centers unavailable due to, for example, a natural disaster such as a flood or earthquake. Geo-replication is discussed in more detail in subsection [@sec:geo-replication]. Since disaster recovery is a complex subject area of its own that goes beyond the application of replication mechanisms, it is not discussed in detail in this thesis (apart from geo-replication).
 
 ### High Availability and Dependability {#sec:availability}
 
@@ -237,7 +237,7 @@ Different levels of availabilty and their respective downtimes are listed in the
     \label{table:availability-classes}
 \end{table}
 
-An availability of 99.999 % is referred to as _five nines_ and is the typical standard for telecommunication networks and a hit target for many site reliability engineering (SRE) departments of service providers, while popular commercial platforms provide lower levels of availability, such as Amazon Web Services (AWS), which provides 99.99% availability for their standard offering of S3 [@amazon2020s3availability]. Oftentimes, such services are geo-replicated and deployed in specific _availability zones_ so that they are available during peak operating hours for the corresponding time zones. The maintenance time (e.g. for updates and general MTTR) is then usually scheduled for the night hours. For critical business operations, a certain level of availability must be guaranteed by the service providers, which they typically specify in their _Service Level Agreements_ (SLAs). If the service provider fails to keep these availability promises, the provider declares themselves responsible to compensate for the damage incurred (the missed revenue). The confidence of having an excellent SLA that ensures high availability, among other things, can often be a decisive competitive advantage. For example, the SLA for AWS S3 guarantees customers tiered compensation based on the availability achieved in the corresponding billing cycle. As of the time of writing, the total cost of the billing cycle will be refunded if the service didn't met an availability of at least 95 % throughout this cycle [@amazon2022s3sla].
+An availability of 99.999 % is referred to as _five nines_ and is the typical standard for telecommunication networks and a hit target for many site reliability engineering (SRE) departments of service providers, while popular commercial platforms provide lower levels of availability, such as Amazon Web Services (AWS), which provides 99.99% availability for their standard offering of S3 [@amazon2020s3availability]. Oftentimes, such services are geo-replicated and deployed in specific _availability zones_ so that they are available during peak operating hours for the corresponding time zones. The maintenance time (e.g. for updates and general MTTR) is then usually scheduled for the night hours. For critical business operations, a certain level of availability must be guaranteed by the service providers, which they typically specify in their _Service Level Agreements_ (SLAs). If the service provider fails to keep these availability promises, the provider declares themselves responsible to compensate for the damage incurred (the missed revenue). The confidence of having an excellent SLA that ensures high availability, among other things, can often be a decisive competitive advantage. For example, the SLA for AWS S3 guarantees customers tiered compensation based on the availability achieved in the corresponding billing cycle. As of the time of writing, partial reimbursements start when an availability of 99.9% wasn't met [@amazon2022s3sla]. The total cost of the billing cycle will be refunded if the service didn't met an availability of at least 95 % throughout this cycle. At the same time, Microsoft is offering an SLA for its Cosmos DB, a distributed NoSQL database, that guarantees partial reimbursement for certain availability regions even if a five nines availability (99.999 %) is not met, but they also cover reimbursements if latency and consistency guarantees are not met [@microsoft2022cosmossla].
 
 When orchestrating multiple services in the context of a _service oriented architecture_ (SOA), the availability of a resulting aggregated system or business process depends heavily on all the orchestrated services as well as the orchestrating system itself, and decreases for each participating system. Ignoring network availability, overlapping unavailability periods and other factors, and assuming all services are run in a sequential order, we can roughly estimate the overall availability as
 
@@ -276,7 +276,9 @@ Building scalable and reliable distributed systems requires a trade-off between 
 
 Consistency is an ambiguous term in data systems: in the sense of the _ACID model_ (Atomic, Consistent, Isolated and Durable), it is a very different property than the one described in the _CAP theorem_ (we explain this later in this section). The ACID model describes consistency only in the context of database transactions, whereas consistency in the CAP model refers to a single request/response sequence of operations. We focus on the definition in the CAP theorem in this work. In the distributed systems literature in general, consistency is understood as a spectrum of models with different guarantees and correctness properties, as well as various constraints on performance.
 
-A database consistency model determines the manner and timing in which a successful write or update is reflected in a subsequent read operation of that same value. It describes what values are allowed to be returned by operations accessing the storage, depending on other operations executed previously or concurrently, and the return values of those operations. There exists no one-size-fits-all approach: it is difficult to find one model that satisfies all main challenges associated with data consistency [@mkandla2021evaluation]. 
+A database consistency model[^consistency-origins] determines the manner and timing in which a successful write or update is reflected in a subsequent read operation of that same value. It describes the ordering guarantees for the execution of operations accessing the system and what values are allowed to be returned. There exists no one-size-fits-all approach: it is difficult to find one model that satisfies all main challenges associated with data consistency [@mkandla2021evaluation]. Consistency models describe the trade-offs between concurrency and ordering of operations, and thus between performance and correctness.
+
+[^consistency-origins]: Originally, consistency models were discussed in the context of concurrency of operations on a single machine or set of CPUs respectively in multi-threaded environments. Discussions of consistency models in distributed systems or even distributed database systems are not substantially different, since a distributed system is basically nothing more than a collection of machines on which multiple threads and processes can run concurrently or in parallel.
 
 There are two distinct perspectives on consistency models: the data-centric and client-centric perspective, as illustrated in figure \ref{fig:data-client-centric-perspective} [@bermbach2013towards]. The data-centric perspective analyzes consistency from a replica's point of view, where the distributed system synchronizes read and write operations of all processes to ensure correct results. Similarly, the client-centric perspective examines consistency from a client's point of view. From this perspective, it is sufficient for the system to synchronize only the data access operations of the same process, independently of the others, to ensure their consistency. This is justified because common updates are often rare and mostly access private data [@campelo2020brief]. It is sufficient to _appear_ consistent to clients, while being at least partially inconsistent between cluster nodes. Therefore, client-centric consistency models are in general weaker than data-centric models. 
 <!-- In this work, we focus on the data-centric perspective because the client-centric perspective depends on it and can be derived from it. -->
@@ -288,127 +290,139 @@ There are two distinct perspectives on consistency models: the data-centric and 
   \label{fig:data-client-centric-perspective}
 \end{figure}
 
-\todo{Hierarchical overview of the consistency levels, with ascending weakness}
+Following, a few of those consistency models are discussed, starting with the model with the strongest consistency guarantees [@steen2007distributed]. Throughout the discussion, we use the following notation (also see figure \ref{fig:consistency-timeline-notation}) to illustrate the behavior of the models by examples:
 
-Following, a few of those consistency models are discussed in the order of their relevance to this work [@steen2007distributed]. Throughout the discussion, we use this notation to illustrate the behavior of the models by examples:
+- $w(x, v)$ denotes a successful write operation of the value $v$ into the variable $x$.
+- $r(x) = v$ denotes a read of $x$ that returns the value $v$.
 
-$w(x, v)$ denotes a successful write operation of the value $v$ into the variable $x$.
-
-$r(x) = v$ denotes a read of $x$ that returns the value $v$.
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.8\textwidth]{images/consistency-timeline-notation.pdf}
+  \caption{Notation of an operation invocation to illustrate following consistency discussions}
+  \label{fig:consistency-timeline-notation}
+\end{figure}
 
 \todo{Work finished to this point.}
 
 \todo{Rephrase}
 
-<!--
-
-Models get weaker from top to bottom
-
-##### Data-centric
-
-Strong consistency: After a successful write (incl. ACK), the value can be read at all nodes immediately
-
-Sequential: Lamport 1979; no immediate read, but writes have to be seen in the same order at every node
-
-Causal: Only causally related writes must be seen in the same order at every node
-
-Weak: Only writes that are explicitly synchronized are consistent. Everything else in between is unordered (but at least the same set of operations)
-
-##### Client-centric
-
-Eventual: if no update takes a very long time, all replicas eventually become consistent. Eventually consistency means in the absence of updates all replicas converge toward identical copies.
-
-##### Need explicit, manual synchronization mechanisms
-
-TODO search for a matrix or table for all consistency models 
-
--->
-
 \todo{Denote everything mathematically if sufficient time and if it does not unneccessary complexity}
 
 <!-- Strong Consistency -->
 
-\paragraph{Strong Consistency.} Strong consistency is, from the view of a client, the ideal consistency model: a read request made to any of the nodes of the replica cluster should return the same data. A replicated data store with strong consistency therefore behaves indistinguishably from one running on a single machine. A strong consistency model provides the highest degree of consistency by guaranteeing that all operations on replicated data behave as if they were performed atomically on a single copy of the data. After a successful write operation, the written object is immediately accessible from all nodes at the same time: _what you write is what you will read_[^read-after-write]. However, this guarantee comes at the cost of lower performance, reliability, and availability compared to weaker consistency models [@attiya1994sequential; @liu2013replication]: Algorithms that guarantee strong consistency properties across replicas are more prone to message delays and render the system vulnerable to network partitions, if not handled properly. Such algorithms do need special strategies to provide partition-tolerance to the cost of availability.
+\paragraph{Strong Consistency (Linearizability).}
 
-[^read-after-write]: For this reason, it is sometimes referred to as _read-after-write consistency_.
+Strong consistency is, from the view of a client, the ideal consistency model: a read request made to any of the nodes of the replica cluster should return the same data. A replicated data store with strong consistency therefore behaves indistinguishably from one running on a single machine. A strong consistency model provides the highest degree of consistency by guaranteeing that all operations on replicated data behave as if they were performed atomically on a single copy of the data. After a successful write operation, the written object is immediately accessible from all nodes at the same time: _what you write is what you will read_[^read-after-write]. A client never sees an uncommitted or partial write. However, this guarantee comes at the cost of lower performance, reliability, and availability compared to weaker consistency models [@attiya1994sequential; @liu2013replication]: Algorithms that guarantee strong consistency properties across replicas are more prone to message delays and render the system vulnerable to network partitions, if not handled properly. Such algorithms do need special strategies to provide partition-tolerance to the cost of availability.
 
-Strong consistency is mandatory for use cases with zero tolerance for inconsistent states, such as banking. To achieve strong consistency, an absolute global time order must be maintained [@lamport1978time]. A good example is linearizability 
+[^read-after-write]: For this reason, it is sometimes referred to as _read-after-write consistency_ from a client-centric view.
 
-TODO explain how to achieve strong consistency: Examples like linea..., 2PC, acks...
+In the literature, strong consistency is often referred to as _linearizability_. To achieve linearizability, an absolute global time order must be maintained [@lamport1978time]. Each operation must appear to be executed immediately, exactly once, at some point between its invocation and its response [@herlihy1990linearizability]. If a write call returns, the client can be sure that the written data is available throughout the system, just as it would be with a single-node system. Therefore, consistent data stores are easy to use for developers because they do not need to be aware of the differences between the respective replicas of the data store. 
+
+Strong consistency is mandatory for use cases with zero tolerance for inconsistent states and strong requirements for real-time ordering guarantees, such as
+
+- Business process automation,
+- Service orchestration (SOA),
+- Financial services,
+- Stock exchange trades and analysis,
+- Event sourcing,
+- Aviation systems.
 
 \todo{Timeline diagram}
 
 \begin{figure}[h]
   \centering
-  \includegraphics[width=0.8\textwidth]{images/strong-consistency-flow.pdf}
-  \caption{Communication model between clients and replica cluster nodes to ensure sequential consistency. A write is acknowledged only when it is consistent throughout all cluster nodes.}
+  \includegraphics[width=1.2\textwidth]{images/strong-consistency-flow.pdf}
+  \caption{Communication model between clients and replica cluster nodes to ensure strong consistency. A write is acknowledged only when it is consistent throughout all cluster nodes, therefore synchronizing the operations.}
   \label{fig:strong-consistency-flow}
 \end{figure}
 
-TODO what about strict and sequential? linearizability ? It seems like all of those are strong consistency models, so they are subclasses. Strict is not used in practice as it is inpractical, so in practice, strong = sequential.
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=1.2\textwidth]{images/consistency-ordering-linearizable.pdf}
+  \caption{Operation schedule that satisfies the realtime ordering guarantee of the strong consistency model (linearizability).}
+  \label{fig:consistency-ordering-linearizable}
+\end{figure}
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=1.2\textwidth]{images/consistency-ordering-linearizable-overlap.pdf}
+  \caption{A strongly consistent operation schedule with a read-write overlap. During the overlap, the read is allowed to return either the current or the previous write.}
+  \label{fig:consistency-ordering-linearizable-overlap}
+\end{figure}
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=1.2\textwidth]{images/consistency-ordering-linearizable-write-overlap.pdf}
+  \caption{This operation schedule is still linearizable, as the order of committing the overlapping writes is not guaranteed.}
+  \label{fig:consistency-ordering-linearizable-write-overlap}
+\end{figure}
+
+\begin{table}[h!]
+    \caption{Fact sheet for strong consistency}
+    \centering
+    \def\arraystretch{1.5}
+    \begin{tabularx}{\textwidth}{>{\bfseries}r | l} 
+        \toprule
+        Consistency & Strongest \\
+        Ordering guarantees & Real-time (for non-overlapping operations) \\
+        Availability & Lowest \\
+        Latency & High \\
+        Throughput & Lowest \\
+        Perspective & Data-centric \\
+        \bottomrule
+    \end{tabularx}
+    \label{table:facts-strong-consistency}
+\end{table}
+
+The linearizability constraints can be further hardened, resulting in _strict consistency_. While linearizability takes overlapping operations in a relaxed way, as illustrated in figure \ref{fig:consistency-ordering-linearizable-write-overlap}, strict consistency does not give that freedom. Overlapped operations also need to be ordered in strict real time order by the time of their invocation. In practice, strict consistency is hard to implement and is rarely necessary for practical use cases, hence it is reduced to a theoretical basis only.
+
+<!-- Sequential -->
+\paragraph{Sequential Consistency.} 
+
+Sequential consistency weakens the constraints of strong consistency by dropping the real-time property. This allows systems to acknowledge a write earlier than it has been accepted by a majority. If a write call returns, it must not neccessarily be available in a subsequent read, but when it is, then the correct order of the operations is guaranteed (sequential) [@attiya1994sequential]. That is, linearizability takes care of time and sequential consistency takes care of program order only.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=1.2\textwidth]{images/sequential-consistency-flow.pdf}
+  \caption{Schematic communication model between clients and replica cluster nodes for sequential consistency. A write can be acknowledged before it is propagated consistently across all cluster nodes. For all successful writes that are committed throughout the cluster, the original order is guaranteed.}
+  \label{fig:sequential-consistency-flow}
+\end{figure}
 
 Sequential: 
 "However, note that it does not always necessarily hold true that the specified global ordering is the same as the real-time sequence of execution of each operation."
 Mostly used in practice to achieve a strong level of consistency
 Does not care about realtime properties, as strict consistency, which expects a global ordering by time. This means that all reads at all nodes expose the same order of writes for sequential consistency, but not neccessarily in the absolute order (by timestamps) that clients requested the reads, which is impractical and needs reordering at and between nodes if concurrent writes appear in the wrong order
-(sequential is sufficient for our implementation; OOO handling of the event store itself should be more efficient than existing strict consistency mechanisms)
-(Raft is sequential)!
-
-"absolute perfect consistency is termed as Strict Consistency but is impractical to implement and hence is reduced to a theoretical basis only. Both of the levels are discussed in detail below."
-
-Strong consistent data stores are easy to use for developers, as they do not need to be aware of differences in replicas of the given data store. The whole system appears as it would be one single node to the user. 
-
-- TODO more [@gotsman2016cause]
-"requesting stronger consistency in too many places may hurt performance, and requesting it in too few places may violate correctness"
-
-TODO data-centric
-
-"Ideally, we would like replicated databases to provide strong consistency, i.e., to behave as if a single centralised node handles all operations. However, achieving this ideal usually requires synchronisation among replicas, which slows down the database and
-even makes it unavailable if network connections between replicas fail (= network partitions)". This does not apply to all protocols with strong consistency: Raft, the protocol of choice of this work, allows the system to be responsive even when the network is partitioned under certain constraints [TODO raft paper].
-
-"For this reason, modern replicated databases often eschew synchronisation completely; such databases are commonly dubbed eventually consistent [47]. In these databases, a replica performs an operation requested by a client locally without any synchronisation with other replicas and immediately returns to the client; the effect of the operation is propagated to the other replicas only eventually. This may lead to anomalies—behaviours deviating from strong consistency"
-
-**Eventual Consistency** - [@vogels2009eventually]
-Client-centric
-
-Eventual consistency makes sure that data of each node of the database gets consistent eventually. Time taken by the nodes of the database to get consistent may or may not be defined.
-
-Eventually consistency means in the absence of updates all replicas converge toward identical copies.
+(???? sequential is sufficient for our implementation; OOO handling of the event store itself should be more efficient than existing strict consistency mechanisms)
 
 \begin{figure}[h]
   \centering
-  \includegraphics[width=0.8\textwidth]{images/eventual-consistency-flow.pdf}
-  \caption{Schematic communication model between clients and replica cluster nodes for eventual consistency. A write is acknowledged immediately before it is propagated consistently across all cluster nodes.}
-  \label{fig:eventual-consistency-flow}
+  \includegraphics[width=1.2\textwidth]{images/consistency-ordering-sequential.pdf}
+  \caption{Operation schedule that satisfies the global ordering guarantee of the sequential consistency model.}
+  \label{fig:consistency-ordering-sequential}
 \end{figure}
 
-"Because of the possibility of inconsistency, the application developer must be explicitly in the knowledge of the replicated nature of data items in the data store. Compared to strong consistency, the developer must consider ..."
+\begin{table}[h!]
+    \caption{Fact sheet for sequential consistency}
+    \centering
+    \def\arraystretch{1.5}
+    \begin{tabularx}{\textwidth}{>{\bfseries}r | l} 
+        \toprule
+        Consistency & Strong \\
+        Ordering guarantees & Global ordering \\
+        Availability & Low \\
+        Latency & High \\
+        Throughput & Low \\
+        Perspective & Data-centric \\
+        \bottomrule
+    \end{tabularx}
+    \label{table:facts-sequential-consistency}
+\end{table}
 
-"strong consistency is the most expensive one to achieve. This is mainly due to the requirements for a 2 phase commit (2PC) type of distributed transaction. 2PC transactions have poor performance, limited scalability and require tight coupling of services. modern microservice architectures oftentimes chose eventual consistency for the consistency outcome"
-- TODO list applications
-- Client-centric
-"This model states that all updates will propagate through the system and all replicas will gradually become consistent, after all updates have stopped for some time [56, 60]. Although this model does not provide concrete consistency guarantees, it is advocated as a solution for many practical situations [10–12, 24, 60] and has been implemented by several distributed storage systems [21, 28, 35, 43]."
-- Can increase performance dramatically; see for example kubernetes made eventual consistent instead of strong to meet edge-computing requirements [@jeffery2021rearchitecting]
-- Not always neccessary; good system design allows even strong consistent services to work at the edge 
+\paragraph{Causal Consistency.} 
 
-"Whereas eventual consistency is only a liveness guarantee (updates will be observed eventually), strong eventual consistency (SEC) adds the safety guarantee that any two nodes that have received the same (unordered) set of updates will be in the same state."
+Only causally related writes must be ordered...
 
-\todo{BASE? [@pritchett2008base]}
-
-Basically Available, Soft state, Eventually consistent
-
-TODO NoSQL Databases are often BASE and not ACID and therefore not strong consistent...
-
-  - AWS services like S3 where eventual consistent when introduced
-  - Maximizing read throughput
-  - Returning recent writes is not guaranteed
-  - Eventual different responses from different nodes at different points in time
-
-Eventual consistency be a problem when users don't receive on a read what they've just written, and they repeat the operation and it is not idempotent. For this, there is the model of strong eventual consistency... which enforces idempotency and commutativeness on all operations... An example of a use case for strong eventual consistency are _conflict-free replicated data types_ (CRDT), which are described in (TODO section here)
-
-
-**Causal Consistency** - [@shen2015causal]
-- Data-centric
+[@shen2015causal]
 "Causal consistency is the strongest form of consistency that satisfies low Latency, defined as the latency less than the maximum wide-area
 delay between replicas [@lloyd2011don]."
 
@@ -425,44 +439,156 @@ TODO Causal+ [@lloyd2011don]
 
 This more relaxing consistency models in general violate crucial correctness properties, compared with strong consistency. A compromise is to allow multiple consistency levels to coexist in the data store, which can be achieved depending on the use case and constraints of the system. An example is to combine both strong and causal consistency for applications with geographically replicated data in distributed data centers [@bravo2021unistore].
 
-**Weak Consistency** - 
-TODO do we need to describe this in the scope of dist sys? This is in the scope of processors(concurrency)! 
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=1.2\textwidth]{images/causal-consistency-flow.pdf}
+  \caption{Schematic communication model between clients and replica cluster nodes for causal consistency. A write can be acknowledged before it is propagated across all cluster nodes. For all causally sequential writes that are committed throughout the cluster, the original order is guaranteed.}
+  \label{fig:causal-consistency-flow}
+\end{figure}
 
-- Data-centric
-"As its name indicates, weak consistency offers the lowest possible ordering guarantee, since it allows data to be written across multiple nodes and always returns the version that the system first finds. This means that there is no guarantee that the system will eventually become consistent."
+\begin{table}[h!]
+    \caption{Fact sheet for causal consistency}
+    \centering
+    \def\arraystretch{1.5}
+    \begin{tabularx}{\textwidth}{>{\bfseries}r | l} 
+        \toprule
+        Consistency & Moderate \\
+        Ordering guarantees & Causal \\
+        Availability & High \\
+        Latency & Moderate \\
+        Throughput & Moderate \\
+        Perspective & Data-centric \\
+        \bottomrule
+    \end{tabularx}
+    \label{table:facts-causal-consistency}
+\end{table}
 
-Only writes that are explicitly synchronized are consistent. Everything else in between is unordered (but at least the same set of operations)
+<!-- Eventual -->
+\paragraph{Eventual Consistency.}
 
-Needs programmers to explicitly synchronize operations, like it is possible with the well-known synchronize keyword in Java
+To achieve a higher level of consistency, synchronization between replicas is usually required, increasing the latency and even rendering the system unavailable if network connections between the replicas fail. For this reason, modern replicated systems that put emphasis on throughput and latency often forgo synchronization altogether; such systems are commonly referred to as _eventually consistent_ [@vogels2009eventually]. Eventual consistency is a weak consistency model that does not guarantee any global ordering, but only _liveness_: intermediate states are allowed to be inconsistent, but after some time, all nodes should converge, returning the same resulting state set of operations. As illustrated in figure \ref{fig:eventual-consistency-flow}, in eventually consistent distributed databases, a replica performs an operation requested by a client locally without any synchronisation with other replicas and immediately acknowledges the client of the response. The operation is passed asynchronously to the other replicas and, in the case of network partitioning, can be pending for a while. The time taken by the replicas to get consistent may or may not be defined, but the model clearly requires that in the absence of updates, all replicas converge toward identical copies. This often requires _conflict resolution_ techniques.
 
-A protocol is said to support weak consistency if:
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=1.2\textwidth]{images/eventual-consistency-flow.pdf}
+  \caption{Schematic communication model between clients and replica cluster nodes for eventual consistency. A write is acknowledged immediately before it is propagated across all cluster nodes. The system remains available even when partitioned by allowing disconnected nodes to converge later when reconnected again.}
+  \label{fig:eventual-consistency-flow}
+\end{figure}
 
-"All accesses to synchronization variables are seen by all processes (or nodes, processors) in the same order (sequentially) - these are synchronization operations. Accesses to critical sections are seen sequentially.
-All other accesses may be seen in different order on different processes (or nodes, processors).
-The set of both read and write operations in between different synchronization operations is the same in each process."
+Because of the possibility of inconsistency, application developers integrating eventually consistent data stores must be explicitly aware of the replicated nature of data items in the store. Compared to strong consistency, the developer must consider the asynchronous behavior and take care that stale data does not render their application unusable, and also make their end users aware of this through clear in-application communication. We describe these considerations in detail in the subsection [@sec:consistency-decisions].
 
-A trivial implementation of this would be replicas kept locally in the client that are not synchronized.
+There are also use cases where eventual consistency is ideal since they do not require any ordering guarantees, for example:
 
+- Non-threaded comments, reviews or ratings,
+- Incremental counters, such as of likes in social media or views on videos.
 
+One of the best known examples of an eventually consistent distributed system is the _Domain Name System_ (DNS). DNS is a hierarchical, highly available system that handles billions of queries every day. The values are cached and replicated across many servers, while it takes some time for the update of a particular record to propagate through DNS servers and clients.
 
+In the database literature, eventually consistent databases are often classified as _BASE_ (Basically Available, Soft-state, Eventually consistent), as opposed to the traditional ACID requirements for _relational database management systems_ (RDBMS) [@pritchett2008base]. _Basically available_ describes that services are available as much as possible, but data may not be consistent. _Soft-state_ describes the convergence behavior, that after a certain amount of time, there is only a certain probability of knowing the actual state. In the past, NoSQL databases were often implemented to meet BASE requirements, hence being eventually consistent. This has changed over time, such as MongoDB supporting strong consistency and also ACID transactions.
 
-\todo{Table summarizing the consistency models, showcasing differences in availability, reliability and safety}
+Eventual consistency can become a problem when operations aren't idempotent and users repeat operations, because they don't receive on a read what they've just written. To mitigate this, another consistency model has been derived from eventual consistency, called _strong eventual consistency_. It enforces _idempotency_ and _commutativeness_ on all operations. By that, strong eventual consistency hardens the liveness property by adding a safety guarantee to the model (see subsection [@sec:safety-reliability] for reference): any nodes that have received the same (probably unordered) intermediate set of updates will be in the same state. An example of a use case for strong eventual consistency are _conflict-free replicated data types_ (CRDT), which are described in subsection [sec:optimistic-replication]. 
 
+\begin{table}[h!]
+    \caption{Fact sheet for eventual consistency}
+    \centering
+    \def\arraystretch{1.5}
+    \begin{tabularx}{\textwidth}{>{\bfseries}r | l} 
+        \toprule
+        Consistency & Lowest \\
+        Ordering guarantees & None \\
+        Availability & High to Highest \\
+        Latency & Low \\
+        Throughput & Highest \\
+        Perspective & Client-centric \\
+        \bottomrule
+    \end{tabularx}
+    \label{table:facts-eventual-consistency}
+\end{table}
+
+<!-- Weak -->
+\paragraph{Weak Consistency.}
+
+As its name indicates, weak consistency offers the lowest possible ordering guarantee, since it allows data to be written across multiple nodes and always returns the version that the system first finds. This means that there is no guarantee that the system will eventually become consistent. Only writes that are explicitly synchronized are consistent. Everything else in between is unordered, but at least the same set of operations on all nodes. This requires programmers to explicitly synchronize operations. Synchronized operations are sequentially consistent, as they are seen by all processes in the same order. Weak consistency with explicit synchronization is uncommon in distributed systems, but a common model in concurrent, multi-threaded programming.
+
+So far, this subsection has briefly introduced consistency models[^more-consistency-models]. Table \ref{table:consistency-models} summarizes all the discussed consistency models. The next subsection explains how tradeoffs are made between consistency, availability, and latency, and how designers of distributed database systems can choose a consistency model (or multiple models) that meets the needs of their applications.
+
+\begin{table}[h!]
+    \caption{Consistency models in descending order of strictness and at the same time in ascending order of availability}
+    \vspace{1ex}
+    \centering
+    $
+    \left\uparrow
+        \rotatebox[origin=c]{90}{Strictness \& Ordering Guarantees}
+        \hspace{2ex}
+      \def\arraystretch{1.5}
+        \begin{tabularx}{0.85\textwidth}{>{\bfseries}l X} 
+            \toprule
+            \multicolumn{2}{c}{\thead{Data-centric}} \\
+            \midrule
+            Strong consistency & After a successful write operation, the value can be read at all nodes immediately \\
+            Sequential consistency & No immediate read, but writes have to be seen in the same order at every node  \\
+            Causal consistency & Only causally related writes must be seen in the same order at every node \\
+            Weak consistency & Only writes that are explicitly synchronized are consistent. Everything else in between is unordered \\
+            \midrule
+            \multicolumn{2}{c}{\thead{Client-centric}} \\
+            \midrule
+            Eventual consistency & After the last update, all replicas all replicas converge toward identical states, eventually becoming consistent, but with no time guarantees \\
+            \bottomrule
+        \end{tabularx}
+        \hspace{2ex}
+    \right\downarrow
+    \rotatebox[origin=c]{-90}{Availability \& Throughput}
+    $
+    \label{table:consistency-models}
+\end{table}
+
+[^more-consistency-models]: In addition to the models discussed in this work, there are other consistency models. Since they do not play an important role for the kind of systems discussed in this work, we will not investigate them further, but provide a uncommented list of some of them: session consistency (e.g. monotonic read, monotonic write, read-my-write, write follows read), bounded staleness, consistent prefix and more.
 
 #### The CAP Theorem
 
 Why can't we always have strong consistency? The CAP theorem (CAP stands for Consistency, Availability and Partition Tolerance), also known as Brewer's Theorem, named after its original author Eric Brewer [@brewer2000towards], asserts that the requirements for strong consistency and high availability cannot be met at the same time and serves as a simplifying explanatory model for consistency decisions that depend on the requirements for the availability of the distributed system in question [@gilbert2002brewer].
 
-TODO draw and show the diagram
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.4\textwidth]{images/CAP.pdf}
+  \caption{Illustration of the CAP theorem}
+  \label{fig:cap}
+\end{figure}
 
-TODO also this https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSLf5rylrAHnisE9SVugRCqKIdJu63fiiWkFXPIydsz_8HmSOp-Afwe0IySCaR_ow3GlUM&usqp=CAU
+
+In this chapter, the three properties of the CAP theorem were already presented. We summarize them here in the context of this theorem:
+
+- **(Strong) Consistency**: The system satisfies linearizability, thus all clients see the same data at the same time.
+- **Availability**: The system operates even in case of node failures (is fault-tolerant), so read and write requests always receive a response.
+- **Partition Tolerance**: The system continues to work even under arbitrary network partitioning.
+
+The theorem states that only two of those properties can apply at the same time. This results in the following classes:
+
+- **CA**: A network problem might render the system unavailable. ... single-node systems like RDBMS... But in distributed systems, this is naturally not the case...
+- **CP**: Strong consistency is guarenteed even in the case of network partitions, but some data may become unavailable.
+- **AP**: The system is available even in the case of network partitions, but potentially returning inconsistent data.
 
 Traditional, non-distributed relational database management systems (RDBMS) support both consistency and availability (as there is either one single node available or none), while they do not support partition tolerance, which is mandatory for distributed databases. 
 \todo{Source for RDBMS, clustering etc}
 
-In general, partition tolerance should always be guaranteed in distributed systems (as described above in the [Types of Possible Faults](#sec:possible-faults)). Therefore, the tradeoff is to be made between consistency and availability in the case of a network partition. Eric Brewer revisited his thoughts on the theorem, stating that tradeoffs are possible for all three dimensions of the theorem: by explicitly handling partitions, both consistency and availability can be optimized [@brewer2012cap].
+In general, partition tolerance should always be guaranteed in distributed systems (as described above in the [Types of Possible Faults](#sec:possible-faults)). Therefore, the trade-off is to be made between consistency and availability in the case of a network partition. Eric Brewer revisited his thoughts on the theorem, stating that trade-offs are possible for all three dimensions of the theorem: by explicitly handling partitions, both consistency and availability can be optimized [@brewer2012cap].
 
-The theorem is often interpreted as a proof that eventually consistent databases have better availability properties than strongly consistent databases. There is sound critic that in practice this is only true under certain circumstances: the reasoning for consistency tradeoffs in practical systems should be made more carefully and strong consistency can be reached in more real-world applications then the CAP theorem would allow [@kleppmann2015critique].
+The theorem is often interpreted as a proof that eventually consistent databases have better availability properties than strongly consistent databases. There is sound critic that in practice this is only true under certain circumstances: the reasoning for consistency trade-offs in practical systems should be made more carefully and strong consistency can be reached in more real-world applications then the CAP theorem would allow [@kleppmann2015critique]. In the next two subsections, we present two critics or extensions to the CAP theorem.
+
+#### The PACELC Theorem
+
+The author of the PACELC theorem criticizes the CAP theorem to just focus on failures [@abadi2012consistency]. They described the PACELC theorem to extend the CAP theorem by another trade-off in the case of normally operating systems with no partitioning failure: In the case of network partitioning (P), the CAP rule still applies, where one must choose between availability (A) and consistency (C). But else (E), when there are no network partitions and the system is operating normally, one still has to choose between latency (L) and consistency (C).
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=1.6\textwidth]{images/pacelc.pdf}
+  \caption{Illustration of the PACELC theorem, showcasing the trade-offs in the case of partitioning and also in the absence of network partitioning}
+  \label{fig:pacelc}
+\end{figure}
+
+The author introduced this theorem to support decision making in the design and implementation of a distributed database system, since consistency decisions must also be made outside of network partitions: the trade-off between consistency and latency is often even more important and arises as soon as a distributed database system introduces replication.
+
+\todo{Further explanation if sufficient time}
 
 #### The CALM Theorem
 
@@ -470,6 +596,31 @@ The CALM theorem (CALM stands for...) is a critic on the CAP theorem that says..
 
 [@hellerstein2019keeping]
 
+#### Deciding for Consistency {#sec:consistency-decisions}
+
+TODO challenges when applying a weaker consistency model, especially eventual consistency (see the subsection about optimistic replication), are on the consuming application side. While a strongly consistent distributed system render itself to the consumer as a single-node system, making it easy for the developer to use it as it's API is clear, stale data and long-running asynchronous behavior must be handled accordingly when talking to an eventual consistent system, rendering the API totally different. Not all use cases are suitable to be built with an eventual consistent system. 
+
+"Hence different systems have different consistency requirements and systems should offer flexibility in how to configure consistency for different kind of operations."
+
+The actual consistency model to decide for depends on the use case of the distributed database system. Therefore, many popular DDBS allow the developers to select the consistency model of their choice by configuration. When deciding for a consistency model, it makes sense to base the decision on the dependability properties that are neccessary for the given use case.
+TODO two examples from above sections, one with high availability, one with high safety (= consistency), e.g. flight systems example (an airplane that does not start when there is a fault is better (no avail. but high safety), while...)
+
+But not only the use case, but also the technical architecture can be an important factor in the decision...
+TODO the paper below, and possible to have strong consistency and still low latency and availability by providing multi-layer consistency models and partitioning etc
+
+Nested implementation of replication to support different consistency layers...
+
+"We presented the first proof rule establishing that a given consistency choice in a replicated database is sufficient to preserve a given
+integrity invariant." [@gotsman2016cause]
+"requesting stronger consistency in too many places may hurt performance, and requesting it in too few places may violate correctness"
+
+A few vendors offer real fine-grained consistency choices to the user... like Cosmos DB
+"With Azure Cosmos DB, developers do not have to settle for extreme consistency choices (strong vs. eventual consistency). It offers 5 well-defined consistency choices - strong, bounded-staleness, session, consistent-prefix and eventual – so you can select the consistency model that is just right for your app."
+
+- Eventual consistency can increase performance dramatically; see for example kubernetes made eventual consistent instead of strong to meet edge-computing requirements [@jeffery2021rearchitecting]
+- Not always neccessary; good system design allows even strong consistent services to work at the edge 
+
+We will discuss the overall cost of replication further in this work in subsection [@sec:cost-of-replication] once we have introduced additional concepts that play a crucial role in deciding on one or more consistency models and replication protocols.
 
 ### Partitioning and Sharding {#sec:partitioning}
 
@@ -501,6 +652,15 @@ TODO more from https://kafka.apache.org/documentation/#georeplication
 
 For geo-replication, a client-centric consistency model is sufficient as not all data 
 
+TODO use and describe the term "availability zones". Maybe draw a diagram: Cluster -> Data Center -> Avail. Zone -> Countries + Continents
+
+Strong consistency is in general a bad choice for geo-replication, as it requires writes to be committed to at least a global majority, reducing latency and availability dramatically. From a use case point of view, strong consistency is oftentimes even obsolete: The geo-replicas accessed by clients need only a fraction of the data of the other replicas most of the times (?). To prepare for disaster recovery, a trade-off between consistency and latency in the non-disaster case needs to be made, and is made on economical risk calculations: what's the cost if stale data is lost forever in the rare case of a disaster? "Within a globally distributed database environment there is a direct relationship between the consistency level and data durability in the presence of a region-wide outage. As you develop your business continuity plan, you need to understand the maximum period of recent data updates the application can tolerate losing when recovering after a disruptive event. The time period of updates that you might afford to lose is known as recovery point objective (RPO)." RPO: "the amount of data that can be lost within a relevant period of time for a company before significant damage occurs"
+Note that use cases exists that actually require strong consistency on a global scale, but they are reduced on a very small subset of the data of the overall system, mostly metadata neccessary to manage and observe the whole system. In this cases, the RPO is 0, which requires strong consistency across geo-replicas
+
+TODO multilevel possible: other consistent choices inside of a cluster then across clusters, and also dependent on the data/content.
+
+
+
 When concerning about service latency, it is always desirable to place service replicas in close proximity to its clients. This allows reducing the request round-trip time and hence the latency experienced by clients
 
 Providing lower latencies to users by serving data from nearby nodes...
@@ -519,11 +679,13 @@ replica.
 - Strong concistency can be a problem
 - Good system design can help (see next subsection) or using another consistency layer [@jeffery2021rearchitecting]
 
-### Cost of Replication
+### Cost of Replication {#sec:cost-of-replication}
 
-As far as we now discussed the benefits of replication for failure management, for Performance enhancements by reducing latency in edge computing and geographically distributed networks, and to increase dependability in general, we need to discuss the _Cost of Replication_. Dependent on the level of fault-tolerance, the consistency decisions and the selected protocol itself, the performance, especially for write operations, can decrease dramatically. We briefly discuss appropriate strategies for a performance-tradeoff mitigation in this case.
+As far as we now discussed the benefits of replication for failure management, for Performance enhancements by reducing latency in edge computing and geographically distributed networks, and to increase dependability in general, we need to discuss the _Cost of Replication_. Dependent on the level of fault-tolerance, the consistency decisions and the selected protocol itself, the performance, especially for write operations, can decrease dramatically. We briefly discuss appropriate strategies for a performance-trade-off mitigation in this case.
 
 Modification on one replica triggers modification on all other replicas --> messaging and acknowledgment of all operations between replicas degrades performane
+
+(So far, we discussed consistency decisions, partial repl., partitioning, geo-repl., multi-layer etc., so we are able to discuss the overall cost and trade-offs and make an educated decision)
 
 - As mentioned, strong concistency can be a problem for performance as with higher cluster sizes, offering higher availability, write request latency
 significantly increases and throughput decreases similarly (TODO refer to evaluation results)
@@ -596,7 +758,7 @@ impact overall system performance.
 
 \todo{Rephrase}
 
-Certain different variations of how to understand a consensus protocol appear in the literature. They differ in the assumed properties of the messaging system, in the type of errors allowed to the processes, and in the notion of what a solution is. Most notable is the differentiation between _consensus protocols for asynchronous and synchronous message-passing systems_. Fischer et al. have proven in the famous _FLP impossibility result_ (called after their authors) that a deterministic consensus algorithm for achieving consensus in a fully asynchronous distributed system is impossible if even a single node crashes in a fail-stop manner [@fischer1985impossibility]. They investigated deterministic protocols that always terminate within a finite number of steps and showed that "every protocol for this problem has the possibility of nontermination, even with only one faulty process." This is based on the failure detection problem discussed earlier in the [subsection on Types of Possible Faults](#sec:possible-faults): in such a system, a crashed process cannot be distinguished from a very slow one.
+Certain different variations of how to understand a consensus protocol appear in the literature. They differ in the assumed properties of the messaging system, in the type of errors allowed to the processes, and in the notion of what a solution is. Most notable is the differentiation between _consensus protocols for asynchronous and synchronous message-passing systems_. Fischer et al. have proven in the famous _FLP impossibility result_ (called after their authors) that a deterministic consensus algorithm for achieving consensus in a fully asynchronous distributed system is impossible if even a single node crashes in a fail-stop manner [@fischer1985impossibility]. They investigated deterministic protocols that always terminate within a finite number of steps and showed that "every protocol for this problem has the possibility of nontermination, even with only one faulty process." This is based on the failure detection problem discussed earlier in subsection [@sec:possible-faults]: in such a system, a crashed process cannot be distinguished from a very slow one.
 
 As pessimistic as this may sound, it can easily be mitigated by adding nondeterminism to a protocol. Bracha et al. consider protocols that may never terminate, "but this would occur with probability 0, and the expected termination time is finite. Therefore, they terminate within finite time with probability 1 under certain assumptions on the behavior of the system" [@bracha1983resilient]. This can be achieved by adding characteristics of randomness to the protocol, such as random retry timeouts for failed messages, or by the application of _unreliable failure detectors_ as in the Chandra–Toueg consensus algorithm [@chandra1996unreliable]. Additionally, adding pseudo-synchronous behavior like in Raft (which is described in detail in the [following section](#sec:raft)), where all messaging goes in rounds by enforcing an enumeration by terms and indexes, removes the initial problem of asynchronous consensus.
 
@@ -619,7 +781,7 @@ Distributed consensus protocols describe a procedure to reach a common agreement
 
 "we apply consensus to ensure reliability and fault tolerance..."
 
-Popular examples for distributed consennsus protocols are [Paxos](#sec:paxos) and [Raft](#sec:raft), the latter being the focus of this work.
+Popular examples for distributed consennsus protocols are Paxos (subsection [@sec:paxos]) and Raft (section [@sec:raft]), the latter being the focus of this work.
 
 Example applications where consensus is needed:
 - Clock synchronisation
@@ -744,9 +906,14 @@ clients;
 same execution result and end up in the same state. 
 [@xiao2020survey]
 
-TODO image from https://arxiv.org/pdf/1904.04098.pdf
-
 TODO cite the slides for the State-Machine Approach for fault-tolerance https://www.inf.ufpr.br/aldri/disc/slides/SD712_lect13.pdf
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=1\textwidth]{images/state-machine.pdf}
+  \caption{Illustration of the messaging between clients and cluster in state-machine replication}
+  \label{fig:state-machine}
+\end{figure}
 
 TODO there are both BFT and CFT state machine replication protocols: 
 "Recent advances in permissioned blockchains [58, 111, 124], firewalls [20, 56], and SCADA systems [9, 92] have shown that Byzantine fault-tolerant (BFT) state-machine replication [106] is not a concept of solely academic interest but a problem of high relevance in practice. [@distler2021byzantine]"
@@ -786,13 +953,13 @@ TODO different use cases then consensus: Not primarily for fault-tolerance, but 
 
 Primary copy server can easily become a bottleneck in the system. It does not scale with the number of nodes and has a detrimental impact especially if faulty behavior appears. What happens if the primary copy server fails? Failure detection mechanisms are required to detect such situations and subsequently select an alternate primary copy server, creating the risk of multiple primary copies when different network partitions occur; a problem that is mitigated in consensus protocols, as described in the corresponding sections.
 
-#### Optimistic Replication
+#### Optimistic Replication {#sec:optimistic-replication}
 
 There are many use cases where the cost of replication is too high when synchronization between nodes in a replica set is required, especially for real-time live collaboration applications or applications that cannot be guaranteed to be online all the time (such as mobile apps). In these cases, the consistency requirements should be attenuated to eventual consistency so that the application can be designed in a non-blocking manner. One approach to solving problems of this scope is _optimistic replication_, as described by Shapiro et al. [@shapiro2005optimistic]. In optimistic replication, any client managing a replicated state is allowed to read or update the local replica at any time.
 
 \begin{figure}[h]
   \centering
-  \includegraphics[width=0.8\textwidth]{images/crdts-optimistic-replication.pdf}
+  \includegraphics[width=0.9\textwidth]{images/crdts-optimistic-replication.pdf}
   \caption{Schematic communication model between the nodes in optimistic replication for a single operation. A write is acknowledged immediately and non-blocking, without synchronization with other nodes. It is then eventually propagated to other nodes. In the event of a write conflict, the conflict is automatically resolved in the background using either a decentralized protocol or a centralized entity. Once the conflict is resolved, the actual agreed value is written back to the node's internal state and acknowledged.}
   \label{fig:crdts-optimistic-replication}
 \end{figure}
@@ -848,6 +1015,7 @@ Several Google systems use Paxos, including the Chubby [@burrows2006chubby] lock
 - original by Leslie Lamport [@lamport1998paxos] and further improvements by himself [@lamport2006fast]
 - although he tried to make it understandable [@lamport2001paxos], it is shown that people of any kind (students, engineers...) still struggle to understand it in its fullest [@ongaro2013raft] 
 - Formally verified using TLA+, as attached to the paper [@lamport2006fast], and also by thirds for Multi-Paxos [@chand2016formal]
+- TLA+ was also invented by Lamport
 - handles fail-stop but not Byzantine failures
 - does it has a reconfiguraion protocol?
 

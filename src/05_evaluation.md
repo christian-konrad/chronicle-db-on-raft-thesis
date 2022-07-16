@@ -10,7 +10,7 @@ evaluate it
 • caution: each result/graph must be discussed! what’s the reason for this peak or why have you ovserved this effect
 -->
 
-In this work, an implementation of the Raft consensus protocol was proposed for replication of ChronicleDB, a high-throughput event store. It has been shown (TODO reference section) that Raft is strongly consistent, so a tradeoff in performance is to be expected. In theory, the larger the number of replicas, the higher the data availability; however, at the same time, the cost of replication (which comes at the expense of performance) increases. This section addresses the evaluation of this implementation, specifically the cost of replication, by quantifying the costs and benefits that come with this approach. The challenge of the implementation is to find an optimal trade-off between the cost of replication and the availability of data.
+In this work, an implementation of the Raft consensus protocol was proposed for replication of ChronicleDB, a high-throughput event store. It has been shown (TODO reference section) that Raft is strongly consistent, so a trade-off in performance is to be expected. In theory, the larger the number of replicas, the higher the data availability; however, at the same time, the cost of replication (which comes at the expense of performance) increases. This section addresses the evaluation of this implementation, specifically the cost of replication, by quantifying the costs and benefits that come with this approach. The challenge of the implementation is to find an optimal trade-off between the cost of replication and the availability of data.
 
 
 TODO measure all of the following dependability properties:

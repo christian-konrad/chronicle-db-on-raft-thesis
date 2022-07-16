@@ -12,7 +12,7 @@ Developed architecture / system design / implementation: 1/3
     - TODO describe that I opted for strong consistency here [@gotsman2016cause]    
     - TODO describe my reasoning for this
     - Reference Calm
-    - if possible (and tradeoff ok), strong consistency is always prefered
+    - if possible (and trade-off ok), strong consistency is always prefered
     - Many other db vendors provide strong consistency (anecdotal proven that it works, TODO reference previous work)
         - Especially with raft or similar protocols
         - Even in high throughput scenarios
@@ -41,6 +41,21 @@ Developed architecture / system design / implementation: 1/3
 
 - TODO describe why strong consistency and finally raft
 - TODO reference criteria from 04a
+- TODO reference CAP and PACELC and describe our trade-offs
+
+TODO "why consistency is the better choice for most databases"
+https://www.cockroachlabs.com/blog/limits-of-the-cap-theorem/
+
+TODO our buffer introduction reduces latency and increases availability; but reduces the consistency from linearizable to sequential (after a write, it can not be immediately read. As the buffer content is not readable, only after a flush, but then on all nodes, it is not eventual consistent, but sequential.)
+
+The actual consistency model to decide for depends on the use case of the distributed database system.
+
+to avoid OOO, which is expensive, linearizability is a must
+
+
+Event sourcing and complex event processing require at least causal consistency and, depending on the use case, causality stretches across all events of a certain event source or stream, requiring at least sequential consistency... (? TODO is that true?)
+
+Aggregations of event properties for idempotent and commutative operations (such as a sum or a mean) do not require strong consistency / can have weaker consistency...
 
 ## Raft Implementations
 
@@ -149,6 +164,8 @@ https://iotdb.apache.org/UserGuide/Master/Cluster/Cluster-Setup.html
 - TODO explain impact of buffer sizes
 - TODO explain similarities with Raft Log Buffer
 - TODO if reasonable, list algos
+- TODO the buffer considerations must be made based on the RPO: The buffer timeout must be smaller than the RPO
+- TODO as the buffer holds data temporarily on a single node (leader), if the leader crashes, this data is lost (so it's not strong consistent)
 
 ### Partitioning using Multi-Raft Groups
 

@@ -47,7 +47,7 @@ https://www.scribbr.co.uk/thesis-dissertation/conclusion/
 
 
 
-The given implementation of the Raft replication protocol has a high cost of replication. With a growing number of replica nodes, the throughput decreases. There are various strategies to address this issue: partitioning strategies (TODO ref to section),... to mention a few. They all come with some level of tradeoffs.
+The given implementation of the Raft replication protocol has a high cost of replication. With a growing number of replica nodes, the throughput decreases. There are various strategies to address this issue: partitioning strategies (TODO ref to section),... to mention a few. They all come with some level of trade-offs.
 
 ## Recommendations
 
@@ -65,6 +65,7 @@ The given implementation of the Raft replication protocol has a high cost of rep
 
 #### Multiple Consistency Levels
 
+- reference CAP and PACELC and describe our trade-offs, and if we could allow users to configure the trade-offs themselvesor 
 - We could limit consensus to critical parts, like creating and evolving an event schema. (All clients agree to simultaneously make the change.), updating meta data and the quorum itself
 - We could also just let database user (= developer) decide
 - We have seen both approaches in other db vendors, as well as fully strong consistently replicated dbs

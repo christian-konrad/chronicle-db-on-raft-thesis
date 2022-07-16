@@ -13,6 +13,8 @@ and Ousterhout in the release paper [@ongaro2013raft] and the dissertation [@ong
 \todo{Use Raft outline from https://onlinelibrary.wiley.com/doi/pdf/10.1002/spe.3048}
 
 - Based on distributed consensus, strong consistent
+- "Raft provides linearizable consistency"
+"Linearizability: a correctness condition for concurrent objects"
 - TODO see and incorporate images of https://www.cs.princeton.edu/courses/archive/fall16/cos418/docs/L13-strong-cap.pdf
 
 - Raft is actually formally proven (TODO reference Proof GitHub Repo)
@@ -29,6 +31,8 @@ TODO Raft is already used in event messaging and logging systems (Kafka, RabbitM
 Why is there a need for another Consensus Protocol which offers equivalent fault-tolerance and performance characteristics as Paxos (does it? Cite proof here)? The main caveat of Paxos is the difficulty to understand the protocol, which makes it a challenge both for work in academia building on Paxos and for developers who want to implement the protocol and adapt it to their use case (see the [previous section on Paxos](#sec:paxos)). This inhibits progress in these areas and hampers discourse. In fact, Raft is a consensus protocol that was explicitly designed as an alternative to the Paxos family of algorithms to solve this understandability issues of how consensus can be achieved.
 
 There are some other main differences in the protocol, which are handled in [Main Differences to Paxos](#sec:raft-vs-paxos).
+
+TODO in essential the same class of protocol as Paxos (state machine consensus). It only adds understandability. In academia/literature, both are oftentimes referenced together or interchangeable when discussing consistency and consensus
 
 ... The author of raft even uses a visual and interactive game to teach the protocol (TODO link)
 - Secret Lives of Data (show images and reference the page)
@@ -79,10 +83,15 @@ See [@garg2010implementing]
 
 ### The Protocol in Detail
 
+"Raft is linearizable (strong consistency) because it handles read/write all by the same leader" https://ieeexplore.ieee.org/document/9458806
+
+TODO original raft is CP (in CAP) and PC/EC (in PACELC)
+
 - leader election, log replication, configuration changes, log compaction
 
 - Messages
 - Message clock synchonisation/enumeration with term:index (TODO reference to (#sec:consensus-protocols))
+    - TODO: is it a logical clock? A hybrid logical clock (HLC)? https://medium.com/geekculture/all-things-clock-time-and-order-in-distributed-systems-hybrid-logical-clock-in-depth-7c645eb03682
 - Random timeout 
 \todo{Reference the random timeout thing from sec consensus-protocols which is one basic characteristic}
 - Log compaction / snapshotting 
@@ -132,6 +141,16 @@ delay between replicas.
 - System rigidity
 - Consensus under load is tricky
 -->
+
+### Client Interaction
+
+From Diss: "Unfortunately, when the consensus literature only addresses the communication between cluster servers,
+it leaves these important issues out. We think this is a mistake. A complete system must interact
+with clients correctly, or the level of consistency provided by the core consensus algorithm will go
+to waste. As we’ve already seen in real Raft-based systems, client interaction can be a major source
+of bugs, but we hope a better understanding of these issues can help prevent future problems."
+
+TODO from diss: Session id to client requests, approaches to avoid possible duplicate requests (due tgo e.g. network problems causing no ack received by client), at-least-once semantics
 
 ### Possible Raft Extensions
 
@@ -183,4 +202,8 @@ TODO if time: DepFast https://tianyin.github.io/pub/depfast-atc.pdf
 #### Leaderless Raft
 
 Lorem ipsum TODO find paper
+
+#### Weakened Consistency Constraints
+
+See https://ieeexplore.ieee.org/document/9458806
 
