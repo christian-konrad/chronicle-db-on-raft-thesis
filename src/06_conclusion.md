@@ -63,6 +63,14 @@ The given implementation of the Raft replication protocol has a high cost of rep
 - As in InfluxDB, having all data replicated with a consensus protocol may be inpractical and slows down the system
 - As others are doing (Apache IoTDB), one could use different protocols for different parts of the implementation, as such for meta data/cluster management, region management, schemas, data itself... Maybe just use raft for meta data and have primary-copy or another approach for the data itself? Perhaps the user should decide this for themselves based on their consistency requirements?
 
+TODO the final consistency model should be decided on
+- use case
+- requirements of the programmer: Complexity of the API (dist sys renders itself like a single node app or do they need to work around stale data?)
+- write vs read heavyness
+- infrastructure capabilities and mitigation possibilities (sharding possible, network partitioning resilience, latency improvements...)
+
+We recommend that you should try to go for strong consistency, apply different discussed techniques (sharding/partitioning, partial replication... etc) and then work your way down the consistency levels until your system satisfies the practical (!) requirements, as theoretical considerations often do not manifest in real world applications. TODO cite again many of the strong consistent but HA and low latency systems we have discussed throughout the work
+
 #### Multiple Consistency Levels
 
 - reference CAP and PACELC and describe our trade-offs, and if we could allow users to configure the trade-offs themselvesor 

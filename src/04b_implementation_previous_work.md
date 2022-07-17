@@ -123,6 +123,24 @@ Specify a minimum ISR size - the partition will only accept writes if the size o
 
 - Some-kind-of Raft
 
+#### Google Spanner
+
+Paxos
+External consistency
+Cloud Spanner is semantically indistinguishable from a single-machine database. 
+Uses TrueTime
+built on Googles infrastructure, therefore even with strong consistency, it is highly available and can even use realtime timestamps. This is only possible due to the fact that Google is in full control of the infrastructure. "Even though it provides such strong guarantees, Cloud Spanner enables applications to achieve performance comparable to databases that provide weaker guarantees (in return for higher performance)."
+
+"Spanner uses the Paxos algorithm as part of its operation to shard (partition) data across up to hundreds of servers.[1] It makes heavy use of hardware-assisted clock synchronization using GPS clocks and atomic clocks to ensure global consistency.[1] TrueTime is the brand name for Google's distributed cloud infrastructure, which provides Spanner with the ability to generate monotonically increasing timestamps in datacenters around the world."
+
+https://cloud.google.com/spanner/docs/true-time-external-consistency#:~:text=FAQ-,What%20consistency%20guarantees%20does%20Cloud%20Spanner%20provide%3F,just%20those%20within%20a%20partition.
+
+99,99958 % availability
+
+https://research.google/pubs/pub39966/
+https://static.googleusercontent.com/media/research.google.com/en//pubs/archive/45855.pdf
+https://www.cockroachlabs.com/blog/spanner-vs-cockroachdb/
+
 #### Fauna
 
 "Why Strong Consistency Matters with Event-driven Architectures"
@@ -183,7 +201,7 @@ Apaache Ratis is the library of choice for the implementation of a replicated ev
 - Eventual
 - https://docs.microsoft.com/en-us/azure/cosmos-db/consistency-levels
 
-"With Azure Cosmos DB, developers do not have to settle for extreme consistency choices (strong vs. eventual consistency). It offers 5 well-defined consistency choices - strong, bounded-staleness, session, consistent-prefix and eventual – so you can select the consistency model that is just right for your app."
+"With Azure Cosmos DB, developers do not have to settle for extreme consistency choices (strong vs. eventual consistency). It offers 5 well-defined consistency choices - strong, bounded-staleness, session, consistent-prefix and eventual – so you can select the consistency model that is just right for your app." [@microsoft2022cosmosconsistency]
 
 - TLA+ spec proven: https://github.com/Azure/azure-cosmos-tla
 - Leslie Lamport co-authoring: https://www.youtube.com/watch?v=kYX6UrY_ooA

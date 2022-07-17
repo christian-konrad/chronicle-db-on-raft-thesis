@@ -302,21 +302,17 @@ Following, a few of those consistency models are discussed, starting with the mo
   \label{fig:consistency-timeline-notation}
 \end{figure}
 
-\todo{Work finished to this point.}
-
-\todo{Rephrase}
-
 \todo{Denote everything mathematically if sufficient time and if it does not unneccessary complexity}
 
 <!-- Strong Consistency -->
 
 \paragraph{Strong Consistency (Linearizability).}
 
-Strong consistency is, from the view of a client, the ideal consistency model: a read request made to any of the nodes of the replica cluster should return the same data. A replicated data store with strong consistency therefore behaves indistinguishably from one running on a single machine. A strong consistency model provides the highest degree of consistency by guaranteeing that all operations on replicated data behave as if they were performed atomically on a single copy of the data. After a successful write operation, the written object is immediately accessible from all nodes at the same time: _what you write is what you will read_[^read-after-write]. A client never sees an uncommitted or partial write. However, this guarantee comes at the cost of lower performance, reliability, and availability compared to weaker consistency models [@attiya1994sequential; @liu2013replication]: Algorithms that guarantee strong consistency properties across replicas are more prone to message delays and render the system vulnerable to network partitions, if not handled properly. Such algorithms do need special strategies to provide partition-tolerance to the cost of availability.
+Strong consistency is, from the view of a client, the ideal consistency model: a read request made to any of the nodes of the replica cluster should return the same data. A replicated data store with strong consistency therefore behaves indistinguishably from one running on a single machine. A strong consistency model provides the highest degree of consistency by guaranteeing that all operations on replicated data behave as if they were performed atomically on a single copy of the data. After a successful write operation, the written object is immediately accessible from all nodes at the same time: _what you write is what you will read_[^read-after-write]. This is illustrated in \ref{fig:consistency-ordering-linearizable}. A client never sees an uncommitted or partial write. However, this guarantee comes at the cost of lower performance, reliability, and availability compared to weaker consistency models [@attiya1994sequential; @liu2013replication]: Algorithms that guarantee strong consistency properties across replicas are more prone to message delays and render the system vulnerable to network partitions, if not handled properly. Such algorithms do need special strategies to provide partition-tolerance to the cost of availability.
 
 [^read-after-write]: For this reason, it is sometimes referred to as _read-after-write consistency_ from a client-centric view.
 
-In the literature, strong consistency is often referred to as _linearizability_. To achieve linearizability, an absolute global time order must be maintained [@lamport1978time]. Each operation must appear to be executed immediately, exactly once, at some point between its invocation and its response [@herlihy1990linearizability]. If a write call returns, the client can be sure that the written data is available throughout the system, just as it would be with a single-node system. Therefore, consistent data stores are easy to use for developers because they do not need to be aware of the differences between the respective replicas of the data store. 
+In the literature, strong consistency is often referred to as _linearizability_. To achieve linearizability, an absolute global time order must be maintained [@lamport1978time]. Each operation must appear to be executed immediately, exactly once, at some point between its invocation and its response [@herlihy1990linearizability]. This is illustrated in the figures \ref{fig:consistency-ordering-linearizable-overlap} and \ref{fig:consistency-ordering-linearizable-write-overlap}. If a write call returns, the client can be sure that the written data is available throughout the system, just as it would be with a single-node system. Therefore, consistent data stores are easy to use for developers because they do not need to be aware of the differences between the respective replicas of the data store. 
 
 Strong consistency is mandatory for use cases with zero tolerance for inconsistent states and strong requirements for real-time ordering guarantees, such as
 
@@ -327,11 +323,11 @@ Strong consistency is mandatory for use cases with zero tolerance for inconsiste
 - Event sourcing,
 - Aviation systems.
 
-\todo{Timeline diagram}
+\todo{Mention 2-phase commits (2PC)}
 
 \begin{figure}[h]
   \centering
-  \includegraphics[width=1.2\textwidth]{images/strong-consistency-flow.pdf}
+  \includegraphics[width=1.5\textwidth]{images/strong-consistency-flow.pdf}
   \caption{Communication model between clients and replica cluster nodes to ensure strong consistency. A write is acknowledged only when it is consistent throughout all cluster nodes, therefore synchronizing the operations.}
   \label{fig:strong-consistency-flow}
 \end{figure}
@@ -379,25 +375,23 @@ The linearizability constraints can be further hardened, resulting in _strict co
 <!-- Sequential -->
 \paragraph{Sequential Consistency.} 
 
-Sequential consistency weakens the constraints of strong consistency by dropping the real-time property. This allows systems to acknowledge a write earlier than it has been accepted by a majority. If a write call returns, it must not neccessarily be available in a subsequent read, but when it is, then the correct order of the operations is guaranteed (sequential) [@attiya1994sequential]. That is, linearizability takes care of time and sequential consistency takes care of program order only.
+<!-- This allows systems to acknowledge a write earlier than it has been accepted by a majority. ?? -->
+
+Sequential consistency weakens the constraints of strong consistency by dropping the real-time property. If a write call returns, it must not neccessarily be available in a subsequent read, but when it is, then the correct order of the write operations of the originating node or process is guaranteed [@attiya1994sequential]. That is, linearizability takes care of time and sequential consistency takes care of program order only. There are two properties defining sequential consistency: first, the writes of one node must appear in the originally executed order (program order) on every node. Second, the order of writes between nodes is not specified, but all nodes must agree on a sequential order (global order) while ensuring program order. This is illustrated in \ref{fig:consistency-ordering-sequential}.
 
 \begin{figure}[h]
   \centering
-  \includegraphics[width=1.2\textwidth]{images/sequential-consistency-flow.pdf}
+  \includegraphics[width=1.5\textwidth]{images/sequential-consistency-flow.pdf}
   \caption{Schematic communication model between clients and replica cluster nodes for sequential consistency. A write can be acknowledged before it is propagated consistently across all cluster nodes. For all successful writes that are committed throughout the cluster, the original order is guaranteed.}
   \label{fig:sequential-consistency-flow}
 \end{figure}
 
-Sequential: 
-"However, note that it does not always necessarily hold true that the specified global ordering is the same as the real-time sequence of execution of each operation."
-Mostly used in practice to achieve a strong level of consistency
-Does not care about realtime properties, as strict consistency, which expects a global ordering by time. This means that all reads at all nodes expose the same order of writes for sequential consistency, but not neccessarily in the absolute order (by timestamps) that clients requested the reads, which is impractical and needs reordering at and between nodes if concurrent writes appear in the wrong order
-(???? sequential is sufficient for our implementation; OOO handling of the event store itself should be more efficient than existing strict consistency mechanisms)
+All reads at all nodes will see the same order of writes to ensure sequential consistency, but not necessarily in the absolute order (by timestamps) in which clients requested the reads, as the latter can often be impractical as it can lead to reordering of operations between nodes when concurrent writes appear in the wrong order. With sequential consistency, programmers must be careful because two successive writes from different nodes (in real time) to the same value can occur in any order, resulting in unexpected overwrites.
 
 \begin{figure}[h]
   \centering
   \includegraphics[width=1.2\textwidth]{images/consistency-ordering-sequential.pdf}
-  \caption{Operation schedule that satisfies the global ordering guarantee of the sequential consistency model.}
+  \caption{Operation schedule that satisfies the global ordering guarantee of the sequential consistency model. The writes of $\textrm{N}_1$ and $\textrm{N}_2$ are seen by $\textrm{N}_3$ in the order of their program execution on the particular nodes, while the order of the interwoven operations does not neccessarily correspond to the real-time sequence. Both $\textrm{N}_3$ and $\textrm{N}_4$ have also agreed on one (partial) global order, while $\textrm{N}_4$ experiences updates faster.}
   \label{fig:consistency-ordering-sequential}
 \end{figure}
 
@@ -418,6 +412,7 @@ Does not care about realtime properties, as strict consistency, which expects a 
     \label{table:facts-sequential-consistency}
 \end{table}
 
+<!-- Causal -->
 \paragraph{Causal Consistency.} 
 
 Only causally related writes must be ordered...
@@ -441,9 +436,23 @@ This more relaxing consistency models in general violate crucial correctness pro
 
 \begin{figure}[h]
   \centering
-  \includegraphics[width=1.2\textwidth]{images/causal-consistency-flow.pdf}
+  \includegraphics[width=1.5\textwidth]{images/causal-consistency-flow.pdf}
   \caption{Schematic communication model between clients and replica cluster nodes for causal consistency. A write can be acknowledged before it is propagated across all cluster nodes. For all causally sequential writes that are committed throughout the cluster, the original order is guaranteed.}
   \label{fig:causal-consistency-flow}
+\end{figure}
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=1.2\textwidth]{images/consistency-ordering-causal-violation.pdf}
+  \caption{Operation schedule that violates causal consistency. As the writes of $\textrm{N}_1$ has already been observed by $\textrm{N}_2$ before overwriting it (assuming that its observation may have triggered the overwrite, thus they are causally related), it must be seen in this order by all subsequent reads of all nodes. Since $\textrm{N}_4$ reads the most recent (the overwriting) value before the overwritten one, it ignores the causal relation and thus violating the properties of causal consistency.}
+  \label{fig:consistency-ordering-causal-violation}
+\end{figure}
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=1.2\textwidth]{images/consistency-ordering-causal.pdf}
+  \caption{Operation schedule that meets the requirements for causal consistency. Since there is no causal relation between the writes of $\textrm{N}_1$ and $\textrm{N}_2$, any order of occurrence of the values in subsequent reads satisfies the properties of causal consistency.}
+  \label{fig:consistency-ordering-causal}
 \end{figure}
 
 \begin{table}[h!]
@@ -466,11 +475,11 @@ This more relaxing consistency models in general violate crucial correctness pro
 <!-- Eventual -->
 \paragraph{Eventual Consistency.}
 
-To achieve a higher level of consistency, synchronization between replicas is usually required, increasing the latency and even rendering the system unavailable if network connections between the replicas fail. For this reason, modern replicated systems that put emphasis on throughput and latency often forgo synchronization altogether; such systems are commonly referred to as _eventually consistent_ [@vogels2009eventually]. Eventual consistency is a weak consistency model that does not guarantee any global ordering, but only _liveness_: intermediate states are allowed to be inconsistent, but after some time, all nodes should converge, returning the same resulting state set of operations. As illustrated in figure \ref{fig:eventual-consistency-flow}, in eventually consistent distributed databases, a replica performs an operation requested by a client locally without any synchronisation with other replicas and immediately acknowledges the client of the response. The operation is passed asynchronously to the other replicas and, in the case of network partitioning, can be pending for a while. The time taken by the replicas to get consistent may or may not be defined, but the model clearly requires that in the absence of updates, all replicas converge toward identical copies. This often requires _conflict resolution_ techniques.
+To achieve a higher level of consistency, synchronization between replicas is usually required, increasing the latency and even rendering the system unavailable if network connections between the replicas fail. For this reason, modern replicated systems that put emphasis on throughput and latency often forgo synchronization altogether; such systems are commonly referred to as _eventually consistent_ [@vogels2009eventually]. Eventual consistency is a weak consistency model that does not guarantee any global ordering, but only _liveness_: intermediate states are allowed to be inconsistent, but after some time, all nodes should converge, returning the same resulting state set of operations. This is illustrated in \ref{fig:consistency-ordering-eventual}. As illustrated in figure \ref{fig:eventual-consistency-flow}, in eventually consistent distributed databases, a replica performs an operation requested by a client locally without any synchronisation with other replicas and immediately acknowledges the client of the response. The operation is passed asynchronously to the other replicas and, in the case of network partitioning, can be pending for a while. The time taken by the replicas to get consistent may or may not be defined, but the model clearly requires that in the absence of updates, all replicas converge toward identical copies. This often requires _conflict resolution_ techniques.
 
 \begin{figure}[h]
   \centering
-  \includegraphics[width=1.2\textwidth]{images/eventual-consistency-flow.pdf}
+  \includegraphics[width=1.5\textwidth]{images/eventual-consistency-flow.pdf}
   \caption{Schematic communication model between clients and replica cluster nodes for eventual consistency. A write is acknowledged immediately before it is propagated across all cluster nodes. The system remains available even when partitioned by allowing disconnected nodes to converge later when reconnected again.}
   \label{fig:eventual-consistency-flow}
 \end{figure}
@@ -486,7 +495,14 @@ One of the best known examples of an eventually consistent distributed system is
 
 In the database literature, eventually consistent databases are often classified as _BASE_ (Basically Available, Soft-state, Eventually consistent), as opposed to the traditional ACID requirements for _relational database management systems_ (RDBMS) [@pritchett2008base]. _Basically available_ describes that services are available as much as possible, but data may not be consistent. _Soft-state_ describes the convergence behavior, that after a certain amount of time, there is only a certain probability of knowing the actual state. In the past, NoSQL databases were often implemented to meet BASE requirements, hence being eventually consistent. This has changed over time, such as MongoDB supporting strong consistency and also ACID transactions.
 
-Eventual consistency can become a problem when operations aren't idempotent and users repeat operations, because they don't receive on a read what they've just written. To mitigate this, another consistency model has been derived from eventual consistency, called _strong eventual consistency_. It enforces _idempotency_ and _commutativeness_ on all operations. By that, strong eventual consistency hardens the liveness property by adding a safety guarantee to the model (see subsection [@sec:safety-reliability] for reference): any nodes that have received the same (probably unordered) intermediate set of updates will be in the same state. An example of a use case for strong eventual consistency are _conflict-free replicated data types_ (CRDT), which are described in subsection [sec:optimistic-replication]. 
+Eventual consistency can become a problem when operations aren't idempotent and users repeat operations, because they don't receive on a read what they've just written. To mitigate this, another consistency model has been derived from eventual consistency, called _strong eventual consistency_. It enforces _idempotency_ and _commutativeness_ on all operations. By that, strong eventual consistency hardens the liveness property by adding a safety guarantee to the model (see subsection [@sec:safety-reliability] for reference): any nodes that have received the same (probably unordered) intermediate set of updates will be in the same state. An example of a use case for strong eventual consistency are _conflict-free replicated data types_ (CRDT), which are described in subsection [@sec:optimistic-replication]. 
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=1.2\textwidth]{images/consistency-ordering-eventual.pdf}
+  \caption{Operation schedule for eventual consistency. One node is partitioned from the others, returning an inconsistent, outdated state in between. When reconnected, the state of the partition converges and eventually becomes consistent again.}
+  \label{fig:consistency-ordering-eventual}
+\end{figure}
 
 \begin{table}[h!]
     \caption{Fact sheet for eventual consistency}
@@ -510,6 +526,24 @@ Eventual consistency can become a problem when operations aren't idempotent and 
 
 As its name indicates, weak consistency offers the lowest possible ordering guarantee, since it allows data to be written across multiple nodes and always returns the version that the system first finds. This means that there is no guarantee that the system will eventually become consistent. Only writes that are explicitly synchronized are consistent. Everything else in between is unordered, but at least the same set of operations on all nodes. This requires programmers to explicitly synchronize operations. Synchronized operations are sequentially consistent, as they are seen by all processes in the same order. Weak consistency with explicit synchronization is uncommon in distributed systems, but a common model in concurrent, multi-threaded programming.
 
+\begin{table}[h!]
+    \caption{Fact sheet for weak consistency}
+    \centering
+    \def\arraystretch{1.5}
+    \begin{tabularx}{\textwidth}{>{\bfseries}r | X} 
+        \toprule
+        Consistency & Lowest to None \\
+        Ordering guarantees & Only explicitly synchronized operations (sequential), else none \\
+        Availability & High \\
+        Latency & Low to Lowest \\
+        Throughput & Highest \\
+        Perspective & Data-centric \\
+        \bottomrule
+    \end{tabularx}
+    \label{table:facts-weak-consistency}
+\end{table}
+
+
 So far, this subsection has briefly introduced consistency models[^more-consistency-models]. Table \ref{table:consistency-models} summarizes all the discussed consistency models. The next subsection explains how tradeoffs are made between consistency, availability, and latency, and how designers of distributed database systems can choose a consistency model (or multiple models) that meets the needs of their applications.
 
 \begin{table}[h!]
@@ -532,7 +566,7 @@ So far, this subsection has briefly introduced consistency models[^more-consiste
             \midrule
             \multicolumn{2}{c}{\thead{Client-centric}} \\
             \midrule
-            Eventual consistency & After the last update, all replicas all replicas converge toward identical states, eventually becoming consistent, but with no time guarantees \\
+            Eventual consistency & After the last update, all replicas all replicas converge toward identical states, eventually becoming consistent, but with no time and ordering guarantees \\
             \bottomrule
         \end{tabularx}
         \hspace{2ex}
@@ -555,23 +589,23 @@ Why can't we always have strong consistency? The CAP theorem (CAP stands for Con
   \label{fig:cap}
 \end{figure}
 
+\todo{Work finished to this point.}
 
-In this chapter, the three properties of the CAP theorem were already presented. We summarize them here in the context of this theorem:
+In this chapter, the three properties of the CAP theorem have already been presented. We summarize them here in the context of this theorem:
 
 - **(Strong) Consistency**: The system satisfies linearizability, thus all clients see the same data at the same time.
 - **Availability**: The system operates even in case of node failures (is fault-tolerant), so read and write requests always receive a response.
-- **Partition Tolerance**: The system continues to work even under arbitrary network partitioning.
+- **Partition Tolerance**: The system continues to work even under arbitrary network partitioning. This is a mandatory requirement in distributed systems.
 
 The theorem states that only two of those properties can apply at the same time. This results in the following classes:
 
-- **CA**: A network problem might render the system unavailable. ... single-node systems like RDBMS... But in distributed systems, this is naturally not the case...
+- **CA**: A network problem might render the system unavailable. Not suitable for any distributed system. Traditional RDBMS fall under this class.
 - **CP**: Strong consistency is guarenteed even in the case of network partitions, but some data may become unavailable.
 - **AP**: The system is available even in the case of network partitions, but potentially returning inconsistent data.
 
-Traditional, non-distributed relational database management systems (RDBMS) support both consistency and availability (as there is either one single node available or none), while they do not support partition tolerance, which is mandatory for distributed databases. 
-\todo{Source for RDBMS, clustering etc}
+This classes reduce the trade-off between availability and consistency to strict binary terms, when in fact, as the various consistency models show, the trade-off is gradual in nature. 
 
-In general, partition tolerance should always be guaranteed in distributed systems (as described above in the [Types of Possible Faults](#sec:possible-faults)). Therefore, the trade-off is to be made between consistency and availability in the case of a network partition. Eric Brewer revisited his thoughts on the theorem, stating that trade-offs are possible for all three dimensions of the theorem: by explicitly handling partitions, both consistency and availability can be optimized [@brewer2012cap].
+In general, partition tolerance should always be guaranteed in distributed systems (as described in section [@sec:possible-faults]). Therefore, the trade-off is to be made between consistency and availability in the case of a network partition. Eric Brewer revisited his thoughts on the theorem, stating that trade-offs are possible for all three dimensions of the theorem: by explicitly handling partitions, both consistency and availability can be optimized [@brewer2012cap]. This gives credit to the gradual nature of the trade-off in consistency models.
 
 The theorem is often interpreted as a proof that eventually consistent databases have better availability properties than strongly consistent databases. There is sound critic that in practice this is only true under certain circumstances: the reasoning for consistency trade-offs in practical systems should be made more carefully and strong consistency can be reached in more real-world applications then the CAP theorem would allow [@kleppmann2015critique]. In the next two subsections, we present two critics or extensions to the CAP theorem.
 
@@ -598,29 +632,31 @@ The CALM theorem (CALM stands for...) is a critic on the CAP theorem that says..
 
 #### Deciding for Consistency {#sec:consistency-decisions}
 
-TODO challenges when applying a weaker consistency model, especially eventual consistency (see the subsection about optimistic replication), are on the consuming application side. While a strongly consistent distributed system render itself to the consumer as a single-node system, making it easy for the developer to use it as it's API is clear, stale data and long-running asynchronous behavior must be handled accordingly when talking to an eventual consistent system, rendering the API totally different. Not all use cases are suitable to be built with an eventual consistent system. 
+In order to decide on a consistency model, several factors must be taken into account. The actual consistency model to decide for depends on the use case of the distributed database system. Therefore, many popular DDBS allow the developers to select the consistency model of their choice by configuration. When deciding for a consistency model, it makes sense to base the decision on the dependability properties that are neccessary for the given use case (cf. the bank transfer example in subsection [@sec:safety-reliability]).
 
-"Hence different systems have different consistency requirements and systems should offer flexibility in how to configure consistency for different kind of operations."
+There are even attempts to formally describe the consistency model needs at the level of operations: Gotsman et al. propose a proof rule for determining the consistency guarantees for different operations on a replicated database that are sufficient to meet given data integrity invariants [@gotsman2016cause].
 
-The actual consistency model to decide for depends on the use case of the distributed database system. Therefore, many popular DDBS allow the developers to select the consistency model of their choice by configuration. When deciding for a consistency model, it makes sense to base the decision on the dependability properties that are neccessary for the given use case.
-TODO two examples from above sections, one with high availability, one with high safety (= consistency), e.g. flight systems example (an airplane that does not start when there is a fault is better (no avail. but high safety), while...)
+\paragraph{Challenges of weaker consistency.}
 
-But not only the use case, but also the technical architecture can be an important factor in the decision...
-TODO the paper below, and possible to have strong consistency and still low latency and availability by providing multi-layer consistency models and partitioning etc
+When applying a weaker consistency model, especially eventual consistency (cf. section [@sec:optimistic-replication]), challenges arise on the consuming application side. While a strongly consistent distributed system is similar to a single-node system for the consumer and makes it easy for the developer to use because its API is clear, stale data and long-running asynchronous behavior must be handled appropriately when talking to an eventual consistent system, which makes it a completely different API. Consequently, eventual consistency is not suitable for all use cases. 
 
-Nested implementation of replication to support different consistency layers...
+\paragraph{Constantly review decisions.}
 
-"We presented the first proof rule establishing that a given consistency choice in a replicated database is sufficient to preserve a given
-integrity invariant." [@gotsman2016cause]
-"requesting stronger consistency in too many places may hurt performance, and requesting it in too few places may violate correctness"
+When stronger consistency models increase the latency of a system in an unacceptable way and there are no other ways to mitigate this, eventual consistency may be considered. It can dramatically increase the performance of a system, but it must fit the use cases of the system and its applications, and it means additional work for developers. At least, it is worth questioning again and again whether strong consistency is really mandatory: even popular systems like Kubernetes undergo this process, as current research seeks to apply eventual consistency to meet edge-computing requirements [@jeffery2021rearchitecting]. At the same time, systems that have originally been eventually consistent could also benefit from re-architecting into stronger consistency to be easier to use and understand for both users and developers, as was the case with AWS S3, as we will show later in section [@sec:cost-of-replication]. In essence, it is worthwhile to constantly challenge applied consistency models as use cases change or new ones are added.
 
-A few vendors offer real fine-grained consistency choices to the user... like Cosmos DB
-"With Azure Cosmos DB, developers do not have to settle for extreme consistency choices (strong vs. eventual consistency). It offers 5 well-defined consistency choices - strong, bounded-staleness, session, consistent-prefix and eventual – so you can select the consistency model that is just right for your app."
+\paragraph{Let the user decide.}
 
-- Eventual consistency can increase performance dramatically; see for example kubernetes made eventual consistent instead of strong to meet edge-computing requirements [@jeffery2021rearchitecting]
-- Not always neccessary; good system design allows even strong consistent services to work at the edge 
+When deciding on a consistency model for a distributed database system, it is important to recognize that different applications built on top of the database will themselves have different consistency requirements, so it may be a good idea to provide multiple consistency models and flexibility in configuring these models for different types of operations in a database system. Many popular database system vendors allow their users to choose for the consistency model of their choice, even at the operations level. Some of those vendors offer true fine-grained consistency options, such as Microsoft Azure Cosmos DB, which offers even 5 models with gradually decreasing consistency constraints [@microsoft2022cosmosconsistency].
 
-We will discuss the overall cost of replication further in this work in subsection [@sec:cost-of-replication] once we have introduced additional concepts that play a crucial role in deciding on one or more consistency models and replication protocols.
+\paragraph{Influence of the infrastructure and overall architecture.}
+
+Not only the use case, but also the capabilities of the infrastructure the system will be deployed onto and the overall technical architecture pla an important factor in the decision. Under certain circumstances, it is possible to provide high levels of consistency and yet low latency and availability, e.g., by using multiple or even nested layers of different consistency models and intelligent partitioning techniques.
+
+The critique of the CAP theorem presented in the previous subsections allows for a more deliberate choice of consistency in practical systems, since several other properties can affect the actual requirements for consistency and dependability, often even more than the original theoretical properties of the CAP theorem. As an example, Google's distributed _NewSQL_ database system Spanner is in theory a CP class system [@corbett2013spanner]. It's design supports strong consistency with realtime clocks. In practice, however, things are different: given that the database is proprietary and runs on Google's own infrastructure, Google is in full control of every aspect of the system (including the clocks). The company can employ additional proactive strategies to mitigate network issues (such as predictive maintenance) and to reduce latency in Google's extremely widespread data center architecture. In addition, intelligent sharding techniques have been deployed (we will discuss partitioning and sharding in the following section [@sec:partitioning]) that take advantage of this data center architecture. As a result, the system is highly available in practice (records to date even show availability of more than five nines (99.999 %) at the time of writing), and manifested network partitions are extremely rare. Eric Brewer, the author of the CAP theorem and now (at the time of writing) VP of infrastracture at Google, even claims that Spanner is technically CP but effectively CA [@brewer2017spanner]. We'll look at Spanner in more detail in section [@sec:previous-work]. It is important to realize that this is not possible (at least at this scale) with open, self-managed distributed databases, or generally with systems on smaller, less complex infrastructures, as it is always a question of overall economic efficiency.
+
+In addition, the actual choice of a replication protocol adds another layer of considerations that must be factored into the decision. We will discuss the overall _cost of replication_ further in this work in subsection [@sec:cost-of-replication] once we have introduced additional concepts that play a crucial role in deciding on one or more consistency models and replication protocols.
+
+As a rule of thumb, the more tightly coupled the replicated database system and infrastructure, the easier it is to ensure strong consistency without compromising latency and availability.
 
 ### Partitioning and Sharding {#sec:partitioning}
 
