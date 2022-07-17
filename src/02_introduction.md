@@ -38,8 +38,8 @@ Fortunately, several replication algorithms have already been proposed to achiev
 
 This brings us to the subject of this thesis. We try to find and evaluate an replication algorithm that has the desirable performance properties for a distributed event store with defined dependability requirements. To find such an algorithm, we use an explorative research approach including both quantitative and qualitative methods to discover the possible solution space:
 
-- Identification of a consistency model suitable for an event store with a specific set of dependability requirements and differentiation from other consistency models including a detailed discussion of the advantages and disadvantages of the models in question.
-- Identification and justification of a replication protocol suitable for an event store that satisfies the characteristic requirements of the selected consistency model, including a differentiation from other replication techniques.
+- Identification of consistency models suitable for an event store with a specific set of dependability requirements and differentiation from other consistency models including a detailed discussion of the advantages and disadvantages of the models in question.
+- Identification and justification of a replication protocol suitable for an event store that satisfies the characteristic requirements of the selected consistency models, including a differentiation from other replication techniques.
 - Investigation and quantitative analysis of the performance trade-off of an implementation of the chosen replication protocol in an event store to meet the given dependability requirements, including fault-tolerance and horizontal scalability, compared with the expected trade-off, as well as an examination of the dependability properties themselves.
 
 Additionally, the results of this work serve as a plausible grounded theory about providing such a replication layer, to build new hypotheses and opportunities on. Therefore, we answer the following research questions:
@@ -51,7 +51,7 @@ Additionally, the results of this work serve as a plausible grounded theory abou
 
 Positive findings from this research work would provide worthwhile benefits to distributed event stores:
 
-- The impact of the application of different consistency models and replication protocols to event stores is known and described and helps both academics and developers to decide which protocol to go for, depending on their use cases and requirements.
+- The impact of the application of different consistency models and replication protocols to event stores is known and described and helps both academics and developers to decide which protocols to go for, depending on their use cases and requirements.
 
 - Users can operate event stores in an edge-cloud architecture, leveraging the different characteristics of embedded, single-node vs. replicated, multi-node clusters in different places of their system design, to be able to deal with the high throughputs occuring in heavily distributed IoT systems.
 
@@ -67,7 +67,7 @@ To the best knowledge, this work is the first attempt published in academia focu
 
 In this thesis we discuss and analyse several different replication algorithms to find the one that fits our requirements for an event store. The contributions are:
 
-- A thorough discussion of consistency models and replication protocols for an edge-cloud ready event store with the capability to ingest very high throughputs. A state-of-the-art replication protocol is then selected to handle this requirements in a future-proof way.
+- A thorough discussion of consistency models and replication protocols for a distributed event store ready for the edge-cloud and capable of processing very high data throughput. A state-of-the-art replication protocol is then selected to handle this requirements in a future-proof way.
 
 - A systematic review of previous implementations of replication protocols, focusing on decisions related to consistency, dependability, levels of data replicated, and the replication protocols chosen.
 

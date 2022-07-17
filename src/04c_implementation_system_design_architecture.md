@@ -28,6 +28,24 @@ Developed architecture / system design / implementation: 1/3
 
 \todo{list Algorithms (heartbeat, load balancer, partitioning...) like in https://software.imdea.org/~gotsman/papers/unistore-atc21.pdf}
 
+TODO discuss here, and also at the end when we evaluate our impl of executableMessages:
+- append-only computing by Pat Helland 2015: We have immutable aggregates: Time series data + domain events. TODO read that paper
+ACID - Associative, Commutative, Idempotent, Distributed (CALM):
+- Validate our operations if they are
+- Possible to apply eventual consistency?
+- insertEvent() could apply: it inserts this one specific event with the given timestamp. But there is no mechanism in place that identifies unique events, there we could add the same event twice at the same timestamp
+- raft log is idempotent ?: every operation (e.g. insertEvents) is unique due to term:index, and order of execution does not matter (is commutative) for inserts and also for createAggregates, but it matters when we consider deletes (and queries?). Therefore, we should have at least causal consistency (?)
+- But even if inserts alone are communitative, OOO is too expensive. 
+- In case the event store would only allow for inserting events, it would be monotonic
+- So it depends on which set of operations we allow 
+- We could model delete operations differently, so they could also be monotonic (= everything is an insert), by just logging them. The tree would then consist of both addEvent and deleteEvent items, and just by observing its final state we know which events are actually there. (It seems like this may does not make sense in our use cases)
+- Also see https://www.slideshare.net/SusanneBraun2/keeping-calm-konsistenz-in-verteilten-systemen-leichtgemacht
+- Also describe the trivial, derived monotonic aggregates thing
+- TODO reference these in the conclusion. We won't build an eventual consistent prototype. But it could make sense. It can be built without any coordination mechanism between nodes if we agree for them to only use monotonic operations.
+- the ohlc of a stock in a certain timeframe is a trivial derived aggregate that is suitable for our example
+- insertEvent is monotonic. Aggregates are also trivial, derived monotonic aggregates -> can use eventual consistency
+- but addStream, cluster management, metadata etc. must be strong consistent! (like InfluxDB did it) -> this is not monotonic (see CALM)
+
 ## Library Decision Considerations
 
 - Building it from ground up makes sense if you want full control and adjust the protocol to perfectly fit your use case (TODO find and cite the paper/tool that mentioned that, it must have been mongo or couchbase)

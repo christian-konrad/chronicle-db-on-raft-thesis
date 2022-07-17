@@ -38,9 +38,7 @@ With an increasing number of users served, the number of nodes in a horizontally
 
 \todo{NTH: show chart and math for near-linear scalability if time}
 
-\todo{Chart: vertical vs horicontal scalability (i.e. the zeebe one)}
-
-Chart from https://www.liquidweb.com/blog/horizontal-vs-vertical-scaling/
+\todo{Charts: vertical vs horicontal scalability (i.e. the zeebe one)}
 
 Opting in for horizontal scaling is beneficial for large-scale cloud and edge applications as it is easier to add new nodes to a system instead of scaling up existing ones, even if the initial costs are higher as the infrastructure and algorithms must be implemented in first place.
 
@@ -377,7 +375,9 @@ The linearizability constraints can be further hardened, resulting in _strict co
 
 <!-- This allows systems to acknowledge a write earlier than it has been accepted by a majority. ?? -->
 
-Sequential consistency weakens the constraints of strong consistency by dropping the real-time property. If a write call returns, it must not neccessarily be available in a subsequent read, but when it is, then the correct order of the write operations of the originating node or process is guaranteed [@attiya1994sequential]. That is, linearizability takes care of time and sequential consistency takes care of program order only. There are two properties defining sequential consistency: first, the writes of one node must appear in the originally executed order (program order) on every node. Second, the order of writes between nodes is not specified, but all nodes must agree on a sequential order (global order) while ensuring program order. This is illustrated in \ref{fig:consistency-ordering-sequential}.
+Sequential consistency weakens the constraints of strong consistency[^linearizability-contains-sequential] by dropping the real-time property. If a write call returns, it must not neccessarily be available in a subsequent read, but when it is, then the correct order of the write operations of the originating node or process is guaranteed [@attiya1994sequential]. That is, linearizability takes care of time and sequential consistency takes care of program order only. There are two properties defining sequential consistency: first, the writes of one node must appear in the originally executed order (program order) on every node. Second, the order of writes between nodes is not specified, but all nodes must agree on a sequential order (global order) while ensuring program order. This is illustrated in \ref{fig:consistency-ordering-sequential}.
+
+[^linearizability-contains-sequential]: It is easy to show that a schedule of operations that satisfies linearizability also satisfies sequential consistency. 
 
 \begin{figure}[h]
   \centering
@@ -415,24 +415,23 @@ All reads at all nodes will see the same order of writes to ensure sequential co
 <!-- Causal -->
 \paragraph{Causal Consistency.} 
 
-Only causally related writes must be ordered...
+Causal consistency relaxes the constraints of sequential consistency by removing the requirement for global order[^sequential-contains-causal]. A system is causally consistent if all operations that are _causally dependent_ must be seen in the same order on all nodes. All other (concurrent) operations can appear in any arbitrary order at the nodes, as well as the sets of causally related operations, and nodes do not need to agree on a global ordering. Causality is therefore a partial ordering on the set of all operations.
 
-[@shen2015causal]
-"Causal consistency is the strongest form of consistency that satisfies low Latency, defined as the latency less than the maximum wide-area
-delay between replicas [@lloyd2011don]."
+[^sequential-contains-causal]: It is easy to show that a schedule of operations that satisfies sequential consistency also satisfies causal consistency. 
 
-"Causal Consistency means that all operations that are causally related must be serialized in the same order on all replicas. An operation O is causally dependent on an operation P if one or more of the following conditions hold:
+An operation $b$ is causally dependent on an operation $a$ (denoted by $a \to b$) if one or more of the following conditions are met [@lamport1978time]:
 
-O and P were both triggered by the same process and P was chronologically prior to O.
-O is a read, P is a write, and O read the result of P.
-O is causally dependent on an operation X, which in turn is causally dependent on P (transitivity)."
+\begin{enumerate}[label=(\arabic*)]
+  \item $a$ and $b$ were both triggered on the same node and $a$ was chronologically prior to $b$.
+  \item $a$ is a write, $b$ is a read, and $b$ reads the result of $a$.
+  \item (Transitivity) $c$ is causally dependent on an operation $b$, which in turn is causally dependent on $a$: If $a \to b$ and $b \to c$ then $a \to c$.
+\end{enumerate}
 
-"Causal consistency is a model in which a sequential ordering is maintained only between requests that have a causal dependency. Two requests A and B have a causal dependency if at least one of the following two conditions is achieved: (1) both A and B are executed on a single thread and the execution of one precedes the other in time; (2) B reads a value that has been written by A. Moreover, this dependency is transitive, in the sense that, if A and B have a causal dependency, and B and C have a causal dependency, then A and C also have a causal dependency [56, 60]. Thus, in a scenario of an always-available storage system in which requests have causal dependencies, a consistency level stricter than that provided by the causal model cannot be achieved due to trade-offs of the CAP Theorem [5, 48]."
+Two operations $a$ and $b$ are said to be concurrent if $a \not\to b$ and $b \not\to a$.
 
-TODO Causal+ [@lloyd2011don]
-"able to leverage the existence of multiple replicas to distribute the load of read requests"
+Causal consistency is mostly studied and used in geo-replication (see subsection [@sec:geo-replication]) and partial replication, as it still satisfies a latency less than the maximum wide-area roundtrip delay between replicas [@shen2015causal], and it only cares about a partial ordering that is of interest for the client or user: users are often only interested in a (causally related) subset of events, e.g., those that happened close to their location. An example to illustrate this are social media posts: when a user posts a status update and another user reads and replies to that update, there is a causal order on the two updates, and they should appear in that order to other (subscribed) users. However, when other users send totally unrelated updates, the order in that these updates appear is not important (at least from a consistency point of view). Another example are stock markets: operations on a a single stock (as a reaction to a stock value change) must be consistently ordered, while changes across different, independent stocks ca be seen in different orders.
 
-This more relaxing consistency models in general violate crucial correctness properties, compared with strong consistency. A compromise is to allow multiple consistency levels to coexist in the data store, which can be achieved depending on the use case and constraints of the system. An example is to combine both strong and causal consistency for applications with geographically replicated data in distributed data centers [@bravo2021unistore].
+There are some extensions to harden causal consistency slightly, namely _causal+_ (or _causal consistency with convergent conflict handling_), which leverages the existence of multiple replicas to distribute the load of read requests [@lloyd2011don], and realtime causal consistency (RTC). 
 
 \begin{figure}[h]
   \centering
@@ -475,7 +474,7 @@ This more relaxing consistency models in general violate crucial correctness pro
 <!-- Eventual -->
 \paragraph{Eventual Consistency.}
 
-To achieve a higher level of consistency, synchronization between replicas is usually required, increasing the latency and even rendering the system unavailable if network connections between the replicas fail. For this reason, modern replicated systems that put emphasis on throughput and latency often forgo synchronization altogether; such systems are commonly referred to as _eventually consistent_ [@vogels2009eventually]. Eventual consistency is a weak consistency model that does not guarantee any global ordering, but only _liveness_: intermediate states are allowed to be inconsistent, but after some time, all nodes should converge, returning the same resulting state set of operations. This is illustrated in \ref{fig:consistency-ordering-eventual}. As illustrated in figure \ref{fig:eventual-consistency-flow}, in eventually consistent distributed databases, a replica performs an operation requested by a client locally without any synchronisation with other replicas and immediately acknowledges the client of the response. The operation is passed asynchronously to the other replicas and, in the case of network partitioning, can be pending for a while. The time taken by the replicas to get consistent may or may not be defined, but the model clearly requires that in the absence of updates, all replicas converge toward identical copies. This often requires _conflict resolution_ techniques.
+To achieve a higher level of consistency, synchronization between replicas is usually required, increasing the latency and even rendering the system unavailable if network connections between the replicas fail. For this reason, modern replicated systems that put emphasis on throughput and latency often forgo synchronization altogether; such systems are commonly referred to as _eventually consistent_ [@vogels2009eventually]. Eventual consistency is a weak consistency model that does not guarantee any global ordering, but only _liveness_: intermediate states are allowed to be inconsistent, but after some time, in the absence of updates, all nodes should converge, returning the same resulting state set of operations [@terry1994session]. This is illustrated in \ref{fig:consistency-ordering-eventual}. As illustrated in figure \ref{fig:eventual-consistency-flow}, in eventually consistent distributed databases, a replica performs an operation requested by a client locally without any synchronisation with other replicas and immediately acknowledges the client of the response. The operation is passed asynchronously to the other replicas and, in the case of network partitioning, can be pending for a while. The time taken by the replicas to get consistent may or may not be defined, but the model clearly requires that in the absence of updates, all replicas converge toward identical copies. This often requires _conflict resolution_ techniques.
 
 \begin{figure}[h]
   \centering
@@ -543,7 +542,6 @@ As its name indicates, weak consistency offers the lowest possible ordering guar
     \label{table:facts-weak-consistency}
 \end{table}
 
-
 So far, this subsection has briefly introduced consistency models[^more-consistency-models]. Table \ref{table:consistency-models} summarizes all the discussed consistency models. The next subsection explains how tradeoffs are made between consistency, availability, and latency, and how designers of distributed database systems can choose a consistency model (or multiple models) that meets the needs of their applications.
 
 \begin{table}[h!]
@@ -589,8 +587,6 @@ Why can't we always have strong consistency? The CAP theorem (CAP stands for Con
   \label{fig:cap}
 \end{figure}
 
-\todo{Work finished to this point.}
-
 In this chapter, the three properties of the CAP theorem have already been presented. We summarize them here in the context of this theorem:
 
 - **(Strong) Consistency**: The system satisfies linearizability, thus all clients see the same data at the same time.
@@ -624,13 +620,82 @@ The author introduced this theorem to support decision making in the design and 
 
 \todo{Further explanation if sufficient time}
 
-#### The CALM Theorem
+#### The CALM Theorem {#sec:calm}
 
-The CALM theorem (CALM stands for...) is a critic on the CAP theorem that says...
+The CALM theorem (Consistency As Logical Monotonicity) arose from a critique of the CAP theorem. It helps to understand whether a distributed problem can be solved with a strong or weak consistency model. While a strong consistency model always requires some form of coordination between nodes which increases latency, a weak model such as eventual consistency can eschew coordination entirely, but often at the cost of violating correctness properties. The CALM theorem allows the system designer to decide whether a weak consistency model can be applied without compromising correctness by considering possible monotonic properties. The theorem says "a problem has a consistent, coordination-free distributed implementation if and only if it is monotonic [@hellerstein2020keeping]".
 
-[@hellerstein2019keeping]
+Monotonicity is defined as follows: A problem $P$ is monotonic if for any input sets $S$, $T$ where $S \subseteq T$, $P(S) \subseteq P(T)$. Figure [@fig:monotonic-function] illustrates this using a simple function example.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.6\textwidth]{images/monotonic-function.pdf}
+  \caption{A curve for a nondecreasing monotonic function}
+  \label{fig:monotonic-function}
+\end{figure}
+
+For a distributed problem to be monotonic, all operations must be designed in a way that they are 
+
+\begin{enumerate}[label=(\arabic*)]
+  \item Associative: $a \circ (b \circ c) = (a \circ b) \circ c$,
+  \item Commutative: $a \circ b = b \circ a$,
+  \item Idempotent: $a \circ a = a$.
+\end{enumerate}
+
+The challenges of the theorem are
+
+- to determine whether a problem can be described by a monotonic specification at all,
+- and, if this is the case, to design and practically implement this specification.
+
+One way to achieve this behavior is to apply the _derived monotonic state pattern_ [@braun2022calm]. The pattern is illustrated in figure \ref{fig:derived-monotonic-state-aggregate}. The pattern can be applied by factoring out every operation on the state object into _immutable aggregates_, such as _domain events_. We will illustrate this with the example of a shopping cart. Domain events in a shopping cart are the insert and removal of items, denoted as `itemInserted` and `itemRemoved`. In a naive implementation, both events could be modeled as operations on a mutable state (the shopping cart entity). But with a weak consistency model, the order of these operations can not be guaranteed, as illustrated in figure [@fig:shopping-cart-naive].
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=1\textwidth]{images/shopping-cart-naive.pdf}
+  \caption{Naive implementation of a shopping cart with weak consistency. $N_2$ received the operations in a different order than $N_1$, rendering a wrong final state.}
+  \label{fig:shopping-cart-naive}
+\end{figure}
+
+But this problem can be implemented in a monotonic fashion: instead of applying the domain events on a single mutable state (an _activity aggregate_), they could just be persisted as immutable aggregates in an append-only manner, resulting in two separate monotonically growing sets. Once the final state needs to be observed, it can be derived from the domain events by putting them together on demand[^state-management-libraries]. The resulting state then describes a derived aggregate, expressed by the count of `itemInserted` minus the count of `itemRemoved` for each particular item.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=1\textwidth]{images/shopping-cart-monotonic-aggregate.pdf}
+  \caption{Monotonic implementation of the shopping cart problem. Both nodes will derive the same final state without the need for coordination.}
+  \label{fig:shopping-cart-monotonic-aggregate}
+\end{figure}
+
+Unfortunately, this monotonic behavior is not applicable to all types of operations. There are events that are naturally causally dependent on previous events. In our shopping cart example, this could be a checkout[^event-sourcing]: neither the add nor delete operation commutes with
+a final checkout operation. If a `checkout` operation message arrives at a node before some insertions of the `itemInserted` or `itemRemoved` events, those events will be lost.
+
+[^state-management-libraries]: This is also how modern state management systems like MobX or Redux (that are heavily used in frontend development) do this to ease complex implementation of concurrency problems on single devices by applying _functional reactive programming_ paradigms.
+
+[^event-sourcing]: In _event sourcing_, monotonic characteristics can be useful. However, to be able to do _time travel queries_, strong consistency and realtime properties are needed again to derive any intermediate state, at least for all causally related events.
+
+The monotonic property of a problem means that the order of operations does not matter at all. Consequently, in the case of network partitions, both consistency and availability are possible in a monotonic problem,  since replicas will always converge to an identical state on all nodes when the partition heals, and this without the need for any conflict resolution or coordination mechanisms.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=1\textwidth]{images/derived-monotonic-state-aggregate.pdf}
+  \caption{Factoring out a nontrivial activity aggregate into immutable and derived aggregates to acquire a monotonic state aggregate allows for a weaker consistency model and therefore lower latency without actually compromising consistency, according to the CALM theorem \cite{braun2022calm}.}
+  \label{fig:derived-monotonic-state-aggregate}
+\end{figure}
+
+
+append-only computing by Pat Helland 2015: We have immutable aggregates: Time series data + domain events. TODO read that paper
+
+\todo{Work finished to this point.}
+
+---
+
+"Distributed systems theory is dominated by fearsome negative results, such
+as the Fischer/Lynch/Patterson impossibility proof,21 the CAP Theorem,23
+and the two generals problem. These
+results identify things that are **not possible to achieve** in general in a distributed system."
+The CALM theorem instead provides a optimistic view that answers the question, which things _can_ be achieved and how, and at a minimum complexity and cost.
 
 #### Deciding for Consistency {#sec:consistency-decisions}
+
+\epigraph{The first principle of successful scalability is to batter the consistency mechanisms down to a minimum, move them off the critical path, hide them in a rarely visited corner of the system, and then make it as hard as possible for application developers to get permission to use them.}{--- \textup{James Hamilton, VP \& Distinguished Engineer at Amazon}}
 
 In order to decide on a consistency model, several factors must be taken into account. The actual consistency model to decide for depends on the use case of the distributed database system. Therefore, many popular DDBS allow the developers to select the consistency model of their choice by configuration. When deciding for a consistency model, it makes sense to base the decision on the dependability properties that are neccessary for the given use case (cf. the bank transfer example in subsection [@sec:safety-reliability]).
 
@@ -640,9 +705,13 @@ There are even attempts to formally describe the consistency model needs at the 
 
 When applying a weaker consistency model, especially eventual consistency (cf. section [@sec:optimistic-replication]), challenges arise on the consuming application side. While a strongly consistent distributed system is similar to a single-node system for the consumer and makes it easy for the developer to use because its API is clear, stale data and long-running asynchronous behavior must be handled appropriately when talking to an eventual consistent system, which makes it a completely different API. Consequently, eventual consistency is not suitable for all use cases. 
 
+\paragraph{Multiple levels of consistency.}
+
+The weaker consistency models generally violate crucial correctness properties compared to strong consistency. A compromise is to allow multiple levels of consistency to coexist in the database system, which can be achieved depending on the use case and constraints of the system. It is even possible to provide different consistency models per operation or class of data. An example is the combination of strong and causal consistency for applications with geographically replicated data in distributed data centers [@bravo2021unistore]. In general, a microservice-oriented architecture that wraps up multiple services into a single application is strongly advised, as each microservice can provide its own specific and well-reasoned consistency model suitable for its particular purpose.
+
 \paragraph{Constantly review decisions.}
 
-When stronger consistency models increase the latency of a system in an unacceptable way and there are no other ways to mitigate this, eventual consistency may be considered. It can dramatically increase the performance of a system, but it must fit the use cases of the system and its applications, and it means additional work for developers. At least, it is worth questioning again and again whether strong consistency is really mandatory: even popular systems like Kubernetes undergo this process, as current research seeks to apply eventual consistency to meet edge-computing requirements [@jeffery2021rearchitecting]. At the same time, systems that have originally been eventually consistent could also benefit from re-architecting into stronger consistency to be easier to use and understand for both users and developers, as was the case with AWS S3, as we will show later in section [@sec:cost-of-replication]. In essence, it is worthwhile to constantly challenge applied consistency models as use cases change or new ones are added.
+When stronger consistency models increase the latency of a system in an unacceptable way and there are no other ways to mitigate this, eventual consistency may be considered. It can dramatically increase the performance of a system, but it must fit the use cases of the system and its applications, and it means additional work for developers. At least, it is worth questioning again and again whether strong consistency is really mandatory: even popular systems like Kubernetes undergo this process, as current research seeks to apply eventual consistency to meet edge-computing requirements [@jeffery2021rearchitecting]. As the authors of the CALM theorem describe, instead of micro-optimizing strong consistency protocols, it is often more effective to question the overall solution design (i.e., perhaps a monotonic solution can be found) and minimize the use of such protocols (cf. subsection [@sec:calm]). At the same time, systems that have originally been eventually consistent could also benefit from re-architecting into stronger consistency to be easier to use and understand for both users and developers, as was the case with AWS S3, as we will show later in section [@sec:cost-of-replication]. In essence, it is worthwhile to constantly challenge applied consistency models as use cases change or new ones are added.
 
 \paragraph{Let the user decide.}
 
@@ -681,6 +750,8 @@ TODO diagrams, also my own ones from PPT
 ### Geo-Replication {#sec:geo-replication}
 
 The replication techniques discussed so far in this work describe the replication of data within a single cluster to improve the dependability of the system. To improve performance when accessing the system and data from different geographical regions and to hedge against geographical limited disasters, data can be further replicated across clusters using _data mirroring_ techniques, which is referenced as _cross-cluster replication_.
+
+TODO causal consistency! https://www.cs.uic.edu/~ajayk/ext/FGCS2018.pdf
 
 TODO more from https://kafka.apache.org/documentation/#georeplication
 - Also for feeding edge cluster data into one central cloud cluster
@@ -742,7 +813,7 @@ There are examples that anecdotally show that high availability and high through
 
 Similar to the considerations of client-centric consistency models... in many systems, not all clients need to access the same data. If data portions can be identified that are only accesses by some clients, they don't need to be consistently shared between all replicas...
 
-TODO [@shen2015causal]
+TODO [@shen2015causal] (causal consistency for partial geo-replication)
 
 ###  Error Correcting Codes
 
@@ -1000,7 +1071,9 @@ There are many use cases where the cost of replication is too high when synchron
   \label{fig:crdts-optimistic-replication}
 \end{figure}
 
-Such local updates are only tentative and their final outcome could change, as they may conflict with an update from another client. In optimistic replication, conflicts should not be visible to the user (since conflict resolution requiring human intervention would compromise consistency, which is undesirable in the intended use cases), so they must be resolved in the background, either by a decentralized protocol or a central server instance. The replicas are allowed to differ in the meantime, but they are expected to eventually become consistent. Figure \ref{fig:crdts-optimistic-replication} illustrates this behavior. Note that it only illustrates it for a single operation. In case of multiple operations, reordering the operations is also part of the conflict resolution, depending on the protocol. 
+Such local updates are only tentative and their final outcome could change, as they may conflict with an update from another client. In optimistic replication, conflicts should not be visible to the user (since conflict resolution requiring human intervention would compromise consistency, which is undesirable in the intended use cases), so they must be resolved in the background, either by a decentralized protocol or a central server instance. The replicas are allowed to differ in the meantime, but they are expected to eventually become consistent. Figure \ref{fig:crdts-optimistic-replication} illustrates this behavior. Note that it only illustrates it for a single operation. In case of multiple operations, reordering the operations is also part of the conflict resolution, depending on the protocol.
+
+Optimistic replication is especially suitable for problems that meet the monotonicity requirements as described in the CALM theorem (cf. subsection [@sec:calm]), as this class of problems requires no conflict resolution at all.
 
 \todo{Describe steps of OR: server/decentralized protocol defines order of events...}
 
