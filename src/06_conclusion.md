@@ -102,6 +102,8 @@ There are also other strategies to improve the throughput that do not violate co
 - Allows to increase number of nodes without decreasing throughput
 - Show diagram of further partitioning/sharding techniques (i.e. by timesplit..., reference methods from background chapter here)
 
+- TODO if there will ever be a concept of transactions here, adjusting the protocol the be coordination-free may be suitable, as with Eris, to avoid high latency by transaction and replication roundtrips, but it requires control of the infrastructure (i.e., the network layer)
+
 #### Elasticity: Auto Scaling and Recovery
 
 - Multi-leader etc., TODO reference to the raft extensions section

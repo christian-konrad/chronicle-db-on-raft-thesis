@@ -87,6 +87,8 @@ See [@garg2010implementing]
 
 TODO original raft is CP (in CAP) and PC/EC (in PACELC)
 
+- Single leader: "Single master computing means somehow we order the changes." one factor to ensure strong consistency
+
 - leader election, log replication, configuration changes, log compaction
 
 - Messages

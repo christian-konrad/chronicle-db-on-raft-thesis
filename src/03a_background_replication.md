@@ -21,7 +21,7 @@ Example use cases for replication in distributed systems (additionally to those 
 
 The following subsections describe the fundamental concepts of _dependable_ distributed systems, as well as use cases for replication and the challenges in these particular cases, before outlining relevant replication protocols.
 
-### Horizontal Scalability
+### Horizontal Scalability {#sec:scalability}
 
 \todo{Verify phrasing of this subsection}
 
@@ -646,7 +646,7 @@ The challenges of the theorem are
 - to determine whether a problem can be described by a monotonic specification at all,
 - and, if this is the case, to design and practically implement this specification.
 
-One way to achieve this behavior is to apply the _derived monotonic state pattern_ [@braun2022calm]. The pattern is illustrated in figure \ref{fig:derived-monotonic-state-aggregate}. The pattern can be applied by factoring out every operation on the state object into _immutable aggregates_, such as _domain events_. We will illustrate this with the example of a shopping cart. Domain events in a shopping cart are the insert and removal of items, denoted as `itemInserted` and `itemRemoved`. In a naive implementation, both events could be modeled as operations on a mutable state (the shopping cart entity). But with a weak consistency model, the order of these operations can not be guaranteed, as illustrated in figure [@fig:shopping-cart-naive].
+One way to achieve this behavior is to apply the _derived monotonic state pattern_ [@braun2022calm]. The pattern is illustrated in figure \ref{fig:derived-monotonic-state-aggregate}, as initially described by Braun. The pattern can be applied by factoring out every operation on the state object into _immutable aggregates_, such as _domain events_. We will illustrate this with the example of a shopping cart. Domain events in a shopping cart are the insert and removal of items, denoted as `itemInserted` and `itemRemoved`. In a naive implementation, both events could be modeled as operations on a mutable state (the shopping cart entity). But with a weak consistency model, the order of these operations can not be guaranteed, as illustrated in figure [@fig:shopping-cart-naive].
 
 \begin{figure}[h]
   \centering
@@ -676,22 +676,9 @@ The monotonic property of a problem means that the order of operations does not 
 \begin{figure}[h]
   \centering
   \includegraphics[width=1\textwidth]{images/derived-monotonic-state-aggregate.pdf}
-  \caption{Factoring out a nontrivial activity aggregate into immutable and derived aggregates to acquire a monotonic state aggregate allows for a weaker consistency model and therefore lower latency without actually compromising consistency, according to the CALM theorem \cite{braun2022calm}.}
+  \caption{Factoring out a nontrivial activity aggregate into immutable and derived aggregates to acquire a monotonic state aggregate allows for a weaker consistency model and therefore lower latency without actually compromising consistency, according to the CALM theorem.}
   \label{fig:derived-monotonic-state-aggregate}
 \end{figure}
-
-
-append-only computing by Pat Helland 2015: We have immutable aggregates: Time series data + domain events. TODO read that paper
-
-\todo{Work finished to this point.}
-
----
-
-"Distributed systems theory is dominated by fearsome negative results, such
-as the Fischer/Lynch/Patterson impossibility proof,21 the CAP Theorem,23
-and the two generals problem. These
-results identify things that are **not possible to achieve** in general in a distributed system."
-The CALM theorem instead provides a optimistic view that answers the question, which things _can_ be achieved and how, and at a minimum complexity and cost.
 
 #### Deciding for Consistency {#sec:consistency-decisions}
 
@@ -717,11 +704,42 @@ When stronger consistency models increase the latency of a system in an unaccept
 
 When deciding on a consistency model for a distributed database system, it is important to recognize that different applications built on top of the database will themselves have different consistency requirements, so it may be a good idea to provide multiple consistency models and flexibility in configuring these models for different types of operations in a database system. Many popular database system vendors allow their users to choose for the consistency model of their choice, even at the operations level. Some of those vendors offer true fine-grained consistency options, such as Microsoft Azure Cosmos DB, which offers even 5 models with gradually decreasing consistency constraints [@microsoft2022cosmosconsistency].
 
-\paragraph{Influence of the infrastructure and overall architecture.}
+\paragraph{Immutability changes everything.}
 
-Not only the use case, but also the capabilities of the infrastructure the system will be deployed onto and the overall technical architecture pla an important factor in the decision. Under certain circumstances, it is possible to provide high levels of consistency and yet low latency and availability, e.g., by using multiple or even nested layers of different consistency models and intelligent partitioning techniques.
+Immutability naturally creates monotonicity, as the set of data—let it be either a payload or commands on this payload, like the `itemInserted`/`itemRemoved` example in subsection [@sec:calm] above—can only grow. Helland claims in his paper "Immutability Changes Everything" that "We need immutability to coordinate at a distance and we can afford immutability, as storage gets cheaper" [@helland2015immutability]. The latter statement is somewhat reminiscent of Moore's Law.
 
-The critique of the CAP theorem presented in the previous subsections allows for a more deliberate choice of consistency in practical systems, since several other properties can affect the actual requirements for consistency and dependability, often even more than the original theoretical properties of the CAP theorem. As an example, Google's distributed _NewSQL_ database system Spanner is in theory a CP class system [@corbett2013spanner]. It's design supports strong consistency with realtime clocks. In practice, however, things are different: given that the database is proprietary and runs on Google's own infrastructure, Google is in full control of every aspect of the system (including the clocks). The company can employ additional proactive strategies to mitigate network issues (such as predictive maintenance) and to reduce latency in Google's extremely widespread data center architecture. In addition, intelligent sharding techniques have been deployed (we will discuss partitioning and sharding in the following section [@sec:partitioning]) that take advantage of this data center architecture. As a result, the system is highly available in practice (records to date even show availability of more than five nines (99.999 %) at the time of writing), and manifested network partitions are extremely rare. Eric Brewer, the author of the CAP theorem and now (at the time of writing) VP of infrastracture at Google, even claims that Spanner is technically CP but effectively CA [@brewer2017spanner]. We'll look at Spanner in more detail in section [@sec:previous-work]. It is important to realize that this is not possible (at least at this scale) with open, self-managed distributed databases, or generally with systems on smaller, less complex infrastructures, as it is always a question of overall economic efficiency.
+By designing a system to be append-only, and therefore monotonic, we receive all the benefits of coordination-free consistency. Append-only systems not only provide lower latency when replicated, but also better write performance at the local disk level. Many databases are equipped with a write-ahead transaction log that records all the changes to be made to the database in advance. These write-ahead logs allow for reliable and high-speed appends, because records are appended immutably, atomically, and sequentially. The log contains virtually the truth about the entire database and allows to validate past and recent transactions (e.g., in the event of a crash), as well as time travel to previous states of the database, acting like a ledger. Even redo and undo operations are stored in this log. As shown in subsection [@sec:calm], replicated and distributed file systems depend on immutability to eliminate anomalies. By deriving aggregates from append-only logs of observed facts, consistency can be guaranteed to a certain degree[^tampering-logs]. From a particular perspective, a database is nothing more than such a large, derivative aggregate. Append-only structures also increase the safety of a system and thus support its fault-tolerance: if a system is limited to functional computations on immutable facts, operations become idempotent. Then the system does not become faulty due to failure and restart.
+
+[^tampering-logs]: In large scale distributed systems, the consistency of such logs can still be victim to tampering and other security threats, as it is the case for blockchains (cf. subsection [@sec:blockchain-consensus]).
+
+When building a distributed system and thinking about the consistency models, it is therefore useful to think about the nature of the data that this system will store and manage in advance. Table \ref{table:inside-vs-outside-data} helps in categorizing data into _inside data_ and _outside data_, as described by Helland [@helland2015immutability]. The latter is immutable and therefore allows for coordination-free consistency.
+
+<!-- TODO What about LSM (Log Structured Merge trees) for append-only? -->
+
+\begin{table}[h!]
+    \caption{Categorization of inside vs outside data}
+    \centering
+    \def\arraystretch{1.5}
+    \begin{tabularx}{\textwidth}{>{\bfseries}r | l l} 
+        \toprule
+         & \thead{Inside Data} & \thead{Outside Data} \\
+        \midrule
+        Changeable & Yes & No: Immutable \\
+        Granularity & Relational field & Document, file, message or event \\
+        Representation & Typically relational & Typically semi-structured \\
+        Schema & Prescriptive & Descriptive \\
+        Identity & No: Data by values & Yes: URL, document id, UUID... \\
+        Versioning & No: Data by values & Versions may augment identity \\
+        \bottomrule
+    \end{tabularx}
+    \label{table:inside-vs-outside-data}
+\end{table}
+
+\paragraph{Influence of the network infrastructure and overall architecture.}
+
+Not only the use case, but also the capabilities of the infrastructure the system will be deployed onto (i.e., the network)  and the overall technical architecture play an important factor in the decision. Under certain circumstances, it is possible to provide high levels of consistency and yet low latency and availability, e.g., by using multiple or even nested layers of different consistency models and intelligent partitioning techniques.
+
+The critique of the CAP theorem presented in the previous subsections allows for a more deliberate choice of consistency in practical systems, since several other properties can affect the actual requirements for consistency and dependability, often even more than the original theoretical properties of the CAP theorem. As an example, Google's distributed _NewSQL_ database system Spanner is in theory a CP class system [@corbett2013spanner]. It's design supports strong consistency with realtime clocks. In practice, however, things are different: given that the database is proprietary and runs on Google's own infrastructure, Google is in full control of every aspect of the system (including the clocks). The company can employ additional proactive strategies to mitigate network issues (such as predictive maintenance) and to reduce latency in Google's extremely widespread data center architecture. In addition, intelligent sharding techniques have been deployed (we will discuss partitioning and sharding in the following section [@sec:partitioning]) that take advantage of this data center architecture. As a result, the system is highly available in practice (records to date even show availability of more than five nines (99.999 %) at the time of writing), and manifested network partitions are extremely rare. Eric Brewer, the author of the CAP theorem and now (at the time of writing) VP of infrastracture at Google, even claims that Spanner is technically CP but effectively CA [@brewer2017spanner]. We'll look at Spanner in more detail in section [@sec:previous-work]. It is important to realize that this is difficult in practice for open, self-managed distributed databases, or generally for smaller, less complex infrastructures, or when there is no control over the underlying network, as this requires a joint design of distributed algorithms and new network functions and protocols (cf. the Eris protocol in subsection [@sec:coordination-free-replication]). And after all, it is always a question of overall economic efficiency.
 
 In addition, the actual choice of a replication protocol adds another layer of considerations that must be factored into the decision. We will discuss the overall _cost of replication_ further in this work in subsection [@sec:cost-of-replication] once we have introduced additional concepts that play a crucial role in deciding on one or more consistency models and replication protocols.
 
@@ -729,10 +747,40 @@ As a rule of thumb, the more tightly coupled the replicated database system and 
 
 ### Partitioning and Sharding {#sec:partitioning}
 
-- https://dimosr.github.io/partitioning-and-replication/ 
-- https://dev.mysql.com/doc/refman/5.7/en/replication-features-partitioning.html
+<!--
+https://dimosr.github.io/partitioning-and-replication/ 
+https://dev.mysql.com/doc/refman/5.7/en/replication-features-partitioning.html
+-->
 
-- Performance is critical for many applications, especially for distributed ones
+While replication increases the dependability of a distributed system and also helps to reduce latency in geo-replicated systems (described in more detail in subsection [@sec:geo-replication]), _partitioning_ is neccessary to scale out, i.e. to distribute the workload across multiple nodes. Partitioning is the method of breaking a large dataset into smaller subsets. For distributed systems serving many different clients or users, partitioning is essential to maintain both the performance and availability of the system at a high level. With partitioning, the number of nodes of a system grows with the number of clients. As described in subsection [@sec:scalability], this happens in general in a linear fashion.
+
+Partitioning helps to improve the performance of both writes and reads: in partitioned databases, when queries only access a fraction of the data that resides in a subset of the partitions, they can run faster because there is less data to scan. This reduces the overall response time to read and load data.
+
+<!-- Two approaches of partitioning -->
+
+<!-- TODO first introduce vertical partitioning, then horizontal. Then introduce sharding as horizontal partitioning distributed across multiple machines. in the literature we speak of _sharding_ when the data is distributed over several machines -->
+
+\paragraph{Vertical partitioning.}
+
+In vertical partitioning, data collections[^data-record-sets] such as tables are partitioned by attributes. A collection is partitioned into multiple collections, each containing a subset of the attributes. An example of this are database systems where large data blobs that are rarely queried are stored separately (i.e., only when accessing the full set of details for a single record, but not when listing multiple records). Database normalization is also an example of vertical partitioning. Vertical partitioning comes in particularly handy when the partitioned data can be stored in separate file systems or hardware with different characteristics, depending on the read or write requirements of the different record contents.
+
+[^data-collection]: We will use the term _data collection_ to describe structured data as well as semi-structured data that belongs to a certain schema (that describes the structure of the data collection) in any kind of data stores: tables in relational databases, streams in event stores, topics in message brokers, or buckets in file storage systems, to mention a few.
+
+In general, vertically partitioned data is not distributed across multiple nodes, as this would slow down queries: The chances that partitioned attributes of a single dataset will be requested in a single query are high. When partitions are distributed, partitioning strategies should be defined so that cross-partition queries are rare. For this reason, we will not discuss this issue further in this work.
+
+---
+
+\todo{Work finished to this point.}
+
+\paragraph{Horizontal partitioning.}
+
+TODO  partitioned data can be stored in seperate file systems or hardware with different properties, depending on the read or write requirements to the content, such as data that is very frequently queried can be hold in in-memory caches or fast SSDs, while on the other end very infrequently accessed can be stored on dedicated archival mass storage
+
+\paragraph{Sharding.}
+
+<!-- Sharding goes beyond this: it partitions the problematic table(s) in the same way, but it does this across potentially multiple instances of the schema. The obvious advantage would be that search load for the large partitioned table can now be split across multiple servers (logical or physical), not just multiple indexes on the same logical server. -->
+
+
 - sharding (also known as horizontal partitioning) helps to provide high availability, fault-tolerance, and scalability to large databases in the cloud [bagui2015database]
 - Partitioning and sharding are methods to ensure throughput by providing horizontal scalability 
   - Explain horizontal scal.
@@ -746,6 +794,53 @@ TODO obsidian notes here
 TODO compare with replication, show later how multi-raft supports both
 
 TODO diagrams, also my own ones from PPT
+
+Also transactions across partitions must follow a consistency model that satisfies the systems requirements. Next to replication between the replicas of a shard, it also requires ordering of the transactions and guaranteeing the atomicity of each transaction. In general, transactions should be linearizable.
+
+- Neccessary for consistent distributed operations across shards (i.e. updates of multiple tables or streams with causal relations)
+
+Following the atomicity property of the ACID schema, every transaction should be applied to all shards it affects, or none at all. 
+
+"Sequencing transactions in a partitioned system (i.e., multisequencing) is substantially more challenging than ordering
+operations to a single replica group, as servers in different
+shards do not see the same set of operations, yet must ensure
+that they execute cross-shard transactions in a consistent order. "
+
+"Existing systems generally achieve these goals using a layered
+approach, as shown in Figure 1. A replication protocol (e.g.,
+Paxos [40]) provides fault tolerance within each shard. Across
+shards, an atomic commitment protocol (e.g., 2PC, two-phase commit) provides atomicity and is combined with a concurrency
+control protocol (e.g., two-phase locking or optimistic concurrency control). Though the specific protocols differ, many
+systems use this structure [2, 3, 16, 19, 21, 29, 38, 47]." [@li2017eris]
+
+TODO describe 2PC here in own paragraph
+
+"A traditional architecture calls for each
+transaction to be carefully orchestrated through a dizzying
+array of coordination protocols – e.g., Paxos for replication,
+two-phase commit for atomicity, and two-phase locking for
+isolation – each adding its own overhead. As we show in
+Section 8, this can increase latency and reduce throughput by
+an order of magnitude or more."
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.9\textwidth]{images/standard-partitioned-architecture.pdf}
+  \caption{Common architecture for a partitioned and replicated data store}
+  \label{fig:standard-partitioned-architecture}
+\end{figure}
+TODO image is only for a single datacenter: it often adds another layer on top for geo-replication
+
+TODO there are alternative approaches to have coordination-free replication and transactions across shards, as shown in subsection [@sec:coordination-free-replication]
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.85\textwidth]{images/2pc-plus-consensus.pdf}
+  \caption{Coordination between shards and replicas for consistent transactions with traditional two-phase commits (2PC) and replication}
+  \label{fig:2pc-plus-consensus}
+\end{figure}
+
+"combine partitioning and sharding strategies for data intensive applications"
 
 ### Geo-Replication {#sec:geo-replication}
 
@@ -986,6 +1081,14 @@ Strong consistent!
 
 \todo{Are all state-machine approaches non-byzantine? I don't think so. What about byzantine raft/paxos?}
 
+Single leader:
+Single master computing means somehow we order the changes.
+The order can come from a centralized master or some Paxos-like
+[11] distributed protocol providing serial ordering
+
+state machine == derived aggregate. Log == trivial facts [@sec:calm]
+leveraging monotonicity and append-only characteristics as shown in [@sec:consistency-decisions]
+
 \todo{Rephrase}
 
 Consensus in distributed computing is a more sophisticated
@@ -1090,6 +1193,79 @@ CRDTs are not the only way to achieve optimistic replication. Before CRDTs, _ope
 \todo{Grammar checking}
 In theory, CRDTs are designed for decentralized systems in which there is no central authority to decide the end state. In practice, there is oftentimes a central instance, such as in SaaS offerings on the web. Decentralized conflict resolution is no longer a requirement for those systems, so CRDTs could be too heavy-weight. Moving the conflict resolution to a central instance (which actually could be a cluster of nodes with stronger consistency guarentees) reduces complexity in the implementation of optimistic replication. This is actually the case in multiplayer video games—especially massive multiplayer online games (MMOGs). They introduce a class of problems that need techniques to synchronize at least a partial state between a lot of clients. Strong consistency would cause this games to experience bad performance drops, since a game's client wouldn't be able to continue until it's state is consistent across all subscribers to that state, so the way to go is eventual consistency. One can learn a lot from these approaches and adopt it to other real-time applications, such as Figma did for their collaborative design tool, comprehensively described in a blog post [@figma2019multiplayer].
 
+#### Coordination-Free Replication {#sec:coordination-free-replication}
+
+TODO refer to [@sec:calm] and https://www.microsoft.com/en-us/research/publication/eris-coordination-free-consistent-transactions-using-network-multi-sequencing/ [@li2017eris]
+
+and [@sec:consistency-decisions] for being in control of the network infrastructure. (This means you can't just build this eris thing on a regular TCP network...) so, this of course subject of research of the big cloud vendors / datacenter owners (AWS, Google, Microsoft)
+
+Eris from microsoft research
+
+"The Eris transaction processing system achieves high performance through a new division of responsibility between
+three parts. An in-network concurrency control primitive,
+multi-sequenced groupcast, establishes a consistent order of
+message delivery across shards, but does not ensure atomic
+or reliable delivery. The latter guarantees are provided by
+the Eris protocol, which makes sure that transactions are processed by all participant shards, or none at all. In combination,
+these allow linearizable execution of independent transactions,
+which make up a substantial part of many workloads. For
+other workloads, a general transaction layer builds arbitrary
+transactions out of multiple independent transactions.
+The net result of this approach is that Eris can execute
+independent transactions without any coordination
+... linearizable...
+Eris achieves strongly consistent, fault-tolerant,
+transactional storage with overhead within 10% compared to
+a system that provides no such guarantees."
+
+Eris uses a quorum-based protocol to maintain safety 
+
+Eris clients send independent transactions directly to the replicas in the affected
+shards using multi-sequenced groupcast and wait for replies
+from a majority quorum from each shard
+
+"Unifying Replication and Transaction Coordination. Traditional layered designs use separate protocols for
+atomic commitment of transactions across shards and for replication of operations within an individual shard. While this
+separation provides modularity, it has been recently observed
+that it leads to redundant coordination between the two layers [66]. Protocols that integrate cross-shard coordination and
+intra-shard replication into a unified protocol have been able
+to achieve higher throughput and lower latency [38, 48, 66].
+This approach integrates particularly well with Eris’s innetwork concurrency control. Because requests are sequenced
+by the network, each individual replica in a shard can independently process requests in the same order. As a result, in
+the common case Eris can execute independent transactions
+in a single round trip, without requiring either cross-shard or
+intra-shard coordination."
+
+TODO how does eris even avoid coordination between replicas inside of a shard??
+
+answer: the sequencer in the network layer actually orders the stuff and then sends the commits to every replica in the shards, and they directly ack to the client, not to the DL. The DLs send the actual transaction results.
+Then, the designated learner is responsible form synchronous execution of it's part of the transaction, while the followers log it and execute it later async. This is similar to NOPaxos. (So, no acks and not coordination between replicas? How is this secure? Is there a TLA+ spec for this? TODO check TLA+ for NOPaxos or Eris)
+The authors write this:
+
+"Eris must be resilient to replica failures (in particular, DL
+failures)
+In Eris, failure of the DL is handled entirely within the shard by a
+protocol similar in spirit to standard leader change protocols"
+
+", we
+introduce a novel element to the Eris architecture: the Failure
+Coordinator (FC). The FC is a service that coordinates with
+the replicas to recover consistently from packet drops and
+sequencer failures. The FC must be replicated using standard
+means [39, 43, 51] to remain available. "
+
+is the network protocol a bottleneck? Not additional, as if the network crashes, the whole thing crashes anyway. 
+
+TODO what is then with partition tolerance???:
+"Eris must be resilient to ... network anomalies"
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.7\textwidth]{images/eris-coordination.pdf}
+  \caption{In the coordination-free transaction and replication protocol Eris, communication happens in a single round-trip in the normal case, while the transactions are consistently ordered by a sequencer on the network layer}
+  \label{fig:eris-coordination}
+\end{figure}
+
 #### Chain Replication
 
 "Chain replication is a new approach to coordinating
@@ -1165,6 +1341,25 @@ Leaderless SMR shows its strengths especially when used in blockchains... high c
 In recent years, the problem of byzantine fault tolerant consensus has raised significantly more attention due to the widespread success of blockchains and blockchain-based applications, especially cryptocurrencies such as Bitcoin, which successfully solved the problem in a public setting without a central authority...
 
 Blockchains are distributed systems par excellence... Using strong consistent consensus protocols to ensure every node reads the same... Handling not only fail-stop, but especially byzantine faults is crucial to those consensus protocols to secure a blockchain.
+
+As shown in subsections [@calm] and [@consistency-decisions], monotonicly growing append-only systems can be replicated with eventual consistency in a coordination-free way. Blockchains are distributed ledgers that provide this monotonic characteristics... (do they all?) So, depending on the requirements of the chain, a great range of consistency levels are possible: strong consistency with coordination between nodes to agree not only on a final state, but also to output the same order of blocks and to only expose the ledger state when all are ready to expose... or eventual consistency are possible (TODO show examples for both)
+
+"Within a Blockchain network system, the
+strong consistency model means that all nodes have the same ledger at the same time, and during the time when the
+distributed ledger is being updated with new data, any subsequent read/write requests will have to wait until the
+commit of this update"
+
+" The consistency property has raised some controversial debate. Some argue
+that Bitcoin systems only provide eventual consistency [6], which is a weak consistency. Others claim that Bitcoin guarantees strong consistency, not eventual consistency [7]." [@kanga2020management]
+
+"Within a Blockchain network system, the
+strong consistency model means that all nodes have the same ledger at the same time, and during the time when the
+distributed ledger is being updated with new data, any subsequent read/write requests will have to wait until the
+commit of this update"
+
+BTC seeems to be sequentially consistent, as all nodes must agree on the same sequence, but only in program order, and not all must see transactions at the same time, and the consistency is controlled with the mining difficulty in the PoW consensus...
+
+"certain Blockchain applications are less risk-averse and may benefit from a weaker consistency guarantee for convenience and performance. "
 
 <!-- From https://tel.archives-ouvertes.fr/tel-03584254/document p24:
 

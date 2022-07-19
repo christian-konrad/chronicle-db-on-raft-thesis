@@ -57,6 +57,9 @@ ACID - Associative, Commutative, Idempotent, Distributed (CALM):
 
 ## Consistency Model and Replication Protocol Choice
 
+- Refer to [@sec:consistency-decisions]
+- Refer to append-only and CALM [@sec:calm]
+
 - TODO describe why strong consistency and finally raft
 - TODO reference criteria from 04a
 - TODO reference CAP and PACELC and describe our trade-offs
@@ -74,6 +77,12 @@ to avoid OOO, which is expensive, linearizability is a must
 Event sourcing and complex event processing require at least causal consistency and, depending on the use case, causality stretches across all events of a certain event source or stream, requiring at least sequential consistency... (? TODO is that true?)
 
 Aggregations of event properties for idempotent and commutative operations (such as a sum or a mean) do not require strong consistency / can have weaker consistency...
+
+#### Transaction Handling
+
+- TODO no transactions so far, which is good for us. No need to think about linearizing transactions and making them atomic.
+- Only atomic inserts
+- If we need transactions, especially across partitions, refer to [@sec:partitioning] and [@sec:coordination-free-replication]
 
 ## Raft Implementations
 
