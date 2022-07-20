@@ -28,6 +28,8 @@ TODO Raft is already used in event messaging and logging systems (Kafka, RabbitM
 
 ### Understandability
 
+\epigraph{There is a race between the increasing complexity of the systems we build and our ability to develop intellectual tools for understanding their complexity. If the race is won by our tools, then systems will eventually become easier to use and more reliable. If not, they will continue to become harder to use and less reliable for all but a relatively small set of common tasks. Given how hard thinking is, if those intellectual tools are to succeed, they will have to substitute calculation for thought.}{--- \textup{Leslie Lamport}}
+
 Why is there a need for another Consensus Protocol which offers equivalent fault-tolerance and performance characteristics as Paxos (does it? Cite proof here)? The main caveat of Paxos is the difficulty to understand the protocol, which makes it a challenge both for work in academia building on Paxos and for developers who want to implement the protocol and adapt it to their use case (see the [previous section on Paxos](#sec:paxos)). This inhibits progress in these areas and hampers discourse. In fact, Raft is a consensus protocol that was explicitly designed as an alternative to the Paxos family of algorithms to solve this understandability issues of how consensus can be achieved.
 
 There are some other main differences in the protocol, which are handled in [Main Differences to Paxos](#sec:raft-vs-paxos).
@@ -109,6 +111,8 @@ TODO MTBF (TODO reference to 03a) - Leader election is the aspect of Raft where 
 > Should put this following sections here or in previous work?
 
 TODO Network reconfiguration and fail-stop on faults: "Also in consensus protocols, shutting down a faulty node and initializing a fresh new one is effective as the data of the new node can be initialized using snapshotting in the background without impacting the whole cluster performance, as we show later in the corresponding section."
+
+TODO network reconfig allows for rebalancing (cf. [@sec:partitioning]) without compromising availability
 
 TODO partition-tolerance: Even while strong-consistent, raft also is ...
 

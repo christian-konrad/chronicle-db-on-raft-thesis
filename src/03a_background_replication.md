@@ -250,8 +250,7 @@ where $A(t)_i$ are the availabilities of the various systems in the period of $t
   \label{fig:serial-availability}
 \end{figure}
 
-
-Conversely, replication is a way to drastically increase the availability of a system. By having more than one copy of important information, the service continues to be usable even when some copies are inaccessible. By providing a _High-Availability Cluster_ (HA Cluster)[^load-balancing] of replicas, the probability of failure of the whole cluster during a fixed period of time decreases with every replica, decreasing the estimated annual downtime. When we ignore factors like failures of the replication system itself, faults in the underlying network, and the time needed for cluster reconfigurations on node failures (as included in the cluster MTTR), we can model the availability of the cluster naively as
+Conversely, replication is a way to drastically increase the availability of a system. By having more than one copy of important information, the service continues to be usable even when some copies are inaccessible. By providing a _High-Availability Cluster_ (HA Cluster)[^service-load-balancing] of replicas, the probability of failure of the whole cluster during a fixed period of time decreases with every replica, decreasing the estimated annual downtime. When we ignore factors like failures of the replication system itself, faults in the underlying network, and the time needed for cluster reconfigurations on node failures (as included in the cluster MTTR), we can model the availability of the cluster naively as
 
 $$ A_{\textrm{cluster}}(t) \approx 1 - (1 - A(t))^n = 1 - U(t)^n $$
 
@@ -264,7 +263,7 @@ where $n$ is the number of replicas, $A(t)$ is the availability of a single node
   \label{fig:parallel-availability}
 \end{figure}
 
-[^load-balancing]: Load balancing is another technique for achieving high availability through service replication. Since this work only deals with data replication, this topic is not covered here (although some session data must be replicated between these services if they are not stateless in the first place).
+[^service-load-balancing]: Service load balancing is another technique for achieving high availability through service replication. Since this work only deals with data replication, this topic is not covered here (although some session data must be replicated between these services if they are not stateless in the first place).
 
 As shown, the common way to achieve high availability is through the replication of data in multiple service replicas. High availability comes hand-in-hand with fault-tolerance, as services remain operational in case of failures as clients can be relayed to other working replicas. 
 
@@ -754,57 +753,75 @@ https://dev.mysql.com/doc/refman/5.7/en/replication-features-partitioning.html
 
 While replication increases the dependability of a distributed system and also helps to reduce latency in geo-replicated systems (described in more detail in subsection [@sec:geo-replication]), _partitioning_ is neccessary to scale out, i.e. to distribute the workload across multiple nodes. Partitioning is the method of breaking a large dataset into smaller subsets. For distributed systems serving many different clients or users, partitioning is essential to maintain both the performance and availability of the system at a high level. With partitioning, the number of nodes of a system grows with the number of clients. As described in subsection [@sec:scalability], this happens in general in a linear fashion.
 
-Partitioning helps to improve the performance of both writes and reads: in partitioned databases, when queries only access a fraction of the data that resides in a subset of the partitions, they can run faster because there is less data to scan. This reduces the overall response time to read and load data.
+Partitioning helps to improve the performance of both writes and reads: in partitioned databases, when queries only access a fraction of the data that resides in a subset of the partitions, they can run faster because there is less data to scan. This reduces the overall response time to read and load data. Data partitions can also be stored in separate file systems or hardware with different characteristics, depending on the read or write requirements for the content. Thus, data that is accessed very frequently can be held in in-memory caches or fast SSDs, while on the other hand, very infrequent accesses can be stored on dedicated archived mass storage.
+
+There are two ways to partition data: Vertical and horizontal partitioning. Both techniques can be combined. They are described in the following paragraphs and their differences are illustrated in figure \ref{fig:partitioning}.
 
 <!-- Two approaches of partitioning -->
 
 <!-- TODO first introduce vertical partitioning, then horizontal. Then introduce sharding as horizontal partitioning distributed across multiple machines. in the literature we speak of _sharding_ when the data is distributed over several machines -->
 
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=1\textwidth]{images/partitioning.pdf}
+  \caption{a) Vertical vs b) horizontal partitioning, illustrated using a relational database table. In a), the table is split by attributes. In b), the table is split by records, using a lexicographical grouping.}
+  \label{fig:partitioning}
+\end{figure}
+
 \paragraph{Vertical partitioning.}
 
-In vertical partitioning, data collections[^data-record-sets] such as tables are partitioned by attributes. A collection is partitioned into multiple collections, each containing a subset of the attributes. An example of this are database systems where large data blobs that are rarely queried are stored separately (i.e., only when accessing the full set of details for a single record, but not when listing multiple records). Database normalization is also an example of vertical partitioning. Vertical partitioning comes in particularly handy when the partitioned data can be stored in separate file systems or hardware with different characteristics, depending on the read or write requirements of the different record contents.
+In vertical partitioning, data collections[^data-collection] such as tables are partitioned by attributes. A collection is partitioned into multiple collections, each containing a subset of the attributes. An example of this are database systems where large data blobs that are rarely queried are stored separately (i.e., only when accessing the full set of details for a single record, but not when listing multiple records). Database normalization is also an example of vertical partitioning. Vertical partitioning comes in particularly handy when the partitioned data can be stored in separate file systems or hardware with different characteristics, depending on the read or write frequency and requirements of the different record contents. These requirements may also include dependability and consistency, so that, for example, less critical data may be given an eventual consistency model and lower availability guarantees. On the downside, vertical partitioning can make querying more complicated, so partitioning decisions must be made with proper justification and based on usage estimates.
+
+The need for vertical partitioning can also be reduced by better upfront data design, such as splitting data in trivial facts and deriving an aggregated state instead of managing the a state by continously updating a single data record (cf. subsection [@sec:calm]). 
 
 [^data-collection]: We will use the term _data collection_ to describe structured data as well as semi-structured data that belongs to a certain schema (that describes the structure of the data collection) in any kind of data stores: tables in relational databases, streams in event stores, topics in message brokers, or buckets in file storage systems, to mention a few.
 
 In general, vertically partitioned data is not distributed across multiple nodes, as this would slow down queries: The chances that partitioned attributes of a single dataset will be requested in a single query are high. When partitions are distributed, partitioning strategies should be defined so that cross-partition queries are rare. For this reason, we will not discuss this issue further in this work.
 
----
-
-\todo{Work finished to this point.}
-
 \paragraph{Horizontal partitioning.}
 
-TODO  partitioned data can be stored in seperate file systems or hardware with different properties, depending on the read or write requirements to the content, such as data that is very frequently queried can be hold in in-memory caches or fast SSDs, while on the other end very infrequently accessed can be stored on dedicated archival mass storage
+In horizontal partitioning, data collections are partitioned by records, while all partitions of the same collection share the same schema. The collection is split by one or more grouping criteria, such as a hash, a certain attribute value or by ranges of attribute values (e.g., by quantitative attributes, date periods, groups of customers or lexicographic ordering). Which split criteria to choose heavily depends on both the use case and technical considerations. With horizontal partitioning, the workload can be distributed across multiple indexes on the same logical server. By choosing well-justified partitioning criteria, frequently visited indexes can be kept small to increase transaction and query throughput.
 
 \paragraph{Sharding.}
 
-<!-- Sharding goes beyond this: it partitions the problematic table(s) in the same way, but it does this across potentially multiple instances of the schema. The obvious advantage would be that search load for the large partitioned table can now be split across multiple servers (logical or physical), not just multiple indexes on the same logical server. -->
+Sharding goes beyond partitioning tables on a single machine by distributing horizontal partitions across multiple machines [bagui2015database]. This allows to distribute the transaction and query load across multiple servers (both logical or physical). 
 
+The optimal _shard key_ (resulting from the split criteria in the context of sharding) allows for _load balancing_, i.e. it distributes the workload as evenly as possible across the shards. It also maximizes coherence and locality within a partition and reduces the number of  queries and transactions across partitions. For instance, the MongoDB authors recommend choosing shard keys with a high level of randomness for write scaling and high locality for range queries [@kookarinrat2015analysis]. Good partitioning moves computation close to the node where that data resides, and the master replica of a shard close to where the most clients will write to it (in case of replication with a strong leader, see subsection [@sec:replication-protocols]). Such sharding strategies can also support geographical scalability, as shown in subsection [@sec:geo-replication]. It also takes the access frequency and importance of every partition into account, so that database users can specify different strategies for security, access permissions, management, monitoring, and backups of the individual partitions. 
 
-- sharding (also known as horizontal partitioning) helps to provide high availability, fault-tolerance, and scalability to large databases in the cloud [bagui2015database]
-- Partitioning and sharding are methods to ensure throughput by providing horizontal scalability 
-  - Explain horizontal scal.
+To find such a shard key, the distribution of operations over the data collection should be considered. That is, the split should not result in a heavy workload on some partitions while other partitions have a modest workload. A common approach to approximate this—assuming that the estimated workload is evenly distributed—is to split so that each shard contains a similar amount of data. For example, using the first letter of a customer's name results in an uneven distribution because some letters are more common than others. Instead, using a hash of the record ID helps distributing the data more evenly across the partitions.
 
-- Various Partitioning strategies 
-  - Reference hashing, Consistent hashing (Cassandra strategy), time split strategies etc. here
-- Strategies can also support geograhical scalability, see following subchapter
+When querying or writing to the data store, the shard keys for each record to be written and each cursor resulting from the query are calculated and used to look up the corresponding partitions.
 
-TODO obsidian notes here
+Different horizontal partitions can also be served with different dependability and consistency requirements: e.g., data from customers who pay for a better SLA can be provided with higher availability guarantees than data from freemium users.
 
-TODO compare with replication, show later how multi-raft supports both
+\paragraph{Rebalancing.}
 
-TODO diagrams, also my own ones from PPT
+Over time, the content and form of a data collection may change, and the distribution of data in the shards may deviate from the distribution originally assumed, especially if _scheme evolution_ occurs. In addition to that, the network of the sharded application itself could be reconfigured, for example, by adding data centers or upscaling machines, or in response to a failure or even as a temporary mitigation of a disaster that renders an entire data center unavailable. When this happens, the load on the shards is no longer balanced, resulting in overloaded shards that become slower, which in turn leads to an overall increase in latency and lower availability. To mitigate this, a sharded system must be continuously monitored and _rebalanced_ in response to such an event or even proactively when a specific trend is apparent. Rebalancing should ideally be done in such a way that users do not notice it, meaning it should not slow down the system or even reduce its availability [@weingartenzero]: rebalancing should not be part of the MTTR (Mean Time To Repair; for reference, see subsection [@sec:availability]). Avoiding shard keys closely coupled to actual record values and instead using consistent hashing algorithms to generate sharding keys generally allow for easier rebalancing [@lamping2014fast].
 
-Also transactions across partitions must follow a consistency model that satisfies the systems requirements. Next to replication between the replicas of a shard, it also requires ordering of the transactions and guaranteeing the atomicity of each transaction. In general, transactions should be linearizable.
+\todo{TODO consistent hashing in Cassandra if sufficient time}
 
-- Neccessary for consistent distributed operations across shards (i.e. updates of multiple tables or streams with causal relations)
+\paragraph{Partitioning and replication.}
 
-Following the atomicity property of the ACID schema, every transaction should be applied to all shards it affects, or none at all. 
+Neither replication or partitioning alone can make a system truly scalable and available. But if both techniques are applied, distributed databases can scale with their users, the data, and the operations executed on it, they can provide world-wide high availability, and they can even withstand data center outages. In common replicated and partioned architectures, the system is divided into _availability groups_. An availability group consists of a set of user databases that fail over together. It includes a single set of primary databases and multiple sets of replicas. Such groups are often deployed in multiple data centers in different geographic _availability zones_ to provide additional disaster resilience. Figure \ref{fig:load-balanced-sharding} illustrates this architecture. 
 
-"Sequencing transactions in a partitioned system (i.e., multisequencing) is substantially more challenging than ordering
-operations to a single replica group, as servers in different
-shards do not see the same set of operations, yet must ensure
-that they execute cross-shard transactions in a consistent order. "
+Load balancing becomes more challenging because replicas must be considered when distributing the load among the nodes. In large, horizontally scaled distributed systems, the _replication factor_ (the number of replicas per shard) is several magnitudes smaller than the number of total nodes. The load balancer (if it is a centralized agent) or the load balancing protocol (if the load balancer itself is decentralized) must maintain a distribution of replicas that balances the load on the nodes, which means that replicas can be moved between nodes during rebalancing.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.8\textwidth]{images/load-balanced-sharding.pdf}
+  \caption{Simplified representation of a common replication and partitioning scheme for high availability. Shards are placed in availability groups (data centers) that are close to their most frequent writers. They are replicated across availability groups so that they can be read with low latency and remain available even in the event of a data center outage.}
+  \label{fig:load-balanced-sharding}
+\end{figure}
+
+\todo{Work finished up to this point.}
+
+<!-- now describe the difficulties and costs -->
+\paragraph{Transactions on partitioned and replicated databases.}
+
+Not only the replicated data within a partition, but also the transactions across partitions must follow a consistency model that meets the requirements of the system. In addition to replication between replicas of a shard, transactions must also be ordered and the atomicity of each transaction must be guaranteed. In general, transactions should be linearizable. Following the atomicity property of the ACID schema, every transaction should be applied to all shards it affects, or none at all.
+
+Providing consistency and atomicity when running transactions in a partitioned and replicated database system is substantially more challenging than just ordering operations in a single replica group, as servers in different
+shards do not see the same set of operations, yet must ensure that they execute cross-shard transactions in a consistent order.
 
 "Existing systems generally achieve these goals using a layered
 approach, as shown in Figure 1. A replication protocol (e.g.,
@@ -825,7 +842,7 @@ an order of magnitude or more."
 
 \begin{figure}[h]
   \centering
-  \includegraphics[width=0.9\textwidth]{images/standard-partitioned-architecture.pdf}
+  \includegraphics[width=0.85\textwidth]{images/standard-partitioned-architecture.pdf}
   \caption{Common architecture for a partitioned and replicated data store}
   \label{fig:standard-partitioned-architecture}
 \end{figure}
@@ -914,7 +931,7 @@ TODO [@shen2015causal] (causal consistency for partial geo-replication)
 
 TODO only a short excursion
 
-### Replication Protocols
+### Replication Protocols {#sec:replication-protocols}
 
 The next subsections describe the different categories of replication protocols and follow with a discussion of specific protocols.
 

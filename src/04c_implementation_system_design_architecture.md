@@ -196,6 +196,7 @@ https://iotdb.apache.org/UserGuide/Master/Cluster/Cluster-Setup.html
 
 ### Partitioning using Multi-Raft Groups
 
+cf. [@sec:partitioning]
 - Basic vertical partitioning by stream, no sharding
 - One raft group = one partition containing an instance of a certain state machine, distributed over n nodes (n = replication factor)
 - PriorityBlockingQueue for simple load balancing
@@ -203,6 +204,12 @@ https://iotdb.apache.org/UserGuide/Master/Cluster/Cluster-Setup.html
 - Show diagram of partitioning approach
 - "data partitions can be defined according to both time slice and time-series ID" [@wang2020iotdb]
 - In this implementation, currently only per stream ID
+- Raft built-in network reconfig allows for rebalancing (cf. [@sec:partitioning]) without compromising availability
+
+But no real sharding: Events belonging to a single schema are not not split in the current solution.
+But: Consider time splits in future work
+
+when rebalancing, replicas may be moved across nodes.  TODO show my figures on rebalancing
 
 ### Messaging between Raft Nodes using gRPC and Protocol Buffers
 
