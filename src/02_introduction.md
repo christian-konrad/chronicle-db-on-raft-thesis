@@ -29,14 +29,12 @@ Approaching a solution to this problems leads to _data replication_. Replication
 
 Fortunately, several replication algorithms have already been proposed to achieve availability under different consistency and fault-tolerance conditions. This work attempts to identify such a replication protocol that meets the desired write and query performance characteristics for ChronicleDB, and then find an implementation design so that it can be used as a fault-tolerant, highly available, and scalable cluster in addition to the embedded and standalone server modes.
 
-
-
 ## Problem Formulation
 
 <!-- Introduce into research methodology and questions/hypotheses -->
 <!-- DONE -->
 
-This brings us to the subject of this thesis. We try to find and evaluate an replication algorithm that has the desirable performance properties for a distributed event store with defined dependability requirements. To find such an algorithm, we use an explorative research approach including both quantitative and qualitative methods to discover the possible solution space:
+This brings us to the subject of this thesis. The objective is to move an existing standalone, non-distributed event repository into a distributed system with fault tolerance and high availability. To achieve this goal, we attempt to find and evaluate a replication algorithm that meets the desired performance and dependability requirements. To find such an algorithm, we use an exploratory research approach that includes both quantitative and qualitative methods to discover the possible solution space:
 
 - Identification of consistency models suitable for an event store with a specific set of dependability requirements and differentiation from other consistency models including a detailed discussion of the advantages and disadvantages of the models in question.
 - Identification and justification of a replication protocol suitable for an event store that satisfies the characteristic requirements of the selected consistency models, including a differentiation from other replication techniques.
@@ -52,9 +50,7 @@ Additionally, the results of this work serve as a plausible grounded theory abou
 Positive findings from this research work would provide worthwhile benefits to distributed event stores:
 
 - The impact of the application of different consistency models and replication protocols to event stores is known and described and helps both academics and developers to decide which protocols to go for, depending on their use cases and requirements.
-
 - Users can operate event stores in an edge-cloud architecture, leveraging the different characteristics of embedded, single-node vs. replicated, multi-node clusters in different places of their system design, to be able to deal with the high throughputs occuring in heavily distributed IoT systems.
-
 - Open questions and known problems are identified and documented properly so that the performance can be further improved to meet the requirements of such event store architectures used in production.  
 
 ## Contribution
@@ -68,14 +64,16 @@ To the best knowledge, this work is the first attempt published in academia focu
 In this thesis we discuss and analyse several different replication algorithms to find the one that fits our requirements for an event store. The contributions are:
 
 - A thorough discussion of consistency models and replication protocols for a distributed event store ready for the edge-cloud and capable of processing very high data throughput. A state-of-the-art replication protocol is then selected to handle this requirements in a future-proof way.
-
 - A systematic review of previous implementations of replication protocols, focusing on decisions related to consistency, dependability, levels of data replicated, and the replication protocols chosen.
-
 - An implementation of a replicated ChronicleDB event store based on Apache Ratis [@konrad2022chroniclecloud], to serve as a learning base for evaluating the consistency model and replication protocol that we found most useful. The code is available in open source in the public domain, at https://github.com/christian-konrad/raft-log-replication-demo.
 
 \todo{Update repo link(s)}
 
 - Benchmark-based performance evaluations of the implementation on event-store-specific metrics (event throughput, query speed) to study the throughput and scalability of network architectures with different numbers of nodes.
+
+## Limitations
+
+Due to the complexity of the distributed systems issue, we limit ourselves to finding and implementing a replication protocol that provides fault tolerance and a selected set of dependability requirements in a single data center, while extending the discussion to other areas and considerations for future work on which we can build. We limit our solution to specific use cases, recognizing that it will not be the ideal solution, and we even postulate that there is no ideal solution.
 
 ## Outline
 

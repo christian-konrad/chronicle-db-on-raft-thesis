@@ -60,8 +60,11 @@ The given implementation of the Raft replication protocol has a high cost of rep
 
 ### Consistency Considerations
 
-- As in InfluxDB, having all data replicated with a consensus protocol may be inpractical and slows down the system
+- As other related data stores such as InfluxDB show, having all data replicated strong consistently with a consensus protocol may be inpractical and slows down the system/currently this is challenging to provide both strong consistency and support high throughputs
 - As others are doing (Apache IoTDB), one could use different protocols for different parts of the implementation, as such for meta data/cluster management, region management, schemas, data itself... Maybe just use raft for meta data and have primary-copy or another approach for the data itself? Perhaps the user should decide this for themselves based on their consistency requirements?
+- But also others like EventStoreDB do provide strong consistency on all layers, to the cost of... 
+
+\todo{Evaluate performance of EventStoreDB!}
 
 TODO the final consistency model should be decided on
 - use case
@@ -122,6 +125,11 @@ There are also other strategies to improve the throughput that do not violate co
 #### More Raft Optimizations
 
 - A paper describes a formal mapping of Paxos optimization to Raft with guaranteed correctness... [@wang2019parallels]
+
+### Raft Log Implementation
+
+\todo{mention here AND in system design}
+TODO the log is a very naive implementation. Popular applications even use efficient embedded (in-memory?) storage engines such as RocksDB (like CockroachDB https://github.com/cockroachdb/cockroach/issues/38322) - and they also come with WAL logs, so we have a multi-layer architecture of the raft log. Even if this comes with some issues, we can learn from it and use a better log approach. Our naive approach (the Ratis default one) can slow down the system. Makes sense to have the raft log running on a different thread to not block other operations and improve I/O
 
 ### Distributed Queries
 

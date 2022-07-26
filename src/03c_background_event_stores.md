@@ -14,7 +14,13 @@ Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod 
 
 ### Differentation of Event Stores and Time Series Databases
 
-Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.
+"The domain of ChronicleDB partly relates to different types of storage systems, including data warehouse, event log processing, as well as temporal database systems."
+
+"Another class of storage solutions ChronicleDB partly relates to are time series databases, which address temporal correlation and compression but usually do not offer query support for typical event-processing operations like pattern matching."
+
+"In contrast to our approach, time series databases (including tsdb) usually assume a uniform division of the time axis in which the data arrives at each time unit. "
+
+"Time series: No support for CEP like queries"
 
 TODO cite papers from
 https://epb.bibl.th-koeln.de/frontdoor/deliver/index/docId/1395/file/Vergleich-Time-Series-Databases-Event-Stores.pdf 
@@ -25,6 +31,20 @@ Zeitreihendaten in regelmäßigen Zeitabständen gemessen und somit auch in rege
 59 Im Gegensatz
 dazu finden Events i.d.R. nach unvorhersehbaren Mustern statt, wie auch das Beispiel
 des User-Logins in einer Webanwendung verdeutlicht. Demzufolge erfolgt die Speicherung von Event Daten eher in unregelmäßigen Zeitabständen.60
+
+### Time in Event Stores
+
+\todo{Do we need all of those times in the discussion?}
+
+- **Event time**: The time the event occured in the original application (also refered to as _application time_),
+- **Arrival time**: The time when the event arrived at the event store,
+- **Insert time**: The time when the event was stored in the event store.
+
+In strong consistent systems, the ordering of the events based on arrival time and insert time must be the same.
+
+<!-- https://developer.confluent.io/patterns/stream-processing/wallclock-time/ -->
+
+"The timestamps are not required to be ascending (merely non-decreasing) because in practice the time resolution of some systems such as financial data sources can be quite low (milliseconds, microseconds or even nanoseconds), so consecutive events may carry equal timestamps." Due to multiple sources of events with slightly offset clocks and especially with very high throughput... general computer opering system are not able to resolve event time at submicrosecond level, especially as CPU multi-tasking/scheduling is not able to provide this resolution... need a solution on network level to have such high-resolution timestamps (e.g. Precision Time Protocol (PTP) [@watt2015ptp])
 
 ### Use Cases and Challenges
 
@@ -52,6 +72,13 @@ In this section...
 #### Messaging
 
 - AMQP (RabbitMQ) etc
+
+#### Complex Event Processing
+
+CEP [@buchmann2009complex]
+
+https://www.espertech.com/esper/esper-faq/#whatiscep
+
 
 #### Aggregation and Stream Processing
 

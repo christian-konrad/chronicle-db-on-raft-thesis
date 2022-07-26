@@ -697,11 +697,19 @@ The weaker consistency models generally violate crucial correctness properties c
 
 \paragraph{Constantly review decisions.}
 
-When stronger consistency models increase the latency of a system in an unacceptable way and there are no other ways to mitigate this, eventual consistency may be considered. It can dramatically increase the performance of a system, but it must fit the use cases of the system and its applications, and it means additional work for developers. At least, it is worth questioning again and again whether strong consistency is really mandatory: even popular systems like Kubernetes undergo this process, as current research seeks to apply eventual consistency to meet edge-computing requirements [@jeffery2021rearchitecting]. As the authors of the CALM theorem describe, instead of micro-optimizing strong consistency protocols, it is often more effective to question the overall solution design (i.e., perhaps a monotonic solution can be found) and minimize the use of such protocols (cf. subsection [@sec:calm]). At the same time, systems that have originally been eventually consistent could also benefit from re-architecting into stronger consistency to be easier to use and understand for both users and developers, as was the case with AWS S3, as we will show later in section [@sec:cost-of-replication]. In essence, it is worthwhile to constantly challenge applied consistency models as use cases change or new ones are added.
+When stronger consistency models increase the latency of a system in an unacceptable way and there are no other ways to mitigate this, eventual consistency may be considered. It can dramatically increase the performance of a system, but it must fit the use cases of the system and its applications, and it means additional work for developers. At least, it is worth questioning again and again whether strong consistency is really mandatory: even popular systems like Kubernetes undergo this process, as current research seeks to apply eventual consistency to meet edge-computing requirements [@jeffery2021rearchitecting]. As the authors of the CALM theorem describe, instead of micro-optimizing strong consistency protocols, it is often more effective to question the overall solution design (i.e., perhaps a monotonic solution can be found) and minimize the use of such protocols (cf. subsection [@sec:calm]). At the same time, systems that have originally been eventually consistent could also benefit from re-architecting into stronger consistency to be easier to use and understand for both users and developers.
+
+There are examples that anecdotally show that high availability and high throughput are possible even under strong consistency constraints: AWS S3 introduced strong consistency for their file operations[^s3-eventual] recently in 2021 [@amazon2021s3consistency]. They even claim to deliver strong consistency "without changes to performance or availability", compared to the earlier eventual consistency.
+
+[^s3-eventual]: Bucket configuration operations are still eventual consistent in AWS S3 at the time of this writing.
+
+In essence, it is worthwhile to constantly challenge applied consistency models as use cases change or new technologies and opportunities emerge.
 
 \paragraph{Let the user decide.}
 
 When deciding on a consistency model for a distributed database system, it is important to recognize that different applications built on top of the database will themselves have different consistency requirements, so it may be a good idea to provide multiple consistency models and flexibility in configuring these models for different types of operations in a database system. Many popular database system vendors allow their users to choose for the consistency model of their choice, even at the operations level. Some of those vendors offer true fine-grained consistency options, such as Microsoft Azure Cosmos DB, which offers even 5 models with gradually decreasing consistency constraints [@microsoft2022cosmosconsistency].
+
+\todo{RabbitMQ consistency choices (quorum queues vs mirror queues) if time}
 
 \paragraph{Immutability changes everything.}
 
@@ -809,7 +817,7 @@ Load balancing becomes more challenging because replicas must be considered when
 \begin{figure}[h]
   \centering
   \includegraphics[width=0.8\textwidth]{images/load-balanced-sharding.pdf}
-  \caption{Simplified representation of a common replication and partitioning scheme for high availability. Shards are placed in availability groups (data centers) that are close to their most frequent writers. They are replicated across availability groups so that they can be read with low latency and remain available even in the event of a data center outage.}
+  \caption{Simplified representation of a common replication and partitioning scheme for high availability (with a replication factor of 3). Shards are placed in availability groups (data centers) that are close to their most frequent writers. They are replicated across availability groups so that they can be read with low latency and remain available even in the event of a data center outage.}
   \label{fig:load-balanced-sharding}
 \end{figure}
 
@@ -820,25 +828,12 @@ Load balancing becomes more challenging because replicas must be considered when
 
 Not only the replicated data within a partition, but also the transactions across partitions must follow a consistency model that meets the requirements of the system. In addition to replication between replicas of a shard, transactions must also be ordered and the atomicity of each transaction must be guaranteed. In general, transactions should be linearizable. Following the atomicity property of the ACID schema, every transaction should be applied to all shards it affects, or none at all.
 
-Providing consistency and atomicity when running transactions in a partitioned and replicated database system is substantially more challenging than just ordering operations in a single replica group, as servers in different
-shards do not see the same set of operations, yet must ensure that they execute cross-shard transactions in a consistent order.
+Providing consistency and atomicity in the execution of transactions in a partitioned and replicated database system is a substantially greater challenge than simply arranging operations in a single replica group, since servers in different shards do not see the same set of operations but must still ensure that they execute cross-shard transactions in a consistent order.
 
-"Existing systems generally achieve these goals using a layered
-approach, as shown in Figure 1. A replication protocol (e.g.,
-Paxos [40]) provides fault tolerance within each shard. Across
-shards, an atomic commitment protocol (e.g., 2PC, two-phase commit) provides atomicity and is combined with a concurrency
-control protocol (e.g., two-phase locking or optimistic concurrency control). Though the specific protocols differ, many
-systems use this structure [2, 3, 16, 19, 21, 29, 38, 47]." [@li2017eris]
+Existing systems generally achieve this using a multi-layer
+approach, as illustrated in figure [@fig:standard-partitioned-architecture]. A replication protocol is used to provide fault-tolerance and dependability inside of a replica group of a shard. Across shards, an commitment protocol provides atomicity, such as the _two-phase commit_ (2PC[^2PC]), which is combined with a concurrency control protocol for isolation, e.g. two-phase locking [@li2017eris]. With geo-replication, even another layer can be added on top to mirror the whole system into multiple geographical regions. Each of this layers adds its own coordination overhead, increasing the number of network round trips significantly and therefore the resulting latency, as illustrated in figure [@fig:2pc-plus-consensus]. NoSQL database systems therefore often forgo transactions altogether to improve availability and latency (see BASE properties of eventual consistent systems in subsection [@sec:consistency]), while NewSQL database systems again allow for transactions and provide ACID properties—mitigating the coordination problem through coordination-free replication and transactions across shards, as shown in subsection [@sec:coordination-free-replication].
 
-TODO describe 2PC here in own paragraph
-
-"A traditional architecture calls for each
-transaction to be carefully orchestrated through a dizzying
-array of coordination protocols – e.g., Paxos for replication,
-two-phase commit for atomicity, and two-phase locking for
-isolation – each adding its own overhead. As we show in
-Section 8, this can increase latency and reduce throughput by
-an order of magnitude or more."
+[^2PC]: The two-phase commit protocol ensures that all participants in a transaction agreed to run all the operations in the transaction, or none. In the first phase of the protocol (the voting phase), the approval or rejection of the commitment of the changes from all participants is collected. If all participants agree, they will be notified of the result (the commit phase) and all partial transactions will be executed (and ressource locks lifted); otherwhise, the transaction will be rolled back. Thus, since all members must be reachable for a transaction to work, 2PC is also referred to as an "anti-availability" protocol [@helland2016standing].
 
 \begin{figure}[h]
   \centering
@@ -846,9 +841,6 @@ an order of magnitude or more."
   \caption{Common architecture for a partitioned and replicated data store}
   \label{fig:standard-partitioned-architecture}
 \end{figure}
-TODO image is only for a single datacenter: it often adds another layer on top for geo-replication
-
-TODO there are alternative approaches to have coordination-free replication and transactions across shards, as shown in subsection [@sec:coordination-free-replication]
 
 \begin{figure}[h]
   \centering
@@ -856,8 +848,6 @@ TODO there are alternative approaches to have coordination-free replication and 
   \caption{Coordination between shards and replicas for consistent transactions with traditional two-phase commits (2PC) and replication}
   \label{fig:2pc-plus-consensus}
 \end{figure}
-
-"combine partitioning and sharding strategies for data intensive applications"
 
 ### Geo-Replication {#sec:geo-replication}
 
@@ -868,6 +858,11 @@ TODO causal consistency! https://www.cs.uic.edu/~ajayk/ext/FGCS2018.pdf
 TODO more from https://kafka.apache.org/documentation/#georeplication
 - Also for feeding edge cluster data into one central cloud cluster
 - In general, this is solved by simply cloning the full data in the background, either hot (while the primary cluster is still running) or cold (when the cluster is shutdown, to produce a reliable cold backup)
+
+"Consistent
+operations that span a wide area have a significant minimum round trip time, which can be tens of
+milliseconds or more across continents. (A distance of 1000 miles is about 5 million feet, so at ½ foot
+per nanosecond, the minimum would be 10 ms.) "
 
 For geo-replication, a client-centric consistency model is sufficient as not all data 
 
@@ -902,6 +897,8 @@ replica.
 
 As far as we now discussed the benefits of replication for failure management, for Performance enhancements by reducing latency in edge computing and geographically distributed networks, and to increase dependability in general, we need to discuss the _Cost of Replication_. Dependent on the level of fault-tolerance, the consistency decisions and the selected protocol itself, the performance, especially for write operations, can decrease dramatically. We briefly discuss appropriate strategies for a performance-trade-off mitigation in this case.
 
+TODO show the maths: how replication puts a upper bound on throughput
+
 Modification on one replica triggers modification on all other replicas --> messaging and acknowledgment of all operations between replicas degrades performane
 
 (So far, we discussed consistency decisions, partial repl., partitioning, geo-repl., multi-layer etc., so we are able to discuss the overall cost and trade-offs and make an educated decision)
@@ -917,9 +914,7 @@ significantly increases and throughput decreases similarly (TODO refer to evalua
     - Leveraging time splits
   - Multi-layer design (full replicated in the cloud, standalone on the edge...)
 
-There are examples that anecdotally show that high availability and high throughput are possible even under strong consistency constraints: AWS S3 introduced strong consistency for their file operations[^s3-eventual] recently in 2021 [@amazon2021s3consistency]. They even claim to deliver strong consistency "without changes to performance or availability", compared to the earlier eventual consistency.
-
-[^s3-eventual]: Bucket configuration operations are still eventual consistent in AWS S3 at the time of this writing.
+"With horizontal scaling, it is possible to keep a constantly high throughput rates (events/s). With higher replication factor, it decreases (TODO how does Zeebe keep throughput constant when latency increases???). Thanks to the buffer, intermediate higher event emitting rates can be compensated, if the mean rate stays below the max throughput... Otherwhise, the overall system slows down and probably crashes ATM (future work: Monitoring of the system, truely elastic, but due to append-only and linearizability we can not mitigate everything with partitioning if write rates stay too high for a minimum replica set; there will be a upper bound. Same would apply to eventual consistency btw: If mean write rate stays higher than max throughput, the system will neve become consistent (i.e., replica states will never converge (TODO should we mention that in fundamentals/cost of replication?)))"
 
 #### Partial Replication
 

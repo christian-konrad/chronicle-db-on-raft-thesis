@@ -9,6 +9,9 @@ If the race is won by our tools, then systems will eventually become easier to u
 
 This section first provides a general picture of the components and behavior of a Raft network as described by Ongaro
 and Ousterhout in the release paper [@ongaro2013raft] and the dissertation [@ongaro2014consensus]...
+In this work, we will focus on... we refer to the original paper, the dissertation and any related work on raft for...
+
+The name: Raft because it is built on replicated logs, such as a raft. (TODO sketch it)
 
 \todo{Use Raft outline from https://onlinelibrary.wiley.com/doi/pdf/10.1002/spe.3048}
 

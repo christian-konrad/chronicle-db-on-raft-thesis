@@ -13,7 +13,9 @@ About 1/2 page:
 - (4) Results (What's the answer?)
 - (5) Conclusion (What are the implications of the answer?)
 
-<!-- TODO this abstract is genius (without the headlines) https://arxiv.org/pdf/2108.03758.pdf >
+<!-- TODO this abstract is genius (without the headlines) https://arxiv.org/pdf/2108.03758.pdf -->
+
+<!-- TODO also great abstract https://www.diva-portal.org/smash/get/diva2:843227/FULLTEXT01.pdf -->
 
 \end{otherlanguage*}
 

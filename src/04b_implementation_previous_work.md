@@ -109,6 +109,8 @@ Specify a minimum ISR size - the partition will only accept writes if the size o
 - Raft
 - NewSQL: Offering benefits of distributed systems with scalable OLTP while still providing ACID capability for relational databases [@pavlo2016s]
 
+- Problem with WAL on raft log https://github.com/cockroachdb/cockroach/issues/38322
+
 #### Camunda Zeebe
 
 - TODO add stuff from our pages
@@ -118,6 +120,11 @@ Specify a minimum ISR size - the partition will only accept writes if the size o
 #### RabbitMQ
 
 - Raft in Quorum Queues [@rabbitmq2021quorum]
+- https://www.rabbitmq.com/quorum-queues.html
+- modern queue type for RabbitMQ implementing a durable, replicated FIFO queue
+- available as of RabbitMQ 3.8.0
+- built for a set of use cases where data safety is a top priority
+- They are not designed to be used for every problem. Their intended use is for topologies where queues exist for a long time and are critical to certain aspects of system operation, therefore fault tolerance and data safety is more important than, say, lowest possible latency and advanced queue features.
 
 #### ElasticSearch
 
@@ -125,8 +132,16 @@ Specify a minimum ISR size - the partition will only accept writes if the size o
 
 #### Google Spanner
 
+https://static.googleusercontent.com/media/research.google.com/de//pubs/archive/45855.pdf
+
 Paxos
-External consistency
+External consistency: 
+- similar to linearizability
+- "Spanner’s external consistency invariant is that for any two
+transactions, T1 and T2 (even if on opposite sides of the globe):
+if T2 starts to commit after T1 finishes committing, then the timestamp for T2 is greater than the timestamp for T1."  
+
+
 Cloud Spanner is semantically indistinguishable from a single-machine database. 
 Uses TrueTime
 built on Googles infrastructure, therefore even with strong consistency, it is highly available and can even use realtime timestamps. This is only possible due to the fact that Google is in full control of the infrastructure. "Even though it provides such strong guarantees, Cloud Spanner enables applications to achieve performance comparable to databases that provide weaker guarantees (in return for higher performance)."
@@ -232,6 +247,10 @@ Lorem ipsum...
 
 Lorem ipsum...
 
+\todo{Evaluate performance of those and mention their consistency models}
+\todo{Have a table like in the upper section}
+\todo{Performance measure here or in 05 evaluation?}
+
 #### EventStoreDB
 
 Consensus; is it raft?
@@ -242,6 +261,10 @@ https://developers.eventstore.com/server/v21.10/cluster.html#cluster-nodes
 Lorem ipsum...
 
 #### InfluxDB
+
+"The most related storage system is InfluxDB [9], an open-source time series database solution. Unlike ChronicleDB, InfluxDB is not optimized for single machine data storage but is designed from
+the ground up as a distributed system. Furthermore, in its current state, it is more suited for univariate time series data and, just like other time series systems, has no support for CEP-style
+queries."
 
 https://s3.amazonaws.com/vallified/InfluxDBRaft.pdf
 https://www.influxdata.com/blog/influxdb-clustering/

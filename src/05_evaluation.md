@@ -12,6 +12,10 @@ evaluate it
 
 In this work, an implementation of the Raft consensus protocol was proposed for replication of ChronicleDB, a high-throughput event store. It has been shown (TODO reference section) that Raft is strongly consistent, so a trade-off in performance is to be expected. In theory, the larger the number of replicas, the higher the data availability; however, at the same time, the cost of replication (which comes at the expense of performance) increases. This section addresses the evaluation of this implementation, specifically the cost of replication, by quantifying the costs and benefits that come with this approach. The challenge of the implementation is to find an optimal trade-off between the cost of replication and the availability of data.
 
+## Evaluation Goals
+
+"The main evaluation goals of this work were to test the additional cost of our techniques in terms of the amount of latency and reduced throughput introduced in the system..."
+
 
 TODO measure all of the following dependability properties:
 
@@ -52,6 +56,14 @@ TODO cite and compare with performance considerations of the raft dissertation h
 
 To evaluate this, the implementation is benchmarked against... as described in the following section.
 
+TODO also compare with cassandra
+"ChronicleDB outperformed Cassandra by a factor of over 200
+in terms of write performance on a single node. In other words: Cassandra would need at least 200 machines to compete with our solution."
+
+TODO consider to evaluate sharding (maybe in future work)
+
+
+
 ## Setup for Comparison
 
 TODO do it like in the koerber_diss.pdf  but also with the synthetic data
@@ -71,6 +83,8 @@ TODO do it like in the koerber_diss.pdf  but also with the synthetic data
 ## Throughput on Different Cluster Settings
 
 TODO first describe expected latency decrease due to network roundtrip/maximum wide area delay of replica nodes (do some math here)
+
+"In Figure 5.2 we show a comparison between the version using replication and the one without replication. The latency cost of the version using replication can be clearly observed and is expected since..." https://www.diva-portal.org/smash/get/diva2:843227/FULLTEXT01.pdf
 
 ### Comparison of Cluster Sizes
 
