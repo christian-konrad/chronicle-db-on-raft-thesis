@@ -7,10 +7,13 @@
 \todo{Write abstract}
 
 About 1/2 page:
+
 - (1) Motivation (Why do we care?)
 - (2) Problem statement (What problem are we trying to solve?)
 - (3) Approach (How did we go about it)
+    - Investigation of the requirements for consistency and dependability, comparison with existing solutions and implementation of a prototype for further investigation
 - (4) Results (What's the answer?)
+    - We identified the Raft consensus protocol as the protocol of our choice...
 - (5) Conclusion (What are the implications of the answer?)
 
 <!-- TODO this abstract is genius (without the headlines) https://arxiv.org/pdf/2108.03758.pdf -->

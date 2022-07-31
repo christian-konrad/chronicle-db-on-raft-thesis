@@ -27,7 +27,7 @@ With edge computing, the requirements on today's distributed systems increase si
 
 Approaching a solution to this problems leads to _data replication_. Replication of data resources both within a local computing cluster and across different geographic regions ensures availability and consistency to a certain degree in the event of a node failure resulting from various types of faults. An effective replication protocol not only enables efficient access to vast amounts of data, but also reduces latency in large-scale, geo-replicated cloud environments. However, there is no one-size-fits-all solution: applications that rely on replication for high availability and low latency must make trade-offs between consistency, availability, and latency.
 
-Fortunately, several replication algorithms have already been proposed to achieve availability under different consistency and fault-tolerance conditions. This work attempts to identify such a replication protocol that meets the desired write and query performance characteristics for ChronicleDB, and then find an implementation design so that it can be used as a fault-tolerant, highly available, and scalable cluster in addition to the embedded and standalone server modes.
+Fortunately, several replication algorithms have already been proposed to achieve availability under different consistency and fault-tolerance conditions, such as the _Raft consensus protocol_. This work attempts to identify such a replication protocol that meets the desired write and query performance characteristics for ChronicleDB, and then find an implementation design so that it can be used as a fault-tolerant, highly available, and scalable cluster in addition to the embedded and standalone server modes.
 
 ## Problem Formulation
 

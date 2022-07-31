@@ -52,7 +52,11 @@ for availability: both require maintaining replica consistency.
 In general, maintaining strong consistency is achievable but
 expensive"
 
-TODO cite and compare with performance considerations of the raft dissertation https://web.stanford.edu/~ouster/cgi-bin/papers/OngaroPhD.pdf
+TODO cite and compare with performance considerations of the raft dissertation https://web.stanford.edu/~ouster/cgi-bin/papers/OngaroPhD.pdf p 140 ff
+
+TODO reference the throughput graph from raft chapter, phrase it as "expected throughput decline"
+
+TODO also compare against throughput chart from zookeeper paper https://www.usenix.org/legacy/event/atc10/tech/full_papers/Hunt.pdf and http://www.cs.cornell.edu/courses/cs6452/2012sp/papers/zab-ieee.pdf
 
 To evaluate this, the implementation is benchmarked against... as described in the following section.
 
@@ -81,6 +85,8 @@ TODO do it like in the koerber_diss.pdf  but also with the synthetic data
     - TODO reference/citate literature on this
 
 ## Throughput on Different Cluster Settings
+
+"To evaluate our system, we benchmark throughput when the system is saturated"
 
 TODO first describe expected latency decrease due to network roundtrip/maximum wide area delay of replica nodes (do some math here)
 

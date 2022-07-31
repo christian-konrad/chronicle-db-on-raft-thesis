@@ -60,7 +60,7 @@ as a library or run as a centralized system without the necessity to use the com
 
 ### Requirements and Architecture
 
-\epigraph{The log is the database.}
+\epigraph{The log is the database.}{}
 
 In ChronicleDB, the major design principle is: _the log is the database_.
 
@@ -68,7 +68,7 @@ In ChronicleDB, the major design principle is: _the log is the database_.
 
 \begin{figure}[h]
   \centering
-  \includegraphics[width=1.1\textwidth]{images/chronicle-architecture.pdf}
+  \includegraphics[width=0.45\textwidth]{images/chronicle-architecture.pdf}
   \caption{Overview of the ChronicleDB architecture}
   \label{fig:chronicle-architecture}
 \end{figure}
@@ -86,8 +86,8 @@ thus, our goal is to maintain a physical order on application time
 
 \begin{figure}[h]
   \centering
-  \includegraphics[width=1.2\textwidth]{images/chronicle-queue-topology.pdf}
-  \caption{Illustrative example for a ChronicleDB event queue topology for 6 event streams}
+  \includegraphics[width=0.8\textwidth]{images/chronicle-queue-topology.pdf}
+  \caption[Example of a ChronicleDB queue topology for 6 event streams]{Illustrative example of a ChronicleDB queue topology for 6 event streams}
   \label{fig:chronicle-queue-topology}
 \end{figure}
 
@@ -111,7 +111,7 @@ two different disks."
 
 \begin{figure}[h]
   \centering
-  \includegraphics[width=1.3\textwidth]{images/chronicle-macro-blocks.pdf}
+  \includegraphics[width=0.45\textwidth]{images/chronicle-macro-blocks.pdf}
   \caption{Layout of macro blocks in the ChronicleDB storage}
   \label{fig:chronicle-macro-blocks}
 \end{figure}

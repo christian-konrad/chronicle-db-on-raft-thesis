@@ -73,6 +73,7 @@ header-includes: |
         \begin{list}{}{\leftmargin=1cm
           \labelwidth=\leftmargin}\item[\Large\ding{43}]}
       {\end{list}\end{mdframed}\par}
+    \newcommand{\breakedparagraph}[1]{\paragraph{#1}\mbox{}\\[-8pt]}
 bibliography: [citations.bib]
 csl: [ieee.csl]    
 classoption: [symmetric]

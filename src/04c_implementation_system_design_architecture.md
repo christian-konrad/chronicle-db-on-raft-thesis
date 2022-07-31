@@ -67,6 +67,38 @@ TODO brief enumeration of all major challenges
 
 Throughout the next sections, we will show how we tackled these challenges, and in chapter [@sec:conclusion], we will show how these could be further mitigated in the future.
 
+## Limitations
+
+Due to the complexity of this topic, the implementation in this work is limited to a few well-justified considerations.
+
+\paragraph{Geo-Replication.}
+
+We limit our work to intra-cluster replication. See the conclusion for some hints for further investigations.
+
+\paragraph{Byzantine-Fault Tolerance.}
+
+We haven't implemented or designed a byzantine-fault tolerant version of ChronicleDB, as this work is limited to a problem scope where byzantine faults are rare (but not yet excluded).
+
+\paragraph{Transaction Handling.}
+
+- TODO no transactions so far, which is good for us. No need to think about linearizing transactions and making them atomic.
+- Only atomic inserts
+- If we need transactions, especially across partitions, refer to [@sec:partitioning] and [@sec:coordination-free-replication]
+
+""Currently, there is a lack of systems supporting the above-described workload scenario (write-intensive, ad hoc temporal queries, and fault-tolerance). Standard database systems are not designed for supporting such write-intensive workloads. Their separation of data and transaction logs generally incurs high overheads."
+
+No transactions, but a log -> But still a very less overhead then with real transaction logs (with locking mechanisms)
+
+\paragraph{Log Optimization.}
+
+I/O on the Raft log can be costly, as all operations must be written to the log before executed on the event store replicas. Without buffering, the log looks almost similar to the actual event stream persisted in the store. In addition, it requires non-trivial state management such as allocation and pruning to prevent unbounded growth.
+
+The log implementation in this work is far from being optimized. Even more, we violate the "The log is the database" philosophy of ChronicleDB. There are approaches for log-less state machine replication that can lead back to this philosophy [@skrzypzcak2020towards]. But, we limit our work on the replication protocol itself, not on the implementation details of the log. In chapter [@sec:conclusion], we list possible improvements on the log.
+
+\paragraph{Log Compaction.}
+
+We haven't implemented a snapshotting mechanism so far. Currently, when the system is rebooted, the whole log is replayed and the $\textrm{TAB}^+$ index rebuilt, which is very expensive. While snapshotting a simple key-value store is simple (which previous literature was limited to), snapshotting the event store by creating clones of it to the current point in time is too expensive, as the store is already written to disk of the replicas. We considered that it is sufficient to reduce the snapshot to a pointer that points to the latest committed event in the store, and changing the state transfer implementation of Ratis to one that transfers the $\textrm{TAB}^+$ up to this pointer. But this method may be limited to an append-only event store—we haven't considered a solution for out-of-order entries yet, nor are we sure that this requires expectional handling at all.
+
 ## Library Decision Considerations
 
 - Building it from ground up makes sense if you want full control and adjust the protocol to perfectly fit your use case (TODO find and cite the paper/tool that mentioned that, it must have been mongo or couchbase)
@@ -125,7 +157,7 @@ detected: the output (computed events) grows monotonically with the input (factu
 \begin{figure}[h]
   \centering
   \includegraphics[width=0.8\textwidth]{images/complex-event-processing.pdf}
-  \caption{In complex event processing, events from multiple streams are fuzzily correlated to derive monotonic aggregates}
+  \caption[Complex event processing with event correlation]{In complex event processing, events from multiple streams are fuzzily correlated to derive monotonic aggregates}
   \label{fig:complex-event-processing}
 \end{figure}
 
@@ -140,14 +172,14 @@ For ESP use cases like algorithmic trading, we have causally related events in a
 \begin{figure}[h]
   \centering
   \includegraphics[width=0.8\textwidth]{images/ooo-consistency.pdf}
-  \caption{For non-monotonic derived events or aggregates, out-of-order events must be prohibited, as they could render the derived events wrong: what was already observed must not change. a) A non-monotonic derived aggregate is created based on previous facts (events). b) When observing the event stream later again, an out-of-order event occured which invalidated the previous derived aggregate and created a new aggregate.}
+  \caption[Out-of-order events breaking non-monotonic aggregates]{For non-monotonic derived events or aggregates, out-of-order events must be prohibited, as they could render the derived events wrong: what was already observed must not change. a) A non-monotonic derived aggregate is created based on previous facts (events). b) When observing the event stream later again, an out-of-order event occured which invalidated the previous derived aggregate and created a new aggregate.}
   \label{fig:ooo-consistency}
 \end{figure}
 
 \begin{figure}[h]
   \centering
-  \includegraphics[width=1.1\textwidth]{images/ohlc-ooo-problem.pdf}
-  \caption{Algorithmic trading as an example for strong consistency requirements. a) A candlestick pattern was detected in the trading events in a order book, causing a buy alert to be sent (and executed). b) At a later time, the past candlesticks are displayed differently due to some out-of-order events, so that the buy alert is now wrong - but it is already too late. This reduces trust in this hypothetical trading platform and its reputation.}
+  \includegraphics[width=0.7\textwidth]{images/ohlc-ooo-problem.pdf}
+  \caption[Algorithmic trading as an example for strong consistency requirements]{Algorithmic trading as an example for strong consistency requirements. a) A candlestick pattern was detected in the trading events in a order book, causing a buy alert to be sent (and executed). b) At a later time, the past candlesticks are displayed differently due to some out-of-order events, so that the buy alert is now wrong - but it is already too late. This reduces trust in this hypothetical trading platform and its reputation.}
   \label{fig:ohlc-ooo-problem}
 \end{figure}
 
@@ -165,6 +197,25 @@ https://arxiv.org/pdf/cs/0612115.pdf
 
 With our partitioning approach, we don't provide linearizability across streams, so we don't ensure the order of events to be committed to the respective event store instances / indexes to be according to their insertion time. This is ok as we only care about the actual event time.
 
+### Replication Protocol Decision
+
+Of the protocols presented in detail in chapter [@sec:background], the protocol of our choice is Raft (see subchapter [@sec:raft]). Here follows a list of reasons that justify the use of Raft for our purposes:
+
+- It provides strong consistency,
+- An implementation can be derived from the complete and concise specification, which reduces the chance to introduce violations of correctness guarantees,
+- It is a understandable protocol, which facilitates the application and customization of the protocol,
+- It is commonly used by the largest distributed systems vendors in large-scale production systems (cf. section [@sec:previous-work]),
+- Academic research on Raft has been trending in recent years and will likely continue to do so in the coming years, allowing for a reliable stream of updates and improvements to the protocol,
+- There are many ready-to-use implementations of Raft with proper APIs written in major programming languages and supported by large communities that will also adopt improvements from recent scientific research,
+- Multi-Raft allows us to implement partitioning and sharding natively,
+- The monotonically growing append-only write-ahead log that contains the commands (i.e. the events) could be naturally paired with the ChronicleDB event log according to "the log is the database",
+- The log also allows to work with out-of-order events efficiently, compared to primary-copy replication,
+- In the face of strong consistency, the cost of replication are justifiable in Raft.
+
+<!--
+Primary-copy like ZAB would also work, as the diff of states after each operation == event(s) - no big difference to SMR here, but with OOO sending the diff would mean deriving the op again - because sending the insert index of the event and the event itself is not sufficient
+-->
+
 ### Consistency From the Client’s Point of View
 
 - OOO: Assumes non-linearized client-server communication
@@ -176,13 +227,9 @@ With our partitioning approach, we don't provide linearizability across streams,
 - But not for event time (no strict consistency), so we can expect a lot of OOO
 - But: The buffer also helps here to avoid OOO. Strict concistency is too expensive: Assuming the clocks of all devices are the same (which is rare; we only have that with infra in full control (cf. Google example)), we would still need to order events before storing in the store, but we won't know if there are still events to come (due to network latency of some clients). This would require extremely expensive coordination between clients. This is only of theoretical interest: we don't need that in practice due to OOO handling and the buffer
 
-"However, we must not assume that the data will always arrive in the correct time sequence. When we perform the search for the complex event, it may happen that the user data arrives earlier than the GPS data. "
+"However, we must not assume that the data will always arrive in the correct time sequence. When we perform the search for the complex event, it may happen that the user data arrives earlier than the GPS data."
 
-#### Transaction Handling
-
-- TODO no transactions so far, which is good for us. No need to think about linearizing transactions and making them atomic.
-- Only atomic inserts
-- If we need transactions, especially across partitions, refer to [@sec:partitioning] and [@sec:coordination-free-replication]
+TODO Transaction Handling ?
 
 ""Currently, there is a lack of systems supporting the above-described workload scenario (write-intensive, ad hoc temporal queries, and fault-tolerance). Standard database systems are not designed for supporting such write-intensive workloads. Their separation of data and transaction logs generally incurs high overheads."
 
@@ -268,12 +315,41 @@ https://iotdb.apache.org/UserGuide/Master/Cluster/Cluster-Setup.html
 - Failure detection (TODO also reference 03a)
 - TODO chain replication states to Allow to build a distributed system without external cluster management process; raft did it, too (see KIP-500), but why did I ended up in here? Describe this so it makes sense (multi-raft, partitioning, add work item to conclusion to get rid of the cluster manager process)
 
+- TODO all commands of the cluster mngmt SM in mathematical notation, and short listing of protobuf example
+
 #### Event Store State Machine
 
 - Standalone Event Store wrapped
 - Replicated Event Store as a facade / to be used as the client to the cluster
 - TODO think of moving it out of spring boot, use as standalone lib
 - TODO if reasonable, list algos
+
+- TODO all commands of the SM in mathematical notation, and short listing of protobuf example
+
+
+
+
+In its core, a very simplified state machine for ChronicleDB could be describes as
+
+$C$ set of all possible events $e$
+
+$S = \{\dots\}$ all possible sequences $E$ of events
+
+$\delta(e, ()) = (e)$ where $()$ is the empty sequence
+
+$\delta(e, (e_1, \dots, e_n)) = (e_1, \dots, e_n, e)$
+
+$\delta'((e'_1, \dots, e'_m), (e_1, \dots, e_n)) = \delta (e'_m, \dots \delta(e'_1, (e_1, \dots, e_n))\dots) = (e_1, \dots, e_n, e'_1, \dots, e'_m)$
+
+TODO as far as the log consists of commands rather than values, we describe it as 
+
+$\delta(cmd(arg), ()) = cmd'(arg, ())$
+
+And concretized
+
+$\delta(append(e), \empty) = (e)$
+
+$\delta(append(e), (e_1, \dots, e_n)) = (e_1, \dots, e_n, e)$
 
 #### Log Implementation
 
@@ -293,13 +369,35 @@ TODO the log is a very naive implementation. Popular applications even use effic
 \begin{figure}[h]
   \centering
   \includegraphics[width=0.9\textwidth]{images/chronicle-raft-log.pdf}
-  \caption{TODO}
+  \caption[Relation of the Raft log and the event store]{Relation of the Raft log and the event store. a) Appending events without allowing for out-of-order events always results in the same sequential order of the events in the Raft log (wrapped in operations) and the events in the event store, even if insertion and event time differ. b) With buffered inserts and without out-of-order insertions, the order correlation still applies, as the buffer contents are ordered before insertion and the buffer can only be served from a single leader node. c) As soon as out-of-order insertions are allowed, the order of the two logs given by insertion and event time is no longer guaranteed to correlate. This can break previously derived non-monotonic aggregates, as shown in figure \ref{fig:ooo-consistency}.}
   \label{fig:chronicle-raft-log}
 \end{figure}
 
+TODO reference future work for log-less replication, to satisfy the "The log is the database" thing again [@skrzypzcak2020towards]
+
 #### Buffered Inserts
 
-TODO compare raft log and event index
+Cf [@sec:cost-reduction]
+
+From original diss file:///Users/christian.konrad/Documents/Paper/style%20inspiration/OngaroPhD.pdf:
+
+"Raft supports batching and pipelining of log entries, and both are important for best performance.
+Many of the costs of request processing are amortized when multiple requests are collected into a
+batch. For example, it is much faster to send two entries over the network in one packet than in two
+separate packets, or to write two entries to disk at once. Thus, large batches optimize throughput
+and are useful when the system is under heavy load. "
+
+Unfortunately, ratis does not support batching itself. Therefore, we implemented a buffer ourselves to provide batching.
+(TODO mention that its better to implement batching in raft, so log entries stay atomic and do not bundle multiple operations per log entry like in our case)
+
+It is recommended to insert events in batches to minimize the network overhead (cf. InfluxDB)...
+To make this easy for the user... don't move batching into the responsibility of the client or the user... ChronicleDB can be run with buffered inserts (optionally)... strong leader buffer (not implemented yet)
+
+and also improve overall latency using buffer... cf. ring buffer in cockroach
+
+https://docs.influxdata.com/influxdb/v2.3/write-data/best-practices/optimize-writes/#batch-writes
+
+
 TODO log is sequentially ordered by time of imsert... using java concurrency mechanisms... what if communicated via rest? not linearized
 TODO buffer: fire and forget. wo/ buffer + sync: strong linearizable
 TODO buffer violates strong consistency: Events are only ordered in the buffer, and the event sets of the buffers are ordered via raft log, but when applying to state machines, the events of the buffers can overlap. Events are still ordered in the event store, but inserting them needs a lot of OOO.
@@ -315,7 +413,7 @@ Two modes: Async fire-and-forget and synchronous. The latter is important when a
 \begin{figure}[h]
   \centering
   \includegraphics[width=1\textwidth]{images/ha-chronicle-architecture.pdf}
-  \caption{Architecture of a ChronicleDB cluster for high availability.}
+  \caption{Architecture of a ChronicleDB cluster for high availability}
   \label{fig:ha-chronicle-architecture}
 \end{figure}
 
@@ -404,7 +502,7 @@ when rebalancing, replicas may be moved across nodes.  TODO show my figures on r
 
 partition = raft group on a node (in Ratis, called a division?)
 
-\paragraph{Time splits.}
+\paragraph{Time Splits.}
 
 In figure xxx, $A_{t_1}^L$ denotes a... when we restrict OOO for historic time splits, we could also replicate them leader-less, as there won't be any writes (TODO aggregate indexes on older splits)... and read from every available node... 
 
@@ -416,13 +514,13 @@ TODO describe the benefit in read scaling with time splits (while writes on the 
 \begin{figure}[h]
   \centering
   \includegraphics[width=1\textwidth]{images/multi-raft-load-balancing.pdf}
-  \caption{Partitioning using time splits with a replication factor of 3, load balanced on 5 nodes. Metadata is replicated on every node (at least on every node in the bootstrap list) to ensure cross-cluster disaster resilience and fault tolerance and allows the partitions on the respective nodes to directly read the metadata on its own node.}
+  \caption[Load-balanced partitioning using time splits]{Partitioning using time splits with a replication factor of 3, load balanced on 5 nodes. Metadata is replicated on every node (at least on every node in the bootstrap list) to ensure cross-cluster disaster resilience and fault tolerance and allows the partitions on the respective nodes to directly read the metadata on its own node.}
   \label{fig:multi-raft-load-balancing}
 \end{figure}
 
 ( TODO is this extra hard replication on metadata neccessary? -> may describe possible byzantine tolerance. But what if you scale with hundreds of nodes? -> discuss this in conclusion)
 
-\paragraph{Sharding (Write splits).}
+\paragraph{Sharding (Write Splits).}
 
 TODO also mention hash split keys to have write-scaling.
 This allows to scale with the number of writing clients. 
@@ -432,7 +530,7 @@ The write splits allow for faster writes, but when querying or aggregating, righ
 \begin{figure}[h]
   \centering
   \includegraphics[width=1\textwidth]{images/multi-raft-historic-splits-sharding.pdf}
-  \caption{A multi-raft cluster with historic time splits and sharding of the current time split to improve write throughput and latency}
+  \caption[Multi-raft cluster with historic time splits and sharding]{A multi-raft cluster with historic time splits and sharding of the current time split to improve write throughput and latency}
   \label{fig:multi-raft-historic-splits-sharding}
 \end{figure}
 
@@ -441,7 +539,7 @@ The write splits allow for faster writes, but when querying or aggregating, righ
 \begin{figure}[h]
   \centering
   \includegraphics[width=1\textwidth]{images/event-stream-merging.pdf}
-  \caption{Illustration of two event stream shards merged on a query with tumbling windows}
+  \caption[Two event stream shards merged on a query]{Illustration of two event stream shards merged on a query with tumbling windows}
   \label{fig:event-stream-merging}
 \end{figure}
 
@@ -465,7 +563,7 @@ TODO glossary with new words in the margin
 \begin{figure}[h]
   \centering
   \includegraphics[width=1\textwidth]{images/multi-raft-follower-fails.pdf}
-  \caption{Rebalancing in the event of a node failure that leads to a raft group with too few replicas, while the leader stays intact. a) A fault makes a node crash (fail-stop). The meta quorum detects this crash and notifies the leader of this group. b) The leader requests a membership change from the meta quorum. The quorum selects a node based on balancing rules and triggers a network reconfiguration. The node is added as a new follower to the group. The leader then installs the current state snapshot on this new follower replica.}
+  \caption[Rebalancing in the event of a follower failure]{Rebalancing in the event of a node failure that leads to a raft group with too few replicas, while the leader stays intact. a) A fault makes a node crash (fail-stop). The meta quorum detects this crash and notifies the leader of this group. b) The leader requests a membership change from the meta quorum. The quorum selects a node based on balancing rules and triggers a network reconfiguration. The node is added as a new follower to the group. The leader then installs the current state snapshot on this new follower replica.}
   \label{fig:multi-raft-follower-fails}
 \end{figure}
 
@@ -474,7 +572,7 @@ TODO leader fails
 \begin{figure}[h]
   \centering
   \includegraphics[width=1\textwidth]{images/multi-raft-leader-fails.pdf}
-  \caption{Rebalancing in the event of a leader failure. a) As the followers no longer receive heartbeats from the leader of their group, they start a vote. The winner of the vote becomes the new leader of this group. b) The cluster manager can now assign a new follower similar to the case in figure \ref{fig:multi-raft-follower-fails}.}
+  \caption[Rebalancing in the event of a leader failure]{Rebalancing in the event of a leader failure. a) As the followers no longer receive heartbeats from the leader of their group, they start a vote. The winner of the vote becomes the new leader of this group. b) The cluster manager can now assign a new follower similar to the case in figure \ref{fig:multi-raft-follower-fails}.}
   \label{fig:multi-raft-leader-fails}
 \end{figure}
 
@@ -502,13 +600,7 @@ Lorem...
 
 TODO what is edge cloud? [@cao2020overview]
 
-\todo{System design illustration of embedded dbs + edge + cloud cluster}
-
-\todo{Rephrase; may break it in}
-\paragraph{Terminal layer.} The terminal layer, also refered to as the _sensing layer_, consists of all types of devices connected to the edge network, including mobile terminals and many Internet of Things devices (such as sensors, smartphones, smart cars, cameras, etc.). In the terminal layer, the device is not only a data consumer, but also a data provider. 
-\paragraph{Edge layer.} The edge layer supports the access of terminal devices downward, and stores and computes the data uploaded by terminal devices. Standalone time-series database on industrial PC (= original standalone ChronicleEngine) with EPAs...
-\paragraph{Cloud Layer.} The cloud computing center can permanently store the reported data of the edge computing layer, and it can also complete the analysis tasks that the edge computing layer cannot handle and the processing tasks that integrate the global information. Distributed event store in raft cluster mode
-
+\todo{Reference to fundamentals}
 
 TODO draw edge-computing diagram for chronicleDB
 

@@ -43,9 +43,7 @@ https://www.scribbr.co.uk/thesis-dissertation/conclusion/
 - Raft formally proven
     - If ratis is 100 % following raft protocol and therefore formally correct still to be confirmed
 - Possible to build a strong-consistent event store with great availability
-- TODO
-
-
+- TODO serialization expensive (and what else?)
 
 The given implementation of the Raft replication protocol has a high cost of replication. With a growing number of replica nodes, the throughput decreases. There are various strategies to address this issue: partitioning strategies (TODO ref to section),... to mention a few. They all come with some level of trade-offs.
 
@@ -55,7 +53,7 @@ The given implementation of the Raft replication protocol has a high cost of rep
 
 ## Future Work
 
-\epigraph{Strive for progress, not perfection.}
+\epigraph{Strive for progress, not perfection.}{}
 
 
 ### Consistency Considerations
@@ -117,19 +115,36 @@ There are also other strategies to improve the throughput that do not violate co
 
 #### Geo-Replication
 
-- In it's given implementation not suitable for geo-replication (TODO reference to 03b) due to it's single-leader characteristic
-- But can be simply adressed using data mirroring 
-- ? There are different solution proposals for that like multi-raft, multi-leader raft... (TODO reference those from 03b)
-- ? Or one could learn from strategies of protocols with weaker consistency [@hsu2021cost] 
+Providing strong consistency with geo-replication is expected to be too expensive for high-throughput event stores, as shown in subsection [sec:geo-replication]. Depending on the locations of the geo-replicas, it will limit the maximum throughput dramatically. Batching writes, i.e. by using a buffer, can help, but only to a certain extend. 
+We recommend to invest time into investigating modern geo-replication approaches, e.g. such with weaker consistency models and coordination-free variants, justified to the cost of consistency. Note that not all use cases allow for this. In that cases, we suggest to look into improved sharding techniques or multi-leader or leaderless Raft, or just mirroring the data into read-only replicas (which maintain the correct event order).
 
-#### More Raft Optimizations
+[@hsu2021cost] 
+
+### Raft Optimizations
 
 - A paper describes a formal mapping of Paxos optimization to Raft with guaranteed correctness... [@wang2019parallels]
 
-### Raft Log Implementation
+For Raft improvements and extensions in general, see subsection [@sec:raft-extensions].
+
+#### Raft Log Implementation
 
 \todo{mention here AND in system design}
 TODO the log is a very naive implementation. Popular applications even use efficient embedded (in-memory?) storage engines such as RocksDB (like CockroachDB https://github.com/cockroachdb/cockroach/issues/38322) - and they also come with WAL logs, so we have a multi-layer architecture of the raft log. Even if this comes with some issues, we can learn from it and use a better log approach. Our naive approach (the Ratis default one) can slow down the system. Makes sense to have the raft log running on a different thread to not block other operations and improve I/O
+
+TODO even consider log-less replication, to satisfy the "The log is the database" thing again, as described in [@skrzypzcak2020towards]
+ In contrast to the log-based architecture, replicas agree on a sequence of replica states instead of a sequence of commands
+
+ "the leader writes the log entry to its disk in parallel
+with replicating the entry to the followers, which can reduce latency significantly"
+
+#### Buffer Improvements
+
+The traditional Raft algorithm executes a client’s request to meet linear consistency with sequential execution and sequential submission, which badly impacts performance.
+As a possible extension, Li et al. propopsed an additional asynchronous batch processing approach [@li2022improved] that increases the performance of raft in the face of concurrent requests, which in their experimental setup improved the raft performance by 2 to 3.6 times.
+
+#### Introduce Learner Roles
+
+A weakness of Raft compared to Paxos is the absence of the learner role. By introducing dedicated learner nodes, read latency can be improved by providing data-locality for certain shards. This comes especially handy for operating on the edge: It allows to provide read replicas on the edge, close to the clients, without compromising write latency.
 
 ### Distributed Queries
 

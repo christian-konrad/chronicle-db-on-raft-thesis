@@ -32,7 +32,7 @@ in general, NoSQL is mostly eventual (but see mongodb as a counterexample)
 Also look at https://www.researchgate.net/figure/Consistency-models-comparison_tbl1_331104869
 
 \begin{table}[h!]
-    \caption{The list of systems studied in this work, and their primary dependability and consistency properties}
+    \caption[List of systems studied in this work]{The list of systems studied in this work, and their primary dependability and consistency properties}
     \centering
     \def\arraystretch{1.5}
     \begin{tabularx}{\textwidth}{>{\bfseries}l X X X} 
@@ -53,7 +53,7 @@ Also look at https://www.researchgate.net/figure/Consistency-models-comparison_t
 \begin{figure}[h]
   \centering
   \includegraphics[width=0.65\textwidth]{images/CAP-dbs.pdf}
-  \caption{Illustration of the CAP theorem}
+  \caption[Classification of database systems with the CAP theorem]{Classification of different database systems into the categories of the CAP theorem}
   \label{fig:cap-dbs}
 \end{figure}
 
@@ -68,13 +68,13 @@ Written by the author of Raft... [@ongaro2015logcabin]
 
 ##### Zookeeper
 
-- Is Primary-Copy Replication (TODO refer to 03a)
-- External agent
-- Provides a risk as a single point of failure
-- Ends up in Primary-Secondary Replication
-- Discontinued in KIP-500: Self-Managed Meta Quorum with Raft, see next section
-- TODO provide the reasoning from Apache here why Zookeeper is considered bad vs. raft/self-organized quorum
-- Zookeeper is used in some/many (?) other Apache Projects:
+See [@sec:zookeeper]
+
+Discontinued in KIP-500: Self-Managed Meta Quorum with Raft, see next section
+
+TODO provide the reasoning from Apache here why Zookeeper is considered bad vs. raft/self-organized quorum
+
+Zookeeper is used in some/many (?) other Apache Projects:
 - https://mesos.apache.org/ 
 
 ##### KIP-500: Replace ZooKeeper with a Self-Managed Metadata Quorum (Raft)
@@ -198,6 +198,20 @@ monetary cost [@zhou2021fault]."
 
 - Raft
 
+#### Tigerbeetle
+
+https://www.tigerbeetle.com/
+
+accounting database
+
+- Strict serializable
+- 
+- replicated state machine - Viewstamped replication
+
+At the heart of TigerBeetle is the pioneering Viewstamped Replication consensus protocol developed by Brian M. Oki with Turing Award-winner Barbara Liskov and later James Cowling at MIT for low-latency leader election and optimal strict serializability.
+- Extremely fault-tolerance
+- High throughput (they state 1,000,000 journal entries per second)
+
 #### Apache Ozone
 
 Apache Ozone is a... [@apache2022ozone]
@@ -234,6 +248,7 @@ Apaache Ratis is the library of choice for the implementation of a replicated ev
 - Apache Flink
 - Apache Cassandra
     - Availability+Partition Tolerance
+    - "Even in systems which don't use consensus, quorum is used to make sure the latest update is available to at least one server in case of failures or network partition. For instance, in databases like Cassandra, a database update can be configured to return success only after a majority of the servers have updated the record successfully."
 - Redis (https://github.com/RedisLabs/redisraft), still working on it, not production-ready
     - https://redis.com/blog/redisraft-new-strong-consistency-deployment-option/ 
     - Consistency+P
@@ -262,9 +277,16 @@ Lorem ipsum...
 
 #### InfluxDB
 
+Metadata: Strong consistent (with Raft)
+Data: Eventually consistent (according to own statement, in practice only under very high throughputs)
+
 "The most related storage system is InfluxDB [9], an open-source time series database solution. Unlike ChronicleDB, InfluxDB is not optimized for single machine data storage but is designed from
 the ground up as a distributed system. Furthermore, in its current state, it is more suited for univariate time series data and, just like other time series systems, has no support for CEP-style
 queries."
+
+"By default, InfluxDB writes data in nanosecond precision. However if your data isn’t collected in nanoseconds, there is no need to write at that precision. For better performance, use the coarsest precision possible for timestamps."
+
+They also recommend inserting in batches: https://docs.influxdata.com/influxdb/v2.3/write-data/best-practices/optimize-writes/#batch-writes
 
 https://s3.amazonaws.com/vallified/InfluxDBRaft.pdf
 https://www.influxdata.com/blog/influxdb-clustering/
@@ -292,6 +314,36 @@ To not store the data has been introduced with a newer version, before that, all
 - Approach was abandoned by 0.9.0
 
 Planned design in 0.10.0: Distinct Raft subsystem + data-only nodes
+
+Development history:
+Old versions with full raft, but in alpha state: https://archive.docs.influxdata.com/influxdb/v0.9/
+https://www.influxdata.com/blog/influxdb-clustering-design-neither-strictly-cp-or-ap/ (Nor CP or AP)
+
+
+
+But: When writing to data nodes, user can choose the consistency level (it also has quorum and all), which is done without Raft. What does that mean? Is it then consensus? TODO find if they have a formal specification for it, and if it is safe and strong consistent (when using quorum)  https://docs.influxdata.com/enterprise_influxdb/v1.8/concepts/clustering/#write-consistency
+
+"Hinted handoff
+Hinted handoff is how InfluxDB Enterprise deals with data node outages while writes are happening. Hinted handoff is essentially a durable disk based queue. When writing at any, one or quorum consistency, hinted handoff is used when one or more replicas return an error after a success has already been returned to the client."
+
+--> Not strong consistent data by design:
+
+Old statement:
+"Scale is critical. The database must be able to handle a high volume of reads and writes.
+Pro: The database can handle a high volume of reads and writes
+Con: The InfluxDB development team was forced to make tradeoffs to increase performance
+Being able to write and query the data is more important than having a strongly consistent view.
+Pro: Writing and querying the database can be done by multiple clients and at high loads
+Con: Query returns may not include the most recent points if database is under heavy load"
+
+Current statement:
+"Handle read and write queries first
+InfluxDB prioritizes read and write requests over strong consistency. InfluxDB returns results when a query is executed. Any transactions that affect the queried data are processed subsequently to ensure that data is eventually consistent. Therefore, if the ingest rate is high (multiple writes per ms), query results may not include the most recent data."
+
+Out-of-order:
+"The vast majority of writes are for data with very recent timestamps and the data is added in time ascending order.
+Pro: Adding data in time ascending order is significantly more performant
+Con: Writing points with random times or with time not in ascending order is significantly less performant"
 
 https://www.influxdata.com/blog/multiple-data-center-replication-influxdb/
 
