@@ -60,7 +60,7 @@ as a library or run as a centralized system without the necessity to use the com
 
 ### Requirements and Architecture
 
-\epigraph{The log is the database.}{}
+\epigraph{\hfill The log is the database.}{}
 
 In ChronicleDB, the major design principle is: _the log is the database_.
 
@@ -164,8 +164,28 @@ situation persists, then the input queues may run full, resulting in back pressu
 
 ### Lambda Engine
 
-Lorem...
+TODO describe what we have written in system design again here
+
+<!--
+
+In general, we distinguish between real-time and non-real-time applications when it comes to stream and event processing. Commonly applied system architecture approaches provide both real-time and non-real-time processing to users and clients. Two popular architectures that provide this approach are the _Kappa architecture_ and the _Lambda architecture_. Both architectures allow for real-time and historical analytics in a single setup. The Lambda architecture requires that event processing reflects the latest state in both the batch and real-time streaming layers (called the _speed layer_), hence requiring consistency. At the heart of the Lambda architecture is an append-only data source—such as ChronicleDB, since it allows for both continous and ad-hoc queries.
+
+What makes ChronicleDB special here is that it can act both as a stream provider, data lake and warehouse. It unifies both OLTP and OLAP properties, making it possible to replace multiple lined up systems (such as Apache Kafka with a Hadoop or Cassandra instance for batch processing) in a Lambda architecture with a ChronicleDB cluster
+
+-->
 
 More benefits... [@glombiewski2020designing]
+
+### Relation to Event Stream Processing
+
+ChronicleDB keeps all secondary
+information within the primary index, and thus omits random writes during index creation. In
+addition, queries on multiple attributes do not need to access multiple indexes. ChronicleDB computes these aggregates incrementally as new events arrive. The applied techniques are closely
+related to sliding window aggregation in data stream processing systems [28, 29, 39]
+
+
+Event Stream Processing. ChronicleDB is designed to run side-by-side with event stream
+processing systems such as Esper1 or Apache Flink [19]. It provides the ability to re-run continuous queries on historical event data and boost their performance via indexes. In this work, we focus
+on two important operations: sliding window aggregation and pattern matching.
 
 \pagebreak

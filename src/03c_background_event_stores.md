@@ -12,7 +12,26 @@ Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod 
 - Transactional vs. Fire-and-Forget (?)
 - etc.
 
+### What are Events?
+
+events are notifications about observations from
+the real world. 
+An event stream is a temporally ordered sequence of events and
+thus a special form of a data stream. 
+
+An event belongs to a certain domain, which is expressed by the event schema.
+
+TODO event definition here. Then omit definition in system design
+
+Domain D
+
 ### Differentation of Event Stores and Time Series Databases
+
+
+An event store contains and manages events in multiple _event streams_, while a time series database stores and manages _time series_.
+
+Event streams are...
+Time series are...
 
 "The domain of ChronicleDB partly relates to different types of storage systems, including data warehouse, event log processing, as well as temporal database systems."
 
@@ -31,6 +50,16 @@ Zeitreihendaten in regelmäßigen Zeitabständen gemessen und somit auch in rege
 59 Im Gegensatz
 dazu finden Events i.d.R. nach unvorhersehbaren Mustern statt, wie auch das Beispiel
 des User-Logins in einer Webanwendung verdeutlicht. Demzufolge erfolgt die Speicherung von Event Daten eher in unregelmäßigen Zeitabständen.60
+
+### Relationship to Data Stream Management Systems
+
+https://de.wikipedia.org/wiki/Data_Stream_Management_System
+
+TODO Chronicle = Data Stream Management System? Event Store = Data Stream Management System?
+
+Not exactly? - It does not store the operations other than aggregates, (time windows, CEP, ESP...) but the event itself
+
+--> It is PART of a DSMS, but not a full DSMS
 
 ### Time in Event Stores
 
@@ -95,28 +124,12 @@ Lorem ipsum dolor sit amet,
 
 TODO do event stores need that?
 
-### Consistency Choices in Event Stores
+#### Replicated Event Stores as a Replication Service
 
-TODO take this off here. This will be explained in my system design section, as well as analyzed before in previous work were I compare popular systems and their decisions
+Similar to ZooKeeper, replicated event stores can be deployed as a replication service themselves, running next to a distributed system and offering the service to store and replicate the commands of this system. From this point of view, an event store turns out to be a replicated log—with some powerful indexing features. Event-sourced systems actually rely on the event store to hold the (replicated) source of truth for the overall system and individual application state.
 
-#### High Availability
+However, this approach is not recommend for all use cases, as it adds additional unwanted latency by enforcing back-and-forth between the services, which is also a reason why Kafka decided to replace ZooKeeper by a quorum-based, embedded replication protocol.
 
-Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.
-
-#### Strong Consistency
-
-TODO describe transactions in event stores
-TODO describe importance for online analytical processing
-TODO describe ACID vs. SAGA pattern here if suitable
-
-Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.
-
-### Partitioning and Sharding of Streams
-
-Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.
-
-### Cross-Cluster Replication
-
-Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.
+#### Use Cases of a Distributed Event Store {#sec:use-cases-distributed-event-store}
 
 \pagebreak

@@ -27,6 +27,7 @@ Suitable for ACID transactional systems...
 
 TODO use cases and applications
 
+TODO true for Kafka? Validate again!
 TODO Raft is already used in event messaging and logging systems (Kafka, RabbitMQ), NoSQL object stores (MongoDB), distributed relational databases (CockroachDB), process orchestration systems (Camunda Zeebe), key-value stores (etcd), container orchestration (Kubernetes), smart grids [@sakic2017response]...
 
 ### Understandability

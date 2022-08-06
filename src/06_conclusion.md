@@ -1,6 +1,16 @@
 # Conclusion {#sec:conclusion}
 
-- TODO conclude and start a discussion
+\epigraph{All software architectures capture tradeoffs, and deciding between alternatives is about choosing which tradeoffs you can live with in a particular context.}{--- \textup{Jimmy Lin}}
+
+\todo{Conclude and start a discussion}
+
+This work discussed... and presented ChronicleDB on a Raft...
+
+With strong consistency, we arrive somehow at a one-size-fits-all solution. It works in every case, but not perfectly. The trade-offs in latency and availability may make this approach not suitable enough for extremely high-throughput cases, but there are multiple other strategies to mitigate this, such as partitioning, which we will introduce in our implementation. It may sound pessimisticly, but you can't have it all: the CAP and PACELC theorem have proven that in theory, and many implementations have shown that in practice. But actually, it is not that bad at all: even if there will always be a decision to be made between generalized vs. specialized implementations, both offer better dependability and scalability properties than a single-node deployment may ever be possible to serve.
+
+TODO if we allow for OOO, it is still not suitable for real-time applications with high business criticality, but this is already the case for standalone ChronicleDB (but chance for OOO is higher in distributed Chronicle)
+
+We have shown this in the evaluation: ...
 
 <!-- Style in this way:
 
@@ -47,13 +57,13 @@ https://www.scribbr.co.uk/thesis-dissertation/conclusion/
 
 The given implementation of the Raft replication protocol has a high cost of replication. With a growing number of replica nodes, the throughput decreases. There are various strategies to address this issue: partitioning strategies (TODO ref to section),... to mention a few. They all come with some level of trade-offs.
 
-## Recommendations
+## Recommendations and Future Work
 
-> TODO depends on outcome. If throughput decreases to much, will recommend to weigh between throughput and availability
+\epigraph{\hfill Strive for progress, not perfection.}{}
 
-## Future Work
-
-\epigraph{Strive for progress, not perfection.}{}
+<!--
+We refer to Gotsman et al. [@gotsman2016cause] to help deciding for a consistency model. If low latency is important, we strongly advice system architects to think about their event design and apply practices of _domain-driven-design_ (DDD), such as breaking down their application to trivial facts (domain events) and derived aggregates and categorizing them as monotonic or non-monotonic, as described in subsection [@sec:consistency-decisions]. Afterwards, the appropriate consistency model can be decided upon, which further guarantees safety and liveness for the adapted system design. If latency is not that important or can be mitigated in other ways through sharding and other practices, we recommend opting for strong consistency, as this ensures safety in any case and allows starting with a simple system design that can be better thought out afterwards. Regarding out-of-order events, they must be either disallowed to provide strong consistency, or the consistency level must be explicitly flagged as eventual consistency, even if a strongly consistent replication protocol is used. We also recommend to look at time-bound partial consistency, as it can help with out-of-order events. We hope that this work will serve as a guidance here.
+-->
 
 
 ### Consistency Considerations
@@ -72,7 +82,11 @@ TODO the final consistency model should be decided on
 
 We recommend that you should try to go for strong consistency, apply different discussed techniques (sharding/partitioning, partial replication... etc) and then work your way down the consistency levels until your system satisfies the practical (!) requirements, as theoretical considerations often do not manifest in real world applications. TODO cite again many of the strong consistent but HA and low latency systems we have discussed throughout the work
 
+TODO out-of-order: Violates strong consistency (not from the point of view of the event store, but from the point of view of client applications expecting a reliable stream of events); maybe allow to choose two consistency levels: strong consistency with exceptional out-of-order and "actual strong consistency"?
+
 #### Multiple Consistency Levels
+
+"A compromise is to allow multiple consistency levels to coexist in the data store." [@bravo2021unistore]
 
 - reference CAP and PACELC and describe our trade-offs, and if we could allow users to configure the trade-offs themselvesor 
 - We could limit consensus to critical parts, like creating and evolving an event schema. (All clients agree to simultaneously make the change.), updating meta data and the quorum itself
@@ -84,6 +98,8 @@ We recommend that you should try to go for strong consistency, apply different d
 - But let user decide on consistency level for data
 - Similar to Kafka
 - So it is suitable to architect an edge-cloud system design with multiple different consistency levels to fit the edge levels best 
+
+- Recommendation: Allow for different consistency levels on a per-stream basis.
 
 
 <!-- TODO CRDTs do not seem to be suitable. Redis say they can be used for Multi-region IoT data ingest, but I think this will slow the event store down too much by idempotency and so on. But what about SECROs?
@@ -102,6 +118,8 @@ There are also other strategies to improve the throughput that do not violate co
     - Like in IoTDB: "data partitions can be defined according to both time slice and time-series ID" [@wang2020iotdb]
 - Allows to increase number of nodes without decreasing throughput
 - Show diagram of further partitioning/sharding techniques (i.e. by timesplit..., reference methods from background chapter here)
+
+TODO refer to system design; sharding of a single stream
 
 - TODO if there will ever be a concept of transactions here, adjusting the protocol the be coordination-free may be suitable, as with Eris, to avoid high latency by transaction and replication roundtrips, but it requires control of the infrastructure (i.e., the network layer)
 
@@ -136,6 +154,8 @@ TODO even consider log-less replication, to satisfy the "The log is the database
 
  "the leader writes the log entry to its disk in parallel
 with replicating the entry to the followers, which can reduce latency significantly"
+
+"Transient raft log; after succesful commit, entries in log are gone; index is always latest snapshot. Also marry raft log and OOO write-ahead log. If we need to derive the log again: with OOO, not possible"
 
 #### Buffer Improvements
 
@@ -180,8 +200,8 @@ Apache Ratis has support problems... Java makes it somehow inefficient (does it?
 - Provide as library
     - Developers can include it to their spring boot apps to quickly develop and provide replicated data services
 
-### Mising Implementations
+### Further Missing Implementations
 
-- Exception Handling, Graceful shutdown
+- Exception Handling, Graceful shutdown...
 
 \pagebreak

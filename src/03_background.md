@@ -1,5 +1,7 @@
 # Fundamentals {#sec:background}
 
+<!-- DONE -->
+
 <!--
 Fundamentals / environment and related work: 1/3
 • describe methods and techniques that build the basis of your work 

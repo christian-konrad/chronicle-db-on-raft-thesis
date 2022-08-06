@@ -44,6 +44,7 @@ Also look at https://www.researchgate.net/figure/Consistency-models-comparison_t
         Zookeeper & Strong & All (It keeps metadata only) & Primary-Copy \\
         MongoDB & Strong & TODO & Pull-Based Consensus (Raft-like) \\
         Redis & Eventual, Strong is WIP & All & CRDTs, Master-Replica, Raft is WIP \\
+        Apache Cassandra & Eventual, User Choice & - \\
         AAA & - & - \\
         \bottomrule
     \end{tabularx}    
@@ -119,6 +120,10 @@ Specify a minimum ISR size - the partition will only accept writes if the size o
 
 #### RabbitMQ
 
+- Comes with two distribution approaches "Shovel" (AP) and general clusters (CP)
+- https://www.rabbitmq.com/distributed.html
+- For strong consistency, clusters must also run quorum queues
+- Consistency on a per-queue basis 
 - Raft in Quorum Queues [@rabbitmq2021quorum]
 - https://www.rabbitmq.com/quorum-queues.html
 - modern queue type for RabbitMQ implementing a durable, replicated FIFO queue
@@ -144,7 +149,7 @@ if T2 starts to commit after T1 finishes committing, then the timestamp for T2 i
 
 Cloud Spanner is semantically indistinguishable from a single-machine database. 
 Uses TrueTime
-built on Googles infrastructure, therefore even with strong consistency, it is highly available and can even use realtime timestamps. This is only possible due to the fact that Google is in full control of the infrastructure. "Even though it provides such strong guarantees, Cloud Spanner enables applications to achieve performance comparable to databases that provide weaker guarantees (in return for higher performance)."
+built on Googles infrastructure, therefore even with strong consistency, it is highly available and can even use real-time timestamps. This is only possible due to the fact that Google is in full control of the infrastructure. "Even though it provides such strong guarantees, Cloud Spanner enables applications to achieve performance comparable to databases that provide weaker guarantees (in return for higher performance)."
 
 "Spanner uses the Paxos algorithm as part of its operation to shard (partition) data across up to hundreds of servers.[1] It makes heavy use of hardware-assisted clock synchronization using GPS clocks and atomic clocks to ensure global consistency.[1] TrueTime is the brand name for Google's distributed cloud infrastructure, which provides Spanner with the ability to generate monotonically increasing timestamps in datacenters around the world."
 
@@ -249,6 +254,7 @@ Apaache Ratis is the library of choice for the implementation of a replicated ev
 - Apache Cassandra
     - Availability+Partition Tolerance
     - "Even in systems which don't use consensus, quorum is used to make sure the latest update is available to at least one server in case of failures or network partition. For instance, in databases like Cassandra, a database update can be configured to return success only after a majority of the servers have updated the record successfully."
+    - read-repair https://cassandra.apache.org/doc/latest/cassandra/operating/read_repair.html#read-consistency-level-and-read-repair
 - Redis (https://github.com/RedisLabs/redisraft), still working on it, not production-ready
     - https://redis.com/blog/redisraft-new-strong-consistency-deployment-option/ 
     - Consistency+P
@@ -270,6 +276,8 @@ Lorem ipsum...
 
 Consensus; is it raft?
 https://developers.eventstore.com/server/v21.10/cluster.html#cluster-nodes
+
+write-ahead log which seems like the $all stream of EventStoreDB
 
 #### TimescaleDB
 
@@ -358,7 +366,7 @@ Lorem ipsum...
 #### Apache IoTDB
 
 [@wang2020iotdb]
-
+- Made to work on the edge!
 - https://iotdb.apache.org/
 - Raft (TODO only for meta or also for data?)
 - Meta Group, Data Group
@@ -377,6 +385,27 @@ Lorem ipsum...
 #### Apache Kafka
 
 TODO PubSub etc., Differentiation to event stores
+
+#### Azure Event Hubs
+
+offered as a PaaS service
+
+Using partitions (shards) as a scaling factor
+"maintaining a log that preserves the order of events requires that these events are being kept together in the underlying storage and its replicas and that results in a throughput ceiling for such a log"
+
+Allows the user to choose the consistency-level per-partition.
+
+[@microsoft2022eventhubsconsistency]
+
+https://docs.microsoft.com/en-us/azure/event-hubs/event-hubs-availability-and-consistency?tabs=dotnet
+
+Either consistent or non-consistent (= eventual consistent)
+
+To do this, events must be sent explicitly to a certain partition (shard). Across shards, no ordering is guaranteed.
+
+"For example, you may want your back-end system to process an update command before a delete command. In this scenario, a client application sends events to a specific partition so that the ordering is preserved. When a consumer application consumes these events from the partition, they are read in order."
+
+" In general we recommend users to maintain a maximum throughput of 1 MB/s per partition and choose the partition count to match the maximum throughput you want to handle. For example, if your use case requires 20 MB/s, it is recommended to choose at least 20 partitions to achieve the optimal throughput."
 
 #### Other Mentionable Implementations
 

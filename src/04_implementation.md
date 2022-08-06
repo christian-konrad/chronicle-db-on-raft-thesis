@@ -1,23 +1,13 @@
 # Protocol Decision and Implementation {#sec:implementation}
 
-1-2 sentences on what this chapter is about. It starts looking at existing implementations of Raft and replication protocols in general for data-intense applications and how they differentiate. Then it compares other event stores and similar systems with ChronicleDB and their approaches to replication. Afterwards, it describes the system design and architecture of the solution, (and finally it will reference the solution in particular (should I really show the code? Or just latex algos in the system design and omit details)). It explains why we chose the Java programming language + Apache Ratis for the PoC implementation, and then discusses some of the implementation choices, illustrating them with selected snippets of pseudo code.
+<!-- DONE -->
 
-<!--
-In Chapter 3 we gave a formal description of the CS reconciliation protocol.
-This allows the protocol to be conceptually understood and its properties
-formally shown. However, it does not provide much information on how such
-a protocol could be implemented in a real middleware. Therefore, we will in
-this chapter describe two implementations that we have done: a simulated
-environment based on J-Sim [53], and a component..
-The reason that we chose to make two implementations is that they
-provide different means of evaluation. The simulation environment allows
-important system parameters to be changed, so that the behaviour of the
-protocol can be investigated under different conditions. In the CORBA
-implementation the protocol is tested on a real system, and provides more
-realistic measurements results.
-We chose J-Sim as the simulator platform since it is a component-based
-simulation environment that provides event-based simulation. Moreover, it
-is built with Java and uses TCL as glue code to control simulations. The
-same Java code could therefore be used in both the simulation and later in
-the CORBA middleware.
--->
+In the previous chapter, we introduced the reader to the realm of replication, explained the various properties of a replicated distributed system such as reliability, fault tolerance, consistency, and latency, and articulated a rationale for why a distributed database should be run with replicated data. We then discussed various consistency levels and replication protocols and provided guidance on how to decide on the appropriate model and protocol. We then looked at event stores and the requirements for them and introduced ChronicleDB, the event store we want to move to a distributed setting.
+
+However, we have not yet provided explicit guidance on which consistency model and replication protocol is best suited for ChronicleDB under specific circumstances and use cases. Therefore, in this chapter we will demonstrate such guidance in three steps:
+
+- First, we look at existing implementations of replication protocols for data-intensive applications and how they differ, focusing on event stores and other systems comparable to ChronicleDB.
+- Second, we will take a closer look at the requirements of a potentially distributed ChronicleDB and decide on a consistency model and replication protocol, pointing out the trade-offs and how to mitigate them.
+- Finally, we will describe the system design and architecture of a solution and discuss our demo implementation of such a replicated event store: ChronicleDB on a raft.
+
+In the remaining chapters, we will then evaluate our implementation, compare the trade-offs with those of popular and comparable distributed database systems, and conclude by presenting the key learnings of this evaluation and pointing to possible future work.

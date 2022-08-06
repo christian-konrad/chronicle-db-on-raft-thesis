@@ -1,7 +1,7 @@
 ---
 title: Replication in Data Stream Management Systems\vspace{2ex}
 subtitle: > 
-    Log Replication using Raft Consensus Protocol for ChronicleDB, a High-Throughput Event Store\vspace{1ex}
+    ChronicleDB on a Raft\vspace{1ex}
 date: May 15th, 2022\vspace{4ex}
 author: 
     - Christian Konrad
@@ -49,8 +49,21 @@ header-includes: |
     \usepackage{mathtools}
     \usepackage{makecell}
     \usepackage{float}
+    \usepackage{pdfpages}
     \renewcommand\theadfont{\normalsize}
     \renewcommand\theadfont{\bfseries}
+    \theoremstyle{definition}
+    \newtheorem{definition}{Definition}[section]
+    \usepackage{xcolor}
+    \usepackage{multicol}
+    \newcommand{\myquote}[2][white!10]{%
+      \medskip
+      {\setlength{\fboxsep}{.1\columnwidth}%
+      \noindent\colorbox{#1}{\begin{minipage}{\dimexpr\columnwidth-2\fboxsep}
+        \raggedright\bfseries\large#2
+      \end{minipage}}} \par
+      \medskip
+    }
     \lstset{
       columns=fullflexible,
       frame=single,

@@ -1,6 +1,6 @@
 # Evaluation {#sec:evaluation}
 
-\epigraph{I've always liked code that runs fast.}{--- \textup{Jeff Dean}}
+\epigraph{\hfill I've always liked code that runs fast.}{--- \textup{Jeff Dean}}
 
 <!--
 Measurement results / analysis / discussion: 1/3
@@ -84,6 +84,8 @@ TODO do it like in the koerber_diss.pdf  but also with the synthetic data
     - Expected: Faster than standalone (mention here standalone could benefit from multithreaded/concurrency, but only to a certain limit (CPU cores, shared memory etc.)) 
     - TODO reference/citate literature on this
 
+The whole experimental setup and evaluation can be found and repeated by yourself in the Jupyter notebook in the appendix.
+
 ## Throughput on Different Cluster Settings
 
 "To evaluate our system, we benchmark throughput when the system is saturated"
@@ -108,6 +110,12 @@ TODO first describe expected latency decrease due to network roundtrip/maximum w
 
 ### Querying and Aggregation
 
+### Horizonal Scalability
+
+As we have seen so far, Raft introduces network latency and decreases the maximum throughput on a single stream, while this effect can be mitigated with horizontal scaling through partitioning and sharding. We compare serving multiple streams with ChronicleDB + Raft against standalone ChronicleDB.
+
+\todo{measure!}
+
 ### Fault-Tolerance
 
 The Raft protocol is formally proven (TODO reference to proof)...
@@ -115,7 +123,9 @@ It is not byzanthine-fault tolerant...
 
 TODO any experimental setup to test fault tolerance anecdotably?
 
+<!--
 ### Usability and Developer Experience
+-->
 
 ## Comparison with other Replicated Event Stores and Time Series Databases
 
