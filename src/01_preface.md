@@ -1,7 +1,7 @@
 ---
 title: Replication in Data Stream Management Systems\vspace{2ex}
 subtitle: > 
-    Log Replication using Raft Consensus Protocol for ChronicleDB, a High-Throughput Event Store\vspace{1ex}
+    ChronicleDB on a Raft\vspace{1ex}
 date: May 15th, 2022\vspace{4ex}
 author: 
     - Christian Konrad
@@ -23,6 +23,7 @@ header-includes: |
     \usepackage{tikz}
     \usetikzlibrary{shapes,arrows,positioning,calc,fit,babel}
     \usepackage{adjustbox}
+    \usepackage{enumitem}
     \usepackage{tikzpeople}
     \usepackage{pifont,mdframed}
     \usepackage{listings}
@@ -34,16 +35,35 @@ header-includes: |
     \setlength\epigraphwidth{8cm}
     \setlength\epigraphrule{0pt}
     \usepackage[raggedright]{titlesec}
-    \usepackage[font={small},justification=centering]{caption}
+    \usepackage[font={small}]{caption}
     \usepackage{glossaries}
     \usepackage{titling}
     \usepackage{todonotes}
     \usepackage{booktabs}
+    \usepackage{tabularx}
     \usepackage{draftwatermark}    	
     \SetWatermarkColor[gray]{0.95}
     \usepackage{lmodern}
     \usepackage{helvet}
     \usepackage[bitstream-charter,sfscaled=false]{mathdesign}
+    \usepackage{mathtools}
+    \usepackage{makecell}
+    \usepackage{float}
+    \usepackage{pdfpages}
+    \renewcommand\theadfont{\normalsize}
+    \renewcommand\theadfont{\bfseries}
+    \theoremstyle{definition}
+    \newtheorem{definition}{Definition}[section]
+    \usepackage{xcolor}
+    \usepackage{multicol}
+    \newcommand{\myquote}[2][white!10]{%
+      \medskip
+      {\setlength{\fboxsep}{.1\columnwidth}%
+      \noindent\colorbox{#1}{\begin{minipage}{\dimexpr\columnwidth-2\fboxsep}
+        \raggedright\bfseries\large#2
+      \end{minipage}}} \par
+      \medskip
+    }
     \lstset{
       columns=fullflexible,
       frame=single,
@@ -66,6 +86,7 @@ header-includes: |
         \begin{list}{}{\leftmargin=1cm
           \labelwidth=\leftmargin}\item[\Large\ding{43}]}
       {\end{list}\end{mdframed}\par}
+    \newcommand{\breakedparagraph}[1]{\paragraph{#1}\mbox{}\\[-8pt]}
 bibliography: [citations.bib]
 csl: [ieee.csl]    
 classoption: [symmetric]

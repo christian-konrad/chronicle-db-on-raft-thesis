@@ -13,6 +13,9 @@ node_modules
 out/*.pdf
 out/*.tex
 
+# inspirational images
+src/images/inspiration
+
 # temp docx files
 ~$*.doc*
 .DS_Store

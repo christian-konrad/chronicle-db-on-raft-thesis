@@ -1,6 +1,6 @@
 # Evaluation {#sec:evaluation}
 
-\epigraph{I've always liked code that runs fast.}{--- \textup{Jeff Dean}}
+\epigraph{\hfill I've always liked code that runs fast.}{--- \textup{Jeff Dean}}
 
 <!--
 Measurement results / analysis / discussion: 1/3
@@ -10,10 +10,28 @@ evaluate it
 • caution: each result/graph must be discussed! what’s the reason for this peak or why have you ovserved this effect
 -->
 
-In this work, an implementation of the Raft consensus protocol was proposed for replication of ChronicleDB, a high-throughput event store. It has been shown (TODO reference section) that Raft is strongly consistent, so a tradeoff in performance is to be expected. In theory, the larger the number of replicas, the higher the data availability; however, at the same time, the cost of replication (which comes at the expense of performance) increases. This section addresses the evaluation of this implementation, specifically the cost of replication, by quantifying the costs and benefits that come with this approach. The challenge of the implementation is to find an optimal trade-off between the cost of replication and the availability of data.
+In this work, an implementation of the Raft consensus protocol was proposed for replication of ChronicleDB, a high-throughput event store. It has been shown (TODO reference section) that Raft is strongly consistent, so a trade-off in performance is to be expected. In theory, the larger the number of replicas, the higher the data availability; however, at the same time, the cost of replication (which comes at the expense of performance) increases. This section addresses the evaluation of this implementation, specifically the cost of replication, by quantifying the costs and benefits that come with this approach. The challenge of the implementation is to find an optimal trade-off between the cost of replication and the availability of data.
+
+## Evaluation Goals
+
+"The main evaluation goals of this work were to test the additional cost of our techniques in terms of the amount of latency and reduced throughput introduced in the system..."
+
+
+TODO measure all of the following dependability properties:
+
+- Availability: readiness for correct service
+- Reliability: continuity of correct service,
+- Safety: absence of catastrophic consequences on the user(s) and the
+environment,
+- Confidentiality: absence of unauthorised disclosure of information,
+- Integrity: absence of improper system state alterations,
+- Maintainability: ability to undergo repairs and modifications.
+
+TODO plot a reliability function! As of https://www.researchgate.net/figure/Comparison-of-experimentally-observed-and-modeled-RAFT-performance-with-clusters-of_fig4_321140059
 
 \todo{Adapt question-style of evaluation from https://software.imdea.org/~gotsman/papers/unistore-atc21.pdf}
 
+\todo{If time, construct simulation of edge-computing with standalone nodes pushing to replicated cluster}
 
 <!-- 
 TODO measure:
@@ -34,11 +52,25 @@ for availability: both require maintaining replica consistency.
 In general, maintaining strong consistency is achievable but
 expensive"
 
-TODO cite and compare with performance considerations of the raft dissertation https://web.stanford.edu/~ouster/cgi-bin/papers/OngaroPhD.pdf
+TODO cite and compare with performance considerations of the raft dissertation https://web.stanford.edu/~ouster/cgi-bin/papers/OngaroPhD.pdf p 140 ff
+
+TODO reference the throughput graph from raft chapter, phrase it as "expected throughput decline"
+
+TODO also compare against throughput chart from zookeeper paper https://www.usenix.org/legacy/event/atc10/tech/full_papers/Hunt.pdf and http://www.cs.cornell.edu/courses/cs6452/2012sp/papers/zab-ieee.pdf
 
 To evaluate this, the implementation is benchmarked against... as described in the following section.
 
+TODO also compare with cassandra
+"ChronicleDB outperformed Cassandra by a factor of over 200
+in terms of write performance on a single node. In other words: Cassandra would need at least 200 machines to compete with our solution."
+
+TODO consider to evaluate sharding (maybe in future work)
+
+
+
 ## Setup for Comparison
+
+TODO do it like in the koerber_diss.pdf  but also with the synthetic data
 
 - Local Environment (Single Machine, Many Nodes (3, 4, 6))
 - AWS, (Kubernetes, Docker?)
@@ -52,9 +84,15 @@ To evaluate this, the implementation is benchmarked against... as described in t
     - Expected: Faster than standalone (mention here standalone could benefit from multithreaded/concurrency, but only to a certain limit (CPU cores, shared memory etc.)) 
     - TODO reference/citate literature on this
 
+The whole experimental setup and evaluation can be found and repeated by yourself in the Jupyter notebook in the appendix.
+
 ## Throughput on Different Cluster Settings
 
+"To evaluate our system, we benchmark throughput when the system is saturated"
+
 TODO first describe expected latency decrease due to network roundtrip/maximum wide area delay of replica nodes (do some math here)
+
+"In Figure 5.2 we show a comparison between the version using replication and the one without replication. The latency cost of the version using replication can be clearly observed and is expected since..." https://www.diva-portal.org/smash/get/diva2:843227/FULLTEXT01.pdf
 
 ### Comparison of Cluster Sizes
 
@@ -72,6 +110,12 @@ TODO first describe expected latency decrease due to network roundtrip/maximum w
 
 ### Querying and Aggregation
 
+### Horizonal Scalability
+
+As we have seen so far, Raft introduces network latency and decreases the maximum throughput on a single stream, while this effect can be mitigated with horizontal scaling through partitioning and sharding. We compare serving multiple streams with ChronicleDB + Raft against standalone ChronicleDB.
+
+\todo{measure!}
+
 ### Fault-Tolerance
 
 The Raft protocol is formally proven (TODO reference to proof)...
@@ -79,7 +123,9 @@ It is not byzanthine-fault tolerant...
 
 TODO any experimental setup to test fault tolerance anecdotably?
 
+<!--
 ### Usability and Developer Experience
+-->
 
 ## Comparison with other Replicated Event Stores and Time Series Databases
 

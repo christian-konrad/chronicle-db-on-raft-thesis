@@ -1,1 +1,1 @@
-pandoc --citeproc -V papersize=a4paper -V breakurl -V hyphens=URL -V breakurl=true -V link-citations=true --highlight-style tango -s *.md -o ../out/thesis.pdf
+pandoc --citeproc -V papersize=a4paper -V breakurl -V hyphens=URL -V breakurl=true -V link-citations=true --filter pandoc-secnos --highlight-style tango -s *.md -o ../out/thesis.pdf

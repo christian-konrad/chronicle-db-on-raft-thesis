@@ -23,10 +23,10 @@ Alle Ausführungen, die wörtlich oder sinngemäß übernommen wurden, sind als 
 \vspace{3cm}
 
 \noindent
-![](images/signature.png){ width=100px }
+\includegraphics[width=0.3\textwidth]{images/signature.pdf}
 
 \noindent
-\theauthor \newline
+\theauthor \orcid{0000-0002-2387-9412} \newline
 Marburg, \thedate
 
 \cleardoublepage
