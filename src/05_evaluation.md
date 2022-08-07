@@ -90,13 +90,17 @@ The whole experimental setup and evaluation can be found and repeated by yoursel
 
 "To evaluate our system, we benchmark throughput when the system is saturated"
 
-TODO first describe expected latency decrease due to network roundtrip/maximum wide area delay of replica nodes (do some math here)
+TODO first describe expected latency decrease due to network round-trip/maximum wide area delay of replica nodes (do some math here)
 
 "In Figure 5.2 we show a comparison between the version using replication and the one without replication. The latency cost of the version using replication can be clearly observed and is expected since..." https://www.diva-portal.org/smash/get/diva2:843227/FULLTEXT01.pdf
 
 ### Comparison of Cluster Sizes
 
 ### Comparison of Buffer Types and Sizes
+
+TODO without buffer
+
+writing every event to the Raft log slows down the system tremendously, due to increased I/O and especially because the default log in Ratis requires a log entry to be written before it is sent to other nodes, effectively blocking the whole system on every single operation.
 
 ### Throughput on a Distributed Remote Cluster
 

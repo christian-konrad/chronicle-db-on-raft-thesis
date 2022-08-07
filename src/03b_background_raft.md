@@ -30,6 +30,8 @@ TODO use cases and applications
 TODO true for Kafka? Validate again!
 TODO Raft is already used in event messaging and logging systems (Kafka, RabbitMQ), NoSQL object stores (MongoDB), distributed relational databases (CockroachDB), process orchestration systems (Camunda Zeebe), key-value stores (etcd), container orchestration (Kubernetes), smart grids [@sakic2017response]...
 
+TODO introduce term-index
+
 ### Understandability
 
 \epigraph{There is a race between the increasing complexity of the systems we build and our ability to develop intellectual tools for understanding their complexity. If the race is won by our tools, then systems will eventually become easier to use and more reliable. If not, they will continue to become harder to use and less reliable for all but a relatively small set of common tasks. Given how hard thinking is, if those intellectual tools are to succeed, they will have to substitute calculation for thought.}{--- \textup{Leslie Lamport}}

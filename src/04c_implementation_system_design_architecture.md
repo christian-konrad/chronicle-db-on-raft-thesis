@@ -16,20 +16,6 @@ Developed architecture / system design / implementation: 1/3
 - Then detailed requirements (how the user interacts with it, requirements to the API, infra and tech requirements)
 -->
 
-<!--
-
-- We could model delete operations differently, so they could also be monotonic (= everything is an insert), by just logging them. The tree would then consist of both addEvent and deleteEvent items, and just by observing its final state we know which events are actually there. (It seems like this may does not make sense in our use cases)
-- Also see https://www.slideshare.net/SusanneBraun2/keeping-calm-konsistenz-in-verteilten-systemen-leichtgemacht
-- Also describe the trivial, derived monotonic aggregates thing
-- TODO reference these in the conclusion. We won't build an eventual consistent prototype. But it could make sense. It can be built without any coordination mechanism between nodes if we agree for them to only use monotonic operations.
-- the ohlc of a stock in a certain timeframe is a trivial derived aggregate that is suitable for our example
-- insertEvent is monotonic. Aggregates are also trivial, derived monotonic aggregates -> can use eventual consistency
-- but addStream, cluster management, metadata etc. must be strong consistent! (like InfluxDB did it) -> this is not monotonic (see CALM)
-
-TODO describe that createSecondaryIndex and creation of "materialized user-defined aggregates" is also an operation in the raft log, but we won't focus on it yet - "ChronicleDB computes these aggregates incrementally as new events arrive" - so we don't care
-
--->
-
 ### Challenges
 
 \epigraph{\hfill Problems are not stop signs, they are guidelines.}{--- \textup{Robert H. Schuller}}
@@ -38,9 +24,9 @@ The biggest challenge in this work was to find an appropriate trade-off between 
 
 Throughout the next sections, we will show how we tackled these challenges, and in chapter [@sec:conclusion], we will show how these could be further mitigated in the future. But first, we limit the scope of this work to the part of the challenges that we tried to solve in the following subsection.
 
-### Limitations
+### Limitations {#sec:system-design-limitations}
 
-Due to the complexity of this topic, the implementation in this work is limited to a few well-justified considerations.
+Due to the complexity of this topic, the research and implementation in this work is limited to a few well-justified considerations.
 
 \paragraph{Geo-Replication.}
 
@@ -54,23 +40,13 @@ We haven't implemented or designed a byzantine-fault tolerant version of Chronic
 
 So far, ChronicleDB does not support transactions, which is actually rare for event stores in general. This is good for us, because we don't need to think about linearizing transactions and making them atomic, which also increases the latency of such a system tremendously. If transactions are ever needed, especially across partitions, we refer to subsections [@sec:partitioning] and [@sec:coordination-free-replication].
 
-\paragraph{Log Optimization.}
-
-I/O on the Raft log can be costly, as all operations must be written to the log before executed on the event store replicas. Without buffering, the log looks almost similar to the actual event stream persisted in the store. In addition, it requires non-trivial state management such as allocation and pruning to prevent unbounded growth.
-
-The log implementation in this work is far from being optimized. Even more, we violate the "The log is the database" philosophy of ChronicleDB. There are approaches for log-less state machine replication that can lead back to this philosophy [@skrzypzcak2020towards]. But, we limit our work on the replication protocol itself, not on the implementation details of the log. In chapter [@sec:conclusion], we list possible improvements on the log.
-
-\paragraph{Log Compaction.}
-
-We haven't implemented a snapshotting mechanism so far. Currently, when the system is rebooted, the whole log is replayed and the $\textrm{TAB}^+$ index rebuilt, which is very expensive. While snapshotting a simple key-value store is simple (which previous literature was limited to), snapshotting the event store by creating clones of it to the current point in time is too expensive, as the store is already written to disk of the replicas. We considered that it is sufficient to reduce the snapshot to a pointer that points to the latest committed event in the store, and changing the state transfer implementation of Ratis to one that transfers the $\textrm{TAB}^+$ up to this pointer. But this method may be limited to an append-only event store—we haven't considered a solution for out-of-order entries yet, nor are we sure that this requires expectional handling at all.
-
 \paragraph{Distributed Queries.}
 
 The following implementation in this work focuses on write replication. To query an event stream with shards on different nodes, distributed queries must be performed, which is an entirely separate, complex area of interest that exceeds the scope of this work. We refer here to the literature of distributed queries and implementations in popular distributed database systems [yu1984distributed; kossmann2000state; azhir2022join]. In this work, we have not yet implemented the query interface, even for single-shard queries.
 
 \paragraph{Multi-Threaded Event Queue Workers and Partitioning.}
 
-We don't know how the decoupling of local event queue threads by introducing partitioning affects the possible performance that can be achieved with multiple streams through ChronicleDBs own event queue and worker architecture, as with partitioning, the relation is no longer one-queue-per-stream, but one-partition-per-stream.
+We don't know how the decoupling of local event queue threads by introducing partitioning affects the possible performance that can be achieved with multiple streams through ChronicleDBs own event queue and worker architecture, as with partitioning, the relation is no longer one-queue-per-stream, but one-partition-per-stream. As we move the actual event store implementation behind the state machine and the Raft log, all inserts are linearized, therefore we don't benefit from implementations of the index that are optimized for concurrency.
 
 \paragraph{Production-Ready Implementation.}
 
@@ -103,7 +79,7 @@ Based on this properties and if we imagine an ideal solution, we can raise the f
 - **Availability**: The event store is available for writes and queries all the time.
 - **Fault-Tolerance**: The event store tolerates crash-faults and is still available and provides non-increasing latency in the face of this faults (up to $n-1$ faults for read availability and up to $n/2-1$ faults for write availability).
 - **Reliability**: The operability of the event store is never or at least rarely interrupted.
-- **Safety**: No node of the distributed event store will never return a false stream of events or false query results.
+- **Safety**: Nodes of the distributed event store will never return a false stream of events or false query results.
 - **Maintainability**: In case of a failure, it is possible to recover from this failure in a short period of time and without compromising ongoing safety.
 - **Integrity**: What has been written can not be changed.
 - **Liveness**: Every write to the event store will eventually be persisted.
@@ -171,7 +147,7 @@ While the replication protocol could ensure strong consistency from the data per
 
 This is because strong consistency from the data perspective only cares about ordering of operations, therefore ordering of `insert` commands, which means it provides a strongly consistent ordering for all replicas by insertion time.
 
-However, the client only cares about event time. Figure \ref{fig:event-store-consistency-levels} shows the different levels of consistency that can be achieved with strong consistency and allowance for out-of-order events. Figure \ref{fig:event-store-consistency-perspectives} illustrates the two perspectives in the event of out-of-order events arriving.
+However, in many use cases, clients care about event time. We pay special attention to this case in the further discussion. Figure \ref{fig:event-store-consistency-levels} shows the different levels of consistency that can be achieved with strong consistency and allowance for out-of-order events. Figure \ref{fig:event-store-consistency-perspectives} illustrates the two perspectives in the event of out-of-order events arriving.
 
 \begin{figure}[h]
   \centering
@@ -244,7 +220,7 @@ event has a short “shelf life”. In order to be actionable, the query must id
 
 In (near) real-time systems, the data is read and processed incrementally, and immediately after it is inserted into the event store. Oftentimes, the result of the real-time analysis of the raw events are aggregates that are served again to other applications that build upon this aggregates, or to end users to query this data, thus relying on the consistency of this data through multiple levels.
 
-Such systems can be seen in a way that the stream "moves", while the consuming application stays fixed. With the stream moving through the consumer, it sees all recently appended events in near-real-time, at least with some delay. This is shown in figure \ref{fig:realtime-vs-nonrealtime-consumers} a. Usually, the stream is not scanned event by event, but in time windows, as illustrated in figure \ref{fig:realtime-vs-nonrealtime-consumers}.
+Such systems can be seen in a way that the stream "moves", while the consuming application stays fixed. With the stream moving through the consumer, it sees all recently appended events in near-real-time, at least with some delay. This is shown in figure \ref{fig:realtime-vs-nonrealtime-consumers} a). Usually, the stream is not scanned event by event, but in time windows, as illustrated in figure \ref{fig:windowed-consumers}.
 
 \begin{figure}[h]
   \centering
@@ -307,16 +283,13 @@ Not all use cases can be served with OOP, as implementing and applying punctuati
 
 ##### Non-Real-Time Applications.
 
-In non-realtime applications, the consumer moves along the event stream, while the event stream stays fixed. The consumer can move in both directions, scanning the stream. This is shown in figure \ref{fig:realtime-vs-nonrealtime-consumers} a.
+In non-realtime applications, the consumer moves along the event stream, while the event stream stays fixed. The consumer can move in both directions, scanning the stream. This is shown in figure \ref{fig:realtime-vs-nonrealtime-consumers} b).
 
 In such applications, out-of-order events are not a big threat, as in general, they arrived a long time ago in the event store when a query is run on historic data. Even more, the eventual consistency model is oftentimes sufficient since it is only necessary that the write operations converge at some point in time in the event store. 
 
 Examples for non-real-time applications are _Business Intelligence_ (BI), data science, process mining or machine learning. We have drawn more examples in figure \ref{fig:chronicle-edge-architecture}. Also, using an event store as a data lake to store derived events after processing does not require strong consistency. 
 
 Historic queries can be used to detect faulty results from real-time queries due to delayed events, as the results of historic queries have a higher chance to be consistent. To repair such a faulty result, it requires the developer to write compensation logic in case the real-time layer already caused executions based on incomplete or stale data, similar to the _Saga pattern_. But, this is only limited to actually compensable operations. For example, how should a business compensate financial transactions in the real world that are made based on wrong assumptions due to incorrect data?
-
-\todo{Finish this section}
--->
 
 <!--
 TODO CEP ESP stuff here
@@ -395,7 +368,7 @@ The causal relation of events can depend on attributes of the events and their d
 
 But there can also be a causal relationship across streams with different schemas, depending on the domain, as illustrated in figure \ref{fig:causal-across-streams}. For example, consider an event stream that contains temperature measurements while another contains humidity measurements. The events between the streams are assumed to be causally related: A rise in temperature causes a (perhaps delayed) rise in humidity in the same region. Finding such patterns is a typical use case of complex event processing (CEP). Note that causal consistency is not sufficient to detect patterns that include the non-occurrence of events: causal consistency only covers the observation of existing events. 
 
-Since this is up to the user, we recommend to design streams in such a way that the causal relationship is kept coharently on a per-stream base. That is, if a stream can be segmented in a way that the segments are no longer causally related, those segments should be streams of their own, and if events appear to be causally related across streams, it may be appropriate to merge the streams, provided their schemas are compatible. This also increases the performance of the system, as `insert` operations of unrelated events do not need to be coordinated. However, some other properties must be taken into account, such as data locality (keep seperate streams close to where they are created), edge-cloud design (merge streams of two sensors afterwards on the edge or cloud if they are causally related) and sharding (find a balance between causality and scalability; i.e. if the throughput limit of one stream has already been reached, it makes sense to partition it even if events in these shards are causally related).
+Since this is up to the user, we recommend to design streams in such a way that the causal relationship is kept coherently on a per-stream base. That is, if a stream can be segmented in a way that the segments are no longer causally related, those segments should be streams of their own, and if events appear to be causally related across streams, it may be appropriate to merge the streams, provided their schemas are compatible. This also increases the performance of the system, as `insert` operations of unrelated events do not need to be coordinated. However, some other properties must be taken into account, such as data locality (keep seperate streams close to where they are created), edge-cloud design (merge streams of two sensors afterwards on the edge or cloud if they are causally related) and sharding (find a balance between causality and scalability; i.e. if the throughput limit of one stream has already been reached, it makes sense to partition it even if events in these shards are causally related).
 
 \begin{figure}[h]
   \centering
@@ -406,7 +379,7 @@ Since this is up to the user, we recommend to design streams in such a way that 
 
 ##### Out-Of-Order Events and Causality.
 
-Out-of-order events cause violations of intermediate states of streams, as the causality chain can be broken. This is illustrated in figure \ref{fig:causal-across-streams} b. Depending on the consuming applications, this can be a serious problem. Figure \ref{fig:ooo-consistency} shows a generalized picture of how non-monotonic aggregates, which are apparently causally dependent on the source events, can be violated by out-of-order events. Such faults introduced by delayed events would require read-repair code, such as applying the SAGA pattern, to be mitigated in the aftermath, which is prone to more errors to be introduced, and even not always possible.
+Out-of-order events cause violations of intermediate states of streams, as the causality chain can be broken. This is illustrated in figure \ref{fig:causal-across-streams} b). Depending on the consuming applications, this can be a serious problem. Figure \ref{fig:ooo-consistency} shows a generalized picture of how non-monotonic aggregates, which are apparently causally dependent on the source events, can be violated by out-of-order events. Such faults introduced by delayed events would require read-repair code, such as applying the SAGA pattern, to be mitigated in the aftermath, which is prone to more errors to be introduced, and even not always possible.
 
 The following sections describe the out-of-order problem in more detail and explain how it can be mitigated.
 
@@ -595,7 +568,7 @@ With this, rather then deciding for the heuristic watermark, a real-time applica
 
 \todo{If time, denote this as an algo}
 
-We continously observe and register the delays of out-of-order events in the stream and set the window size in a way that it covers the $p_{C}$ percentile of these delays, including an additional tolerance area (such as 20% of this timeframe). We choose the percentile so we can exclude outliers, as shown in figure \ref{fig:ooo-distribution}. We don't recommend to choose a value of 100%, as if any outlier occurs (due to a node fault or other exceptional delays), it would render the inconsistency window too long, thus denying any near-real-time properties. 
+We continously observe and register the delays of out-of-order events in the stream and set the window size in a way that it covers the $p_{C}$ percentile of these delays, including an additional tolerance area (such as 20% of this timeframe). We choose the percentile so we can exclude outliers, as shown in figure \ref{fig:ooo-distribution}. We don't recommend to choose a value of 100%, as if any outlier occurs (due to a node fault or other extreme delays), it would render the inconsistency window too long, thus denying any near-real-time properties. 
 
 <!--
 This is still not suitable for every use cause, though. For instance, a consistency probability of 99.999% would mean that there is a chance of one in a million that there is a out-of-order event arriving before the inconsistency window, and due to the exponential distribution of the delay of event insertions, this is nearly the chance that it is read in recent time windows. In high-volume financial transactions, this is still not tolerable.
@@ -631,7 +604,7 @@ By investigating the convergence behavior of a stream, we can argue about differ
 
 #### Buffered Inserts {#sec:buffer-theory}
 
-One solution to cope with out-of-order events is to buffer `insert` operations temporarily before writing them to the stream. The buffer is flushed and all events written in a batch once its content reaches a certain size or after a certain timeout after the last write. On flush, events in the buffer are ordered by event time, instead of insertion time, ensuring consistency for the batch write. This also decreases latency introduced by the replication protocol dramatically, since the network roundtrips are reduced, which we will elaborate later in this chapter.
+One solution to cope with out-of-order events is to buffer `insert` operations temporarily before writing them to the stream. The buffer is flushed and all events written in a batch once its content reaches a certain size or after a certain timeout after the last write. On flush, events in the buffer are ordered by event time, instead of insertion time, ensuring consistency for the batch write. This also decreases latency introduced by the replication protocol dramatically, since the network round-trips are reduced, which we will elaborate later in this chapter.
 
 \todo{Refer to this section later again in implementation}
 
@@ -648,7 +621,7 @@ The effect of a write buffer on the overall consistency is shown in figure \ref{
 
 While a buffer increases the real-time consistency from the client perspective (the chance is higher that events arrive at consumers ordered by event time), it reduces the data consistency from linearizable to sequential, since after a write, an event can not be immediately read. But, when it is read in real-time, it is ordered (with a high chance). Acknowledging each single write to the stream to the producer is challenging: this would require callbacks that must be managed somewhere, e.g. in the replication log. We currently only acknowledge a successful write to the buffer, but this does not guarantee a successful write to the quorum. Only the acknowledge of a flush of the buffer and the execution of the batch of events lets the client know of a successful write to the store, but this adds a lot of latency to this acknowledgements. In case of unavailability or faults, the client will not get an immediate insight into this.
 
-#### Consistency Across Partitions
+#### Consistency Across Partitions {#sec:system-consistency-across-partitions}
 
 Keeping writes consistent across partitions, and especially across streams of different schemas, is challenging, especially when each partition is covered by its own instance of the replication protocol. This requires another layer of coordination across partitions, which increases the overall latency. It is also only relevant for streams with inter-stream causality (see subsection [@sec:stream-causal-consistency]).
 
@@ -658,7 +631,7 @@ Note that even popular event stores and similar systems often do not support str
 
 #### Conclusion
 
-What have we decided for? The previous discussion has shown that the consistency model applicable heavily depends on the use case of the event store: event sourcing requires at least causal consistency, ESP relies commonly on strongly consistent data and in CEP, pattern matching also works on monotonicly derived aggregates on eventual consistent data. Non-realtime applications are usually satisfied with eventual consistency. This shows that the event store is not the application, but a platform, inheriting its consistency requirements from the consumers. We must keep in mind that an event in a stream may be associated with state changes in multiple consuming applications with different requirements. Similarly, the literature on event processing emphasizes that the degree of consistency is highly dependent on the use case and end-user requirements [@barga2006consistent]. 
+What have we decided for? The previous discussion has shown that the consistency model applicable heavily depends on the use case of the event store: event sourcing requires at least causal consistency, ESP relies commonly on strongly consistent data and in CEP, pattern matching also works on monotonicly derived aggregates on eventual consistent data. Non-realtime applications are usually satisfied with eventual consistency. And there are also applications that are satisfied with a strong ordering by insertion time. This shows that the event store is not the application, but a platform, inheriting its consistency requirements from the consumers. We must keep in mind that an event in a stream may be associated with state changes in multiple consuming applications with different requirements. Similarly, the literature on event processing emphasizes that the degree of consistency is highly dependent on the use case and end-user requirements [@barga2006consistent]. 
 
 ##### Let the User Decide.
 
@@ -679,13 +652,13 @@ https://www.cockroachlabs.com/blog/limits-of-the-cap-theorem/
 I believe that maintaining eventual consistency in the application layer is too heavy of a burden for developers. Read-repair code is extremely susceptible to developer error; if and when you make a mistake, faulty read-repairs will introduce irreversible corruption into the database.
 -->
 
-Accordingly, we opted for strong consistency as the strongest of the identified models. It allows the event store to act as a platform that suits all use cases at least regarding safety. In addition, this allows us to built for a set of use cases where data safety is a top priority, and enables use cases where patterns that include the non-occurrence of events are to be detected. With strong consistency, we can start with a prototypical implementation that is easy to understand, compared to other protocols. We then evaluate this implementation to understand the trade-offs for latency and availability not only in theory, but also in practice. We are aware that this introduces network latency and decreases the maximum throughput on a single stream, while this effect can be mitigated with horizontal scaling through partitioning and sharding. Many popular distributed databases have proven that extremely high throughput rates are possible even with strong consistency, as we have shown in section [#sec:previous-work]. This serves as a basis for future work, that could result in a distributed ChronicleDB that allows users to choose their consistency level on a per-stream basis, or even across streams. 
+Accordingly, we opted for strong consistency as the strongest of the identified models. It allows the event store to act as a platform that suits all use cases at least regarding safety. In addition, this allows us to built for a set of use cases where data safety is a top priority, and enables use cases where patterns that include the non-occurrence of events are to be detected. With strong consistency, we can start with a prototypical implementation that is easy to understand, compared to other protocols. We then evaluate this implementation to understand the trade-offs for latency and availability not only in theory, but also in practice. We are aware that this introduces network latency and decreases the maximum throughput on a single stream, while this effect can be mitigated with horizontal scaling through partitioning and sharding. Many popular distributed databases have proven that extremely high throughput rates are possible even with strong consistency, as we have shown in section [@sec:previous-work]. This serves as a basis for future work, that could result in a distributed ChronicleDB that allows users to choose their consistency level on a per-stream basis, or even across streams. 
 
-We identified a few strategies how to cope with out-of-order events, but we do not decide on and implement a specific one other than a lightweight buffer due to the limited scope of this work.
+We identified a few strategies how to cope with out-of-order events for those clients with strong ordering requirements by event time. We decided to implement a lightweight buffer to cover the inconsistency window, while we do not implement advanced techniques due to the limited scope of this work. For clients that want to process events by insertion time, linearizability on the data perspective is sufficient to ensure consistency on the client perspective, even if the events occur out-of-order.
 
 This considerations justify our decision that we add the following requirement to the distributed event store:
 
-- **Linearizability**: To ensure the safety of the event streams, every write to an event stream will be ordered, i.e. every event is written in the order given by its timestamp, and every query will return the events in this order. An expection to this can be made with out-of-order events, that must be written ordered in insertion time, but still returned ordered in event time.
+- **Linearizability**: To ensure the safety of the event streams, every write to an event stream will be ordered, i.e. every event is written in the order given by its timestamp, and every query will return the events in this order. The order can be either by event or insertion time. An expection to this can be made with out-of-order events, that must be written at least ordered in insertion time, but still returned ordered in either event or insertion time.
 
 ##### Trade-Offs.
 
@@ -695,12 +668,12 @@ The buffer can handle out-of-order arrivals of events, if its size and timeout a
 
 ### Deciding for a Replication Protocol
 
-Of the protocols presented in detail in chapter [@sec:background], the protocol of our choice is Raft (see subchapter [@sec:raft]). Here follows a list of reasons that justify the use of Raft for our purposes:
+Now that we decided for strong consistency, the space of possible replication protocols (presented in detail in chapter [@sec:background]) is narrowed down to a few, such as consensus protocols, state machine replication and derivates. Of these protocols, the protocol of our choice is Raft (see subchapter [@sec:raft]). Here follows a list of reasons that justify the use of Raft for our purposes:
 
 - It provides strong consistency,
 - An implementation can be derived from the complete and concise specification, which reduces the chance to introduce violations of correctness guarantees,
 - It is a understandable protocol, which facilitates the application and customization of the protocol,
-- It is commonly used by the largest distributed systems vendors in large-scale production systems (cf. section [@sec:previous-work]),
+- It is commonly used by some of the largest distributed systems vendors in large-scale production systems (cf. section [@sec:previous-work]),
 - Academic research on Raft has been trending in recent years and will likely continue to do so in the coming years, allowing for a reliable stream of updates and improvements to the protocol,
 - There are many ready-to-use implementations of Raft with proper APIs written in major programming languages and supported by large communities that will also adopt improvements from recent scientific research,
 - Multi-Raft allows us to implement partitioning and sharding natively,
@@ -708,203 +681,421 @@ Of the protocols presented in detail in chapter [@sec:background], the protocol 
 - The log also allows to work with out-of-order events efficiently, compared to primary-copy replication,
 - In the face of strong consistency, the cost of replication are justifiable in Raft.
 
-<!--
-Primary-copy like ZAB would also work, as the diff of states after each operation == event(s) - no big difference to SMR here, but with OOO sending the diff would mean deriving the op again - because sending the insert index of the event and the event itself is not sufficient
--->
-
 ### Raft Implementations
 
-\todo{Just the list from the raft github? Or omit}
+There are several Raft implementations in different programming languages. The Raft authors maintain a curated list of these implementations on their website [@raft2022implementations], where they provide an overview of the following properties and features per listing:
 
+- GitHub stars,
+- Authors,
+- Programming language,
+- License,
+- Leader election + log replication,
+- Persistence,
+- Membership changes,
+- Log compaction.
+
+There may be a few other libraries that are not on this list, but we haven't investigated that yet because this list looks very comprehensive.
 
 #### Library Decision
 
-\todo{Rephrase}
-- Building it from ground up makes sense if you want full control and adjust the protocol to perfectly fit your use case (TODO find and cite the paper/tool that mentioned that, it must have been mongo or couchbase)
-- Adjusting the protocols allows you to tickle out the last ounce of performance, but oftentimes under the cost of losing the formal verification (TODO reference to raft verification mention in 03b)
-- This thesis is about a proof that it works, so we use something existant to leverage implementation power of the OOS community and save time to build the proof
-- We use Java for simplicity, as ChronicleDB is written in Java. For best performance and future-proof support (at the time of this writing), it is recommended to implement the library yourself or to use one of the popular Golang implementations: etcd/raft or hashicorp/raft. One could even use the Gorum framework in Golang (with some adjustments as in [@pedersen2018analysis])
-- It is also possible to build upon a library / an API and also leveraging the library in a way that allows you to maximize throughput
-- TODO List other libraries in short
+Before introducing the library we have chosen, we list the requirements we have for a suitable library implementation.
 
-Note: Implementing a replication layer that allows the event store consumer to decide on the consistency level, would in general require to implement the replication protocol yourself. As we have seen so far, there is no out-of-the-box implementation of multiple protocols that can just be toggled in between. We found in Apache IoT DB the approach to toggle the protocol by wrapping it into a provider, but only for raft, multi-leader consensus and standalone usage (https://github.com/apache/iotdb/tree/master/consensus/src/main/java/org/apache/iotdb/consensus). Another approach would to limit the toggleability on a per-stream basis and deploy two completely different replication protocols/libraries.
+##### Requirements.
 
+We are looking for a library written in Java, since ChronicleDB is written in Java and we want to integrate it tightly with the actual event store implementation, rather than offering it as a service alongside ChronicleDB (cf. ZooKeeper).
 
-#### Apache Ratis
+We are also looking for
 
-\todo{Rephrase}
-- Repo, maybe mvn link, version 2.1.0 [@apache2022ratis] [@apacheratis2022github] 
+- A library with a non copyleft open-source license,
+- A library that is likely to be maintained in a future,
+- A library that is feature-complete in the sense of the original Raft protocol description: it provides leader election, membership changes, log replication and persistence, handles network reconfigurations, and allows for log compaction,
+- A library that looks to fulfill all correctness properties.
 
-TODO from https://de.slideshare.net/Hadoop_Summit/high-throughput-data-replication-over-raft:
-Raft protocol has been successfully used for consistent metadata replication; however, using it for data replication poses unique challenges. Apache Ratis is a RAFT implementation targeted at high throughput data replication problems. 
-(Background Info: Has been an incubator project at Apache; was approved; same team (?) from Hortonworks built Apache Ozone on top (validate this!); Hortonworks merged with Cloudera)
+##### Apache Ratis.
 
-° In Raft,
-* All transactions and the data are written in the log
-* Not suitable for data intensive applications
+We went for _Apache Ratis_ [@apache2022ratis] [@apacheratis2022github] since it satisfies all our requirements and more:
 
-° In Ratis
-* Application could choose to not write all the data to log
-* State machine data and log data can be separately managed
+- It is written in Java, 
+- It can be used as an embedded library rather than a dedicated service,
+- It is feature-complete,
+- It allows to implement both the state machine and the log yourself, but also provides basic implementations for a quick start,
+- It uses `gRPC` (`HTTP/2`) as the messaging protocol both under the hood and for replication messaging,
+- It is used in a production-ready implementation (Apache Ozone),
+- It is offered under a non-copyleft open-source license (Apache 2.0),
+- The project is relatively popular on GitHub[^github-stars],
+- The team continously works on the library,
+- And the project was moved into the Apache Software Foundation after it succeeded in the Apache Incubator.
 
+[^github-stars]: GitHub stars are a good indicator for the popularity of a library and a proxy for the future-safety, as more popular libraries are more likely to be maintained in future.
+
+Ratis comes of course with some caveats:
+
+- The library is not well documented (a large part of the documentation is not only available in English),
+- Due to the not-so-good documentation, parts of the API are hard to understand and the learning curve is steep (can best be learned by examining their sample projects, Apache Ozone implementation, and interfaces),
+- The backlogs and current project progress are hard to understand from what they list in their JIRA project[^apache-ratis-jira],
+- The team does not release updates very often (less than have a year) [^ratis-release],
+- There is no (automatic) verification of the Raft correctness properties.
+
+[^apache-ratis-jira]: https://issues.apache.org/jira/projects/RATIS/issues
+
+[^ratis-release]: We are using Ratis in version `2.1.0`; as the time of this writing, there is a version `2.3.0` released.
+
+Unfortunately, we haven't found any Java Library with such a correctness verification. We compared its source code to the $\textrm{TLA}^{+}$ specification of Raft and it looks quite valid, while we can not exclude any exceptions in the runtime behavior.
+
+##### Differences to Basic Raft.
+
+The Ratis authors claim that Ratis is not only suitable for metadata replication, but it is actually targeted to high-throughput data replication problems. We have seen in subchapter [@sec:previous-work] that some vendors, such as InfluxDB, do not replicate their data using Raft, but only the meta data, because of the effect it has on the throughput. In theory, their data replication is only eventually consistent, while they claim this is not the case in practice under normal throughput conditions. This is similar to our observations of the inconsistency window (see section [@sec:time-bound-partial-consistency]). With this in mind, Ratis seems to solve a major problem and makes it suitable for our purposes.
+
+Following is how the authors describe their approach [@ratis2018highthroughput]:
+
+While in basic Raft, all transactions and the data are written in the log, which is not suitable for data-intensive applications, in Ratis, applications could choose to not write all the data to log, by allowing engineers to manage state machine data and log data separately.
+
+<!--
 * See the FileStore example in ratis-example
 * See the ContainerStateMachine as an implementation in Apache Hadoop Ozone.
+-->
 
-To do so, must implement interface StateMachine.DataApi:
-An optional API for managing data outside the raft log.
-For data intensive applications, it can be more efficient to implement this API
-in order to support zero buffer coping and a light-weighted raft log.
+To do so, they provide an interface `StateMachine.DataApi` for managing data outside the Raft log. This allows to build a very light-weighted Raft log. 
+
+We haven't implemented this yet in our prototype, but sketched out how this could be achieved in paragraph [@sec:log-less].
+
+Ratis also introduces the concept of _divisions_. A division represents the role a node has in a particular Raft group. In Multi-Raft, a node is allowed to take part in multiple Raft groups, thus having multiple different roles at the same time.
+
+##### Alternatives.
+
+Other alternatives are listed as follows and why we didn't choose them.
+
+- **Hazelcast**: Hazelcast is a full-fledged platform for building real-time applications with stream processing capabilities, that also uses Raft under the hood. This sounds very suitable for our case, as this is exactly what we want to build. But Hazelcast is not a embeddable library, but a platform with a magnitude of other features (in-memory key-value store, embedded stream and batch processing, pub/sub messaging). It is available as an open-source edition with community support, but you still build your application on top of the Hazelcast platform, instead of integrating Hazelcast. This introduces additional complexity, especially as we want to build ChronicleDB as a platform itself, which would require a lot of re-engineering of Hazelcast. Hazelcast is therefore aimed at application engineers rather than platform engineers. To embed Hazelcast instead of running it as a platform, you need to register yourself as a commercial partner of the Hazelcast, Inc. company.
+- **etcd/raft**: The most popular Raft implementation out there. As it is written in _Go_ (aka. Golang), it is not suitable for our case (only if we build replication in ChronicleDB around a microservice architecture, which is not our goal). We list it here for the sake of completeness. etcd/raft powers etcd, a high-throughput key-value store, which itself is the fundamental basis for Kubernetes.
+
+We use Java for simplicity, as ChronicleDB is written in Java. For best performance and future-proof support (at the time of this writing), it is recommended to implement the library yourself or to use one of the popular Golang implementations: etcd/raft or hashicorp/raft. One could even use the _Gorum framework_ in Golang—with some adjustments as in [@pedersen2018analysis]. Go is a relatively new language that is very popular in the realm of distributed systems, since it provides a powerful yet easy built-in networking library similar to Erlang, and the language semantics are simple which makes it easier to write, read and maintain distributed algorithms in Go, compared to other languages. Another reason is the already broad support in this area from package providers, which makes it easier to get started.
+
+Another alternative we have considered is to write the replication layer ourselves from scratch. This would have allowed us to implement a replication layer that allows the consumer of the event store to decide on the level of consistency. We have not found a library that allows this, so this must always be implemented by yourself. As we have seen so far, there is no out-of-the-box implementation of multiple protocols that can just be toggled in between. We found the approach in Apache IoT DB to switch the protocol by wrapping it in a provider, but only for Raft, multi-leader consensus and standalone use[^iot-db]. Another approach would be to limit the toggleability to a per-stream basis and deploy two completely different replication protocols or libraries. Due to the sheer complexity of such an undertaking, we quickly dismissed the idea.
+
+Note that in all of the previous implementations we presented in subchapter [@sec:previous-work], the replication layer was built by the engineering teams themselves.
+
+[^iot-db]: https://github.com/apache/iotdb/tree/master/consensus/src/main/java/org/apache/iotdb/consensus
+
+Now that we presented the library we use for our prototype implementation, we will present the implementation itself in the following sections.
 
 ### ChronicleDB on a Raft
 
-This subsection describes the actual implementation of Raft in ChronicleDB with Apache Ratis.
+This subsection describes the actual implementation of Raft in ChronicleDB with Apache Ratis. Before we delve deeper into this, let's look at further limitations.
 
-\todo{Algorithm diagrams}
+<!-- TODO Algorithm diagrams like in https://software.imdea.org/~gotsman/papers/unistore-atc21.pdf -->
 
-like in https://software.imdea.org/~gotsman/papers/unistore-atc21.pdf
+#### Limitations {#sec:implementation-limitations}
 
-#### Limitations
-
-On top of the constraints we set for the research, we also limit the scope of our prototype implementation to fit within the bounds of this work. For topics not covered here, see also the section on future work in Chapter [@sec:conclusion].
+On top of the constraints we set for the research (cf. section [@sec:system-design-limitations]), we also limit the scope of our prototype implementation to fit within the bounds of this work. For topics not covered here, see also the section on future work in Chapter [@sec:conclusion].
 
 ##### Sharding.
 
-We limit our implementation to the one-partition-per-stream case, thus we are not able to evaluate the impact of sharding on the overall througput.
+We limit our implementation to the one-partition-per-stream case, thus we are not able to evaluate the impact of sharding on the overall throughput.
+
+##### Queries.
+
+To allow for any queries, the original query interface of the ChronicleDBs `lambda-engine` must be adjusted, since it exposes a cursor interface that is hard to break down and wrap in a serialized message, which is required to be executed by a Raft node. We limit our work on implementing and investigating writes, since reads are served from a single leader and do not incorporate significantly more network round-trips, thus not being slower than in the standalone deployment—in fact, replication can reduce read latency. This is sufficient for our analysis. Since it was much easier to implement basic aggregate queries, we use them to validate our results. 
 
 ##### Message Protocol.
 
-We use gRPC with Protocol Buffers for intra-cluster messaging between nodes. But, we currently only offer HTTP/1.1 for clients to communicate with a deployment of ChronicleDB (next to the Java API for the embedded case). We recommend using gRPC (which is built upon HTTP/2), AMQP, or other protocols that are best suited for high-velocity event messaging.
+We use `gRPC` with `Protocol Buffers` for intra-cluster messaging between nodes. But, we currently only offer `HTTP/1.1` for clients to communicate with a deployment of ChronicleDB (next to the Java API for the embedded case). We recommend using `gRPC` (which is built upon `HTTP/2`), `AMQP`, or other protocols that are best suited for high-velocity event messaging.
 
 ##### Advanced Out-Of-Order Handling.
 
 While we recommend to invest time into researching and implementing an approach to cope with out-of-order events such as punctuation, time-bound partial consistency with inconsistency windows, or a consistency query module, the scope of this work is limited. Hence, our prototype implementation does not provide such a module. Instead, we will implement a lightweight buffering approach for writes that dramatically reduces the likelihood of inconsistencies due to out-of-order events in practice.
 
+##### Log Optimization.
+
+I/O on the Raft log can be costly, as all operations must be written to the log before executed on the event store replicas. Without buffering, the log looks almost similar to the actual event stream persisted in the store. In addition, it requires non-trivial state management such as allocation and pruning to prevent unbounded growth.
+
+The log implementation in this work is far from being optimized. Even more, we violate the "The log is the database" philosophy of ChronicleDB. Ratis allows us to implement the state machine and Raft log separately, and allows for a lightweight log implementation to enable high-throughput data replication. There are also approaches for log-less state machine replication in the literature that can lead back to this philosophy [@skrzypzcak2020towards]. But, we limit our work on the replication protocol itself, not on the implementation details of the log. We sketch out a possible log improvement in paragraph [@sec:log-less].
+
+##### Log Compaction.
+
+We haven't implemented a snapshotting mechanism so far. Currently, when the system is rebooted, the whole log is replayed and the $\textrm{TAB}^+$ index rebuilt, which is very expensive. While snapshotting a simple key-value store is simple (which previous literature was limited to), snapshotting the event store by creating clones of it to the current point in time is too expensive, as the store is already written to disk of the replicas. We considered that it is sufficient to reduce the snapshot to a pointer that points to the latest committed event in the store, and changing the state transfer implementation of Ratis to one that transfers the $\textrm{TAB}^+$ up to this pointer. But this method may be limited to an append-only event store—we haven't considered a solution for out-of-order entries yet, nor are we sure that this requires expectional handling at all.
+
 #### Technical Architecture Overview
 
-<!-- Now, I present my results -->
+This subsection outlines the architecture of ChronicleDB on a Raft. The system is implemented in 3 layers, as illustrated in figure \ref{fig:chronicle-raft-layers}:
 
-- Stack:
-    - Protocol Implementation: Apache Ratis
-    - Messaging Implementation: Google Protocol Buffers / gRPC (TODO cite both)
-    - Event Store: Standalone/Embedded ChronicleDB Event Store + ChronicleEngine
+- **Replication Layer**: This layer is built with Apache Ratis. We use the Java API of Apache Ratis to implement a Multi-Raft cluster running a distributed ChronicleDB state machine. This layer is described in subsections [@sec:cluster-management]—[@sec:multi-raft-partitioning].
+- **Messaging Layer**: In this layer, messaging between Raft nodes is defined with Google `Protocol Buffers` and sent over `gRPC`. We elaborate the details of this layer in subsection [@sec:messaging]. In addition, there is also messaging between ChronicleDB and clients, which is currently solved with `REST` on `HTTP/1.1` (cf. subsection [@sec:implementation-limitations]).
+- **Data Layer**: This is the layer that holds the actual ChronicleDB implementation by wrapping the embedded ChronicleDB `EventStore` implementation and providing an implementation of the `ChronicleEngine` as the API for producers and consumers. We present our changes in this layer in subsection [@sec:chronicledb-core-changes].
 
-- pretty architecture diagrams
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.85\textwidth]{images/chronicle-raft-layers.pdf}
+  \caption[Layers of the replicated ChronicleDB architecture]{The 3 layer-architecture of ChronicleDB on a Raft. Each nodes runs on a replication layer and communicates with each other over the messaging layer, while they manage multiple data layers (event streams).}
+  \label{fig:chronicle-raft-layers}
+\end{figure}
 
-- Architecture in overview: Communication layers, client + server architecture, node architecture, how to run the system, ... afterwards the details in own sections
-
-- Describe target package/library ecosystem (replicated event store as lib, consumed by spring)
-
-two separate groups of processes: data nodes and meta nodes. Exposing 3 ports: Data, Metadata/Management and Public (HTTP/REST). Similar to many other solutions like InfluxDB, Apache IoTDB... (but by accident, not intentional :) )
-See https://docs.influxdata.com/enterprise_influxdb/v1.8/concepts/clustering/
-https://iotdb.apache.org/UserGuide/Master/Cluster/Cluster-Setup.html 
-
-<!--
-#### Simplified API for Apache Ratis
-
-> This should better be covered in the following sections (cluster management + state machine)
-
-- StateMachineProviders
-- PartitionInfo
-- ClusterManager
--->
-
-\paragraph{Changes in the ChronicleDB core.}
+#### Changes in the ChronicleDB Core {#sec:chronicledb-core-changes}
 
 \todo{Mention the other patterns we used other then facades}
-Since we wrapped the relevant classes and interfaces of ChronicleDB into own extensions and facades, no changes in the core implementation of ChronicleDB where needed.
 
-We created an interface to the `ChronicleEngine` and extended it to a replicated one, serving as a facade and the API for the end-user. 
+A few adjustments where to be made on the original implementation of ChronicleDB. Our adjustments are made on the basis of ChronicleDB version `0.2.0-prealpha`. The original implementation consists of multiple dependent packages:
 
-We... EventStore...
+- `chronicledb-event`: The ChronicleDB event store, which is dependent on the following:
+  - `chronicledb-index`: The indexing layer of ChronicleDB,
+    - `chronicledb-common`: Commons for the ChronicleDB packages,
+    - `chronicledb-io`: The I/O layer of ChronicleDB,
+  - `event-data-model` from `de.umr.event`: The event meta model, interface and utilities to describe an event schema.
+<!-- - `jepc-api` from `de.umr.jepc.v2`: The API for the _Java Event Processing Connectivity_ (JEPC)[^jepc] library. -->
 
-To allow for distributed queries, the original query interface of ChronicleDB should be adjusted, since it exposes a cursor interface that is hard to wrap in a serialized gRPC command message. Instead of wrapping, it should be re-eingeered for the distributed case. Note that we limit our work to support replicated writes, so we did not touch this yet.
+[^jepc]: mathematik.uni-marburg.de/~bhossbach/jepc/index.html
 
-#### Cluster Management
+With this setup, ChronicleDB can be deloyed embedded as a library in other Java applications.
 
-- Similar to LogCabin (see previous work)
-- The management quorum
-- Bookkeeping of available nodes and balancing partitions
-- Heartbeats, health checks (failure detections) and timeouts
-- Registering of Partitions for StateMachines
-- Additional RaftServer (with own port)
-- Explain how to startup the cluster similar to https://github.com/logcabin/logcabin/blob/master/README.md
-- Failure detection (TODO also reference 03a)
-- TODO chain replication states to Allow to build a distributed system without external cluster management process; raft did it, too (see KIP-500), but why did I ended up in here? Describe this so it makes sense (multi-raft, partitioning, add work item to conclusion to get rid of the cluster manager process)
+On top of this exists the `lambda-engine`, which is a Spring Boot app providing both real-time query and batch processing APIs, based on the Lambda architecture. In addition, it allows to deploy ChronicleDB standalone rather then embedded, exposing a `REST` API for clients to insert and query events (and aggregates).
 
-- TODO all commands of the cluster mngmt SM in mathematical notation, and short listing of protobuf example
+Our prototypical implementation is dependent on the following packages:
 
-#### Failure Detection
+- `chronicledb-event` as the ChronicleDB core implementation,
+- `event-data-model` as we need the event data model across all layers.
+
+We wrap the embedded ChronicleDB library into the data layer of our implementation and re-engineered parts of the `lambda-engine` to serve our implementation in a test application (cf. section [@sec:test-application]). We created an interface to the `ChronicleEngine`, the centerpiece of the service, and extended it to a replicated one, serving as a facade and the API for clients. We illustrated this in figure \ref{fig:chronicle-before-after}. Since we wrapped the relevant classes and interfaces of ChronicleDB into own extensions and facades, no changes in the core implementation of ChronicleDB where needed. To allow for distributed queries, the original query interface of the `lambda-engine` should be adjusted, since it exposes a cursor interface that is hard to wrap in a serialized `gRPC` command message. Instead of wrapping, it should be re-engineered for the distributed case. We limit our work to support replicated writes, so we did not touch this yet.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.9\textwidth]{images/chronicle-before-after.pdf}
+  \caption[Re-engineered ChronicleDB on Raft]{Re-engineered ChronicleDB on Raft. The replication layer sits between the event store instances and the lambda engine.}
+  \label{fig:chronicle-before-after}
+\end{figure}
+
+Note that the event data model in ChronicleDB is slightly different to our definition in section [@sec:consistency-choice]: In ChronicleDB, an event contains two timestamps $t_1$ and $t_2$, denoting the start and end of the _temporal validity_ of the event. This makes discussions about the event order somewhat more complex, but we won't go into it.
+
+The full picture of the architecture is shown in figure \ref{fig:ha-chronicle-architecture}. The different parts of this architecture will be explained in the following sections.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=1.5\textwidth, angle=90]{images/ha-chronicle-architecture.pdf}
+  \caption{Architecture of a ChronicleDB cluster for high availability}
+  \label{fig:ha-chronicle-architecture}
+\end{figure}
+
+#### Cluster Management {#sec:cluster-management}
+
+In the center of the replicated ChronicleDB implementation sits the cluster management. The cluster management is crucial for managing nodes, partitions and instances of state machines in the cluster. 
+
+<!-- describe what it does -->
+
+The cluster manager acts as both a book keeper and as a service for provisioning nodes to new or initial partitions of a state machine instance. It
+
+- Keeps references to all nodes, Raft groups, divisions, and state machine instances,
+- Stores all metadata of the cluster, including information on the machines hardware, OS and load,
+- Performs regular health checks using heartbeats (including failure detection),
+- Serves Raft nodes with health info about the cluster,
+- Provisions new partitions, such as for newly instantiated event streams, with load balancing,
+- Acts as a gateway and routes requests to the Raft group of the according state machine and partition,
+- Updates the _bootstrap lists_ of the clients (the list of known nodes of a cluster a client can message to),
+- Acts as a service for clients to query the cluster state.
+
+It therefore plays a crucial part in the architecture; without it, no write or read can happen at any node.
+
+<!-- describe how it does it (running as a seperate Raft group) -->
+
+The cluster manager is implemented as a replicated state machine itself, as it must provide at least the same level of fault-tolerance and availability as the actual application logic due to its crucial role in the architecture. The cluster management and actual application logic is divided into two instances of Raft servers, as shown in figure \ref{fig:management-server}. This guarantees that the management server is always up, even in case of faults of the application servers, which are detected by the management server. While the management Raft group runs on all nodes, ensuring an additional level of fault-tolerance, the actual application groups run only on the nodes with partitions covering them. Moreover, the cluster manager runs another state machine that serves a simple in-memory key-value store for additional metadata that we haven't yet implemented with type safety. This key-value store allows for single-nested key-value pairs. We use this to store and distribute additional node metadata, such as remaining disk capacity, which is exposed to the user via an API and a UI and can be used for alerting or auto-scaling.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.7\textwidth]{images/management-server.pdf}
+  \caption[Management and application server]{A single deployment contains both a management and application server. The management server is responsible for all book keeping of the cluster.}
+  \label{fig:management-server}
+\end{figure}
+
+In Apache Ratis, every instance of a `RaftServer` runs on its own port. Therefore, we need to provide two ports per node, one for messaging and replication of the application logic, and one for the cluster management. While this adds complexity for cluster operators, it ensures that both servers are decoupled. This is similar to what other vendors are doing (InfluxDB, Apache IoTDB, see subchapter [@sec:previous-work]). Although one could imagine running cluster management and application logic on separate machines, we run them on the same machines for efficiency and complexity reasons. This is illustrated in figure \ref{fig:multi-raft-load-balancing}. In addition, there is one public port for client requests. In our example setup on AWS, as well as in our local Docker setup, we made both ports for cluster management and application replication private. We recommend this to reduce the risk of someone messing up the protocol messaging, and thereby the consistency of the system.
+
+The Raft log of the cluster management state machine does not persist every command, simply to avoid additional I/O and log compaction complexity for very frequent commands such as heartbeats.
+
+##### Raft Groups, Clients and Servers.
+
+Ratis provides three classes that are mandatory to run a cluster on Raft.
+
+A _Raft group_ is a logical instance, containing a set of nodes that replicate a single state machine instance. Each physical node can participate in multiple Raft groups, meaning it can take on different roles at the same time. This relation is called a _division_. A division is a relational tuple describing a node, a Raft group, and the role of this node in this group.
+
+A _Raft client_ is a client instance that can send requests to a single Raft group. On instantiation, the Raft client is given the Raft group ID and a bootstrap list of nodes to reach out to. Once a Raft client reached out to a single node, it receives information about the whole group and what the current leader is, and communicates directly to the leader from this point. A Raft client is mandatory for sending any message to a Raft group. A write request sent from a Raft client is written and replicated to Raft logs of a quorum of the nodes in the group, before it is applied to the state machine. Raft clients can be run on any Java service on any machine as long as they can reach one Raft server of a Raft group and know the ID of the Raft group to connect to.
+
+A _Raft server_ is the instantiating of Raft on a single node. Ratis supports Multi-Raft, so a Raft server can run multiple Raft groups.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.95\textwidth]{images/ratis-classes.pdf}
+  \caption[Multi-Raft in Apache Ratis]{Multi-Raft in Apache Ratis, here with a replication factor of 3}
+  \label{fig:ratis-classes}
+\end{figure}
+
+##### Commands.
+
+As we describe in subsection [@sec:messaging], all communication between nodes is done via `gRPC`. All possible commands and message schemas are defined in `Protocol Buffer` schema descriptions. This provides a clear, transparent and reliable interface for all communication with the cluster management server. The server supports the following commands:
+
+- `REGISTER_PARTITION(string statemachine_classname, string partition_name, int replication_factor)` to register a new partition for a set of nodes and a state machine with the given replication factor,
+- `DETACH_PARTITION(string partition_name)` which detaches a partition without deleting its persisted contents,
+- `LIST_PARTITIONS(string statemachine_classname)` to list all registered partitions, either for all or a specific state machine,
+- `HEARTBEAT(RaftPeerProto peer)` for a node (_peer_) to broadcast a heartbeat to let the cluster know of its presence.
+
+In addition, the metadata state machine provides the following commands:
+
+- `SET(string scope_id, string key, string value)` writes a value to a key for a certain scope. If the key is already defined, it is overwritten. The scope allows to define multiple instances of the key-value store, identified by the scope ID.
+- `DELETE(string scope_id, string key)` removes the key from the scope, if existing,
+- `GET(string scope_id, string key)` returns the value for the key of the given scope,
+- `GET_ALL_FOR_SCOPE(string scope_id)` returns the whole map for a scope,
+- `GET_ALL()` returns all maps for all scopes. 
+
+<!--
+##### Failure Detection.
 
 \todo{Describe the heartbeat mechanism} 
+-->
 
-#### Event Store State Machine
+#### Event Store State Machine {#sec:event-store-state-machine}
 
-- Standalone Event Store wrapped
-- Replicated Event Store as a facade / to be used as the client to the cluster
-- TODO think of moving it out of spring boot, use as standalone lib
-- TODO if reasonable, list algos
+The ChronicleDB event store is split in multiple event store instances, where each instance manages a particular event stream for a given event schema. In a standalone ChronicleDB deployment, these event store instances are managed by the `lambda-engine`, which maintains a map of references to the respective instances. In the basic approach, the list of available stream is managed with a metadata file on disk, next to the event streams. Each event stream itself is stored a set of files, which contain the block segments, the index, and secondary indexes, if any.
 
-- TODO all commands of the SM in mathematical notation, and short listing of protobuf example
+In the distributed approach of this work, the event store instances are managed by the cluster manager, which keeps book of all the registered event store instances as partitions. Each ChronicleDB event store instance is managed by a dedicated state machine instance. In this subsection, we examine our implementation and additional abstractions that we have built on top of Apache Ratis to improve maintainability and generalizability.
 
-TODO the state machine manages a reference to a copy of the event stream via a EventStore instance
+##### Formal Definition.
 
+In its core, the state machine for an event stream can be formally described as follows (based on subsection [@sec:state-machine-replication]), under the condition that the only valid write operation is the insertion of one or multiple events:
 
-In its core, a very simplified state machine for ChronicleDB could be describes as
+$C$ is the set of all possible events $e$.
 
-$C$ set of all possible events $e$
+$S = \{\dots\}$ denotes all possible sequences $E$ of events.
 
-$S = \{\dots\}$ all possible sequences $E$ of events
+Writing one event can be denoted as
 
-$\delta(e, ()) = (e)$ where $()$ is the empty sequence
+$\delta(e, \langle \rangle) = \langle e \rangle$ where $\langle \rangle$ is the empty stream.
 
-$\delta(e, (e_1, \dots, e_n)) = (e_1, \dots, e_n, e)$
+For non-empty streams:
 
-$\delta'((e'_1, \dots, e'_m), (e_1, \dots, e_n)) = \delta (e'_m, \dots \delta(e'_1, (e_1, \dots, e_n))\dots) = (e_1, \dots, e_n, e'_1, \dots, e'_m)$
+$$\delta(e, \langle e_1, \dots, e_n \rangle) = 
+  \begin{cases}
+    \langle e_1, \dots, e_n, e \rangle & \text{if } e \geq e_n, \\
+    \langle \delta(e, \langle e_1, \dots, e_{n-1} \rangle), e_n \rangle & \text{else }\text{ (out-of-order)}.
+  \end{cases}$$
 
-TODO as far as the log consists of commands rather than values, we describe it as 
+and writing events in batches can be described by
 
-$\delta(cmd(arg), ()) = cmd'(arg, ())$
+$$\delta((e'_1, \dots, e'_m), \langle e_1, \dots, e_n \rangle) = \delta (e'_m, \dots \delta(e'_1, \langle e_1, \dots, e_n \rangle )\dots)$$
 
-And concretized
+##### Generic State Machine Instantiation.
 
-$\delta(append(e), \empty) = (e)$
+Our architecture allows us to run not only instances of event stores, but instances for any arbitrary implementation of a state machine. This allows us to break down the replicated logic into multiple state machines for different service domains, which improves the performance of a complex system since this approach allows us to break coordination and linearization of operations where we don't need it. However, we must be careful not to decouple logic with a great amount of strong causal connections. We can either deploy the state machines from the same code base or seperately in a service-oriented approach. Both are valid approaches since the communication between different state machine instances is abstracted using Raft clients and Raft groups. They handle to build a connection with the appropriate group leader via `gRPC`, while the messaging between groups is reliable due to the downward and backward compatibility of message schema evolution in `protobuf`. We illustrated this in figure \ref{fig:decouple-state-machine-monolith}. It is also imaginable to introduce a message bus, i.e. using Kafka (or ChronicleDB itself) to decouple communication between state machine instances.
 
-$\delta(append(e), (e_1, \dots, e_n)) = (e_1, \dots, e_n, e)$
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.9\textwidth]{images/decouple-state-machine-monolith.pdf}
+  \caption[Decoupling a monolithic state machine]{Decoupling multiple service domains from a monolithic state machine that must not neccessarily be linearized into multiple state machine instances can improve the performance of the overall system}
+  \label{fig:decouple-state-machine-monolith}
+\end{figure}
+
+Thanks to Multi-Raft in Ratis, each Raft group can run a different state machine implementation. A fresh state machine instance is registered as a single partition via the cluster management. You can instantiate such a instance using the `StateMachineProvider` interface. It bundles the state machine to be deployed, a descriptor for that instance/partition, the number of replicas to partake in that partition, and other domain-specific information such as the event schema. When issuing the creation of a new event stream for a given schema, the API creates such a provider and registers it to the cluster management, which then executes the provisioning by selecting the replicas with the lowest load, spawning a new Raft group for the requested state machine instance and writing it to the cluster managers log.
+
+There is one state machine instance for each event store instance, which covers a single event stream. Currently, there is exactly one partition per state machine instance, as we don't support sharding yet. Our implementation of the `lambda-engine` makes use of the cluster manager to retrieve the set of instantiated event store state machines, so it can forward client requests for writes and queries to the respective event stream. 
+
+##### The State Machine Interface.
+
+Our state machine interface abstracts the original Ratis interface in multiple layers to improve the maintainability of the code and the system and to allow to implement new state machines with less effort and highest possible modularity.
+
+In Ratis, the state machine API entices you to build a monolithic state machine, which quickly becomes hard to read and to maintain. With our approach, we enforce modularity and atomicity. Each abstraction layer of the state machine has a specific set of responsibilities (the layers are illustrated in figure \ref{fig:state-machine-interface} as well as in the UML diagram in figure \ref{fig:chronicle-uml-classes-annotated}):
+
+- The abstract `ExecutableMessageStateMachine` class can be extended to provide lightweight state machines that uses `ExecutableMessages` together with `OperationExecutors` to decouple state and operations on the state. It simply references the `State` that is to be managed, the `StateManager`to manage the state, and the class of allowed `ExecutableMessages` on this state.
+- The `StateManager` interface must be implemented to keep a reference on the `State`. Direct manipulations on the `State` object are prohibited, instead all allowed operations must be implemented via the `StateManager`. The `StateManager` is passed to `OperationExecutors`, exposing its interface for atomic state updates.
+- The `State` interface should be implemented to describe how the state should be instantiated (what the empty state looks like), how it is persisted (references to the actual storage, such as the node's disk) and how snapshots are taken (for log compaction).
+
+In Ratis, a state machine has at least two methods `applyTransaction` and `query`. 
+
+- `applyTransaction` receives the `TransactionContext`, which includes the Raft log entry. The log entry itself includes the message payload for the execution on the state. Developers are responsible to update the last applied term-index themselves in case the operation was successful, otherwhise to rollback the state change (in case it is not atomic).
+- `query` is similar to `applyTransaction` with the difference that it does not receive a log entry, but only the message payload. Query operations are not allowed to mutate the state, therefore, no entry is written to the Raft log.
+
+We generalized the `applyTransaction` method. Developers do not longer need to update the term-index themselves. Instead, all operations must be written atomically asa pair of an `ExecutableMessage` together with an `OperationExecutor`. For the case of a failed execution, every `OperationExecutor` allows to provide a `cancel` method for neccessary rollbacks or compensations, in case an operation can not be designed atomically and/or idempotent.
+
+For side effects (not on the state—this is prohibited—but rather for logging or notifications to the cluster manager) we added a `beforeApplyTransaction` respectively `afterApplyTransaction` method.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.75\textwidth]{images/state-machine-interface.pdf}
+  \caption[Splitting up the state machine interface]{Splitting up the state machine interface into the state machine, the state manager, the state itself and message-executor pairs.}
+  \label{fig:state-machine-interface}
+\end{figure}
+
+##### The Event Store Facade.
+
+The actual event store instances that manage the event streams are prevented from direct access. They can only be accessed through the replication layer, which ensures consistency. For convenience, an event store facade hides the replication layer and offers the same API to producers and consumers as the original event store classes, since it implements the same interface. This follows the philosophy of strong consistency to render a replicated system to clients as it where a single-server system. We extended this approach to the `lambda-engine`, which offers an API to access multiple streams. However, we haven't managed to implement neither continuous queries nor batch processing yet (cf. subsection [@sec:implementation-limitations]).
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.95\textwidth]{images/event-store-facade.pdf}
+  \caption[Facade hiding the actual event store]{The actual event store instances are hidden behind a facade. The replication layer wraps the event store instances, preventing direct access to them.}
+  \label{fig:event-store-facade}
+\end{figure}
+
+##### Architecture and Message Flow.
+
+We illustrate the class hierarchy and the message flow in the annotated UML diagram in figure \ref{fig:chronicle-uml-classes-annotated}.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=1\textwidth]{images/chronicle-uml-classes-annotated.pdf}
+  \caption[UML class diagram for the replicated ChronicleDB event store]{UML class diagram for the replicated ChronicleDB event store state machine. The annotations show the message flow for an event insert operation. A non-annotated version can be found in the appendix.}
+  \label{fig:chronicle-uml-classes-annotated}
+\end{figure}
+
+An insert operation includes the following components in several steps:
+
+\begin{enumerate}[label=(\arabic*)]
+  \item The \texttt{insert} of an event is requested via the HTTP API.
+  \item The reference to the target stream (partition) is retrieved from the cluster management. It is necessary to use it to instantiate the Raft client so that it sends the request to the leader of the coresponding Raft group.
+  \item The insert operation of the \texttt{BufferedReplicatedEventStore}is called, which is a facade for the Raft client. It implements the same interface as the actual event store and additionally provides a buffered insert operation.
+  \item Once the buffer is flushed (meanwhile, other insertions could have been requested), a \texttt{InsertBulkEventsOperationMessage} is instantiated. Its payload contains the events to be inserted from the buffer. Before flushing, the events are ordered by event time. The message is then serialized using \texttt{Protocol Buffers} and sent via \texttt{gRPC} to the leader of the Raft group that manages the streams partition.
+  \item The leader receives the message...
+  \item ...and writes it to the Raft log. The log entry is now replicated to a quorum.
+  \item Once the message is replicated to a quorum, the \texttt{EventStoreStateMachine} instances at each quorum node (and successive other nodes) apply the message, executing the \texttt{insert} command.
+  \item The \texttt{insert} operation is finally executed on the event stream by the actual event store instance on all participating and available nodes.
+\end{enumerate}
+
+Note that in future work, the order of this operations may differ if the Raft log is optimized; i.e. a message is applied immediately on the state machine while writing a pointer reference only to the Raft log (cf. section [@sec:log-less]).
+
+##### Commands.
+
+The prototype implementation of the event store state machine supports the following commands on a stream:
+
+- `PUSH_EVENTS(repeated<Event> events, bool is_ordered)` inserts the given list of events, which is optimized by telling ChronicleDB in advance if these events need to be reordered before inserting,
+- `AGGREGATE(Range range, AggregateScope aggregate_scope, AggregateType aggregate_type, string attribute)` derives an aggregate of the given type (currently supporting `COUNT`, `SUM`, `MIN` and `MAX`), either on a attribute or global scope, for the given time range,
+- `GET_KEY_RANGE()` returns the time range for the stream,
+- `CLEAR()` returns the whole stream.
+
+A query message is not yet implemented due to the complexity of the query interface and more challenges that we pointed out in subsections [@sec:system-design-limitations] and [@sec:implementation-limitations].
 
 #### Log Implementation
 
-- Commands
-- Replayable
-- Transactions vs Queries
-- Acts kind-of write-ahead log, but buffered
-- Snapshot: Pointer to last committed event in the store
-- Persisting the log expensive
-- TODO compare with other databases write-ahead logs
-- OOO challenges
-- TODO if reasonable, list algos
+The Raft log in Apache Ratis has all the properties that a Raft log must have: it is replayable, compactable and comes with a term-index pair for each log entry to mark the current leader term and the index of this entry for linearizability. It also denotes the high-water mark of the log with the `lastAppliedTermIndex`. In addition, Apache Ratis allows to implement the Raft log yourself, and independently from the state machine, by providing an interface for managing log data outside the Raft log. For data-intense applications, we recommend to do so: they provide a basic, non-optimized Raft log implementation that dumps the log entries to segmented binary files on disk, and reads them again from disk when feeding them to the state machines. This basic implementation is not efficient, slowing down data-intensive applications. In our evaluation, writing every event to the Raft log slows down the system tremendously, due to increased I/O and especially because the default log in Ratis requires a log entry to be written before it is sent to other nodes, effectively blocking the whole system on every single operation (this could be mitigated by parallelizing log writes and replication). As a key insight, the Raft log implementation is crucial for the performance of the whole system. 
 
-\todo{mention here AND in conclusion}
-TODO the log is a very naive implementation. Popular applications even use efficient embedded (in-memory?) storage engines such as RocksDB (like CockroachDB https://github.com/cockroachdb/cockroach/issues/38322) - and they also come with WAL logs, so we have a multi-layer architecture of the raft log. Even if this comes with some issues, we can learn from it and use a better log approach. Our naive approach (the Ratis default one) can slow down the system. Makes sense to have the raft log running on a different thread to not block other operations and improve I/O
+ Some of the applications we investigated use efficient embedded storage engines such as _RocksDB_ that are optimized for high-throughput[^cockroach-rocksdb], some others wrap the log in a cache[^hashicorp-log-cache], and some even come with additional WAL logs, providing a multi-layer architecture of the Raft log. Even if this comes with some issues, we can learn from it to implement a better log. We use buffering to improve the performance of the system, avoiding too many writes to the log while at the same time sacrificing atomicity of the log entries. This approach is presented in subsection [@sec:buffered-inserts]. In the next paragraph, we also present an approach to the log that we haven't managed to implement in our prototype yet.
 
-\begin{figure}[h]
+[^cockroach-rocksdb]: CockroachDB uses RocksDB for their log: https://github.com/cockroachdb/cockroach/issues/38322
+
+[^hashicorp-log-cache]: Hashicorp Raft wraps a cache with a in-memory ring buffer around the Raft log to avoid I/O on recently written log entries, as the state machine, replication engine and log disk writer can immediately pick up the log entry from the buffer after an insert: https://github.com/hashicorp/raft/blob/main/log_cache.go 
+
+\begin{figure}[H]
   \centering
   \includegraphics[width=0.9\textwidth]{images/chronicle-raft-log.pdf}
   \caption[Relation of the Raft log and the event store]{Relation of the Raft log and the event store. a) Appending events without allowing for out-of-order events always results in the same sequential order of the events in the Raft log (wrapped in operations) and the events in the event store, even if insertion and event time differ. b) With buffered inserts and without out-of-order insertions, the order correlation still applies, as the buffer contents are ordered before insertion and the buffer can only be served from a single leader node. c) As soon as out-of-order insertions are allowed, the order of the two logs given by insertion and event time is no longer guaranteed to correlate. This can break previously derived non-monotonic aggregates, as shown in figure \ref{fig:ooo-consistency}.}
   \label{fig:chronicle-raft-log}
 \end{figure}
 
-##### Log-Less Rafting.
+##### Log-Less Rafting. {#sec:log-less}
 
-With the Raft log, we write the same event twice: Once to the Raft log, and once to the event stream (when it is replicated and committed). The messages end up being stored redundantly, and the duplicate writes use up additional I/O capacity, which slows down the system. It also violates the _"The log is the database"_ philosophy of ChronicleDB. So the question is: why can't the event stream simply act as the log, instead of a redundant Raft log?
+With the Raft log, we write the same event twice: Once to the Raft log, and once to the event stream (when it is replicated and committed). The messages end up being stored redundantly, and the duplicate writes use up additional I/O capacity, which slows down the system. It also violates the _"The log is the database"_ philosophy of ChronicleDB. So the question is: why can't the event stream just serve the log instead of creating a redundant Raft log?
 
-- The Raft log contains not only events (actually insert commands), but also Raft commands (such as leader changes, network reconfigurations etc.) and in the future additional operations on the event stream (for example, maybe for schema evolution, but here we would advice to just create a new stream).
-- With out-of-order events, the ordering of the Raft log and event stream can differ (see the previous discussions in section [@consistency-choice]).
+- The Raft log contains not only events (actually insert commands), but also Raft commands (such as leader changes, network reconfigurations etc.) and in the future additional operations on the event stream (for example for schema evolution, but here we would recommend to just create a new stream).
+- Not all entries in the log are already committed and applied to the state machine, similar to a WAL.
+- With out-of-order events, the ordering of the Raft log and event stream can differ (see the previous discussions in section [@sec:consistency-choice]).
 
-We can address this problem if we reduce the raft log to pointers, at least for the write operations. We use the event stream as the truth for the log and keep only pointers in the Raft log (next to the command, in this case `insert`). Once a message arrives at a node, it immediately writes it into the event stream and at the same time a pointer to the Raft log. When reading the event stream, the system must read the high-water mark of the log to know which event stream entries are already committed, and is only allowed to return these. In case of uncommitted entries dropped from the log (e.g., after a network partitioning or due to some faults), the event stream entries after the high watermark are allowed to be overwritten. Overwriting entries is a new concept to ChronicleDB that must also be discussed from an index and storage layout perspective, therefore we haven't implemented this throughout this work. This approach must also take care of out-of-order events: it is not sufficient to read the high-water mark and allow to return all past entries in the event stream that have an event timestamp before the watermark, because this could return out-of-order entries that were not yet fully replicated to a quorum and committed. It is only allowed to return entries with an insertion timestamp before the entry with the high-water mark, which requires further thoughtful engineering to be efficient. In addition, no materialized aggregates are allowed to be returned that are based on uncommitted out-of-order entries. This is illustrated in figure \ref{fig:logless-raft}.
+As we wrote, other applications use embedded storage engines for high-throughput to write the log. ChronicleDB is such a high-throughput embedded storage engine. Consequently, this leads to the consideration of using the ChronicleDB event store itself as the log. We can address this by reducing the Raft log to pointers, at least for the write operations. We use the event stream as the truth for the log and keep only pointers in the Raft log (next to the command, in this case `insert`). Once a message arrives at a node, the state machine immediately writes it into the event stream and at the same time a pointer to the Raft log. When reading the event stream, the system must read the high-water mark of the log to know which event stream entries are already committed, and is only allowed to return these. In case of uncommitted entries dropped from the log (e.g., after a network partitioning or due to some faults), the event stream entries after the high watermark are allowed to be overwritten. Overwriting entries is a new concept to ChronicleDB that must also be discussed from an index and storage layout perspective, therefore we haven't implemented this throughout this work. This approach must also take care of out-of-order events: it is not sufficient to read the high-water mark and allow to return all past entries in the event stream that have an event timestamp before the watermark, because this could return out-of-order entries that were not yet fully replicated to a quorum and committed. It is only allowed to return entries with an insertion timestamp before the entry with the high-water mark, which requires further thoughtful engineering to be efficient. In addition, no materialized aggregates are allowed to be returned that are based on uncommitted out-of-order entries. This is illustrated in figure \ref{fig:logless-raft}.
 
-\begin{figure}[h]
+\begin{figure}[H]
   \centering
-  \includegraphics[width=0.8\textwidth]{images/logless-raft.pdf}
+  \includegraphics[width=0.95\textwidth]{images/logless-raft.pdf}
   \caption[Almost logless Raft]{Sketch of an almost logless Raft. a) Regular Raft log, with events only written to the stream once committed, but then, they are written twice. b) Almost logless Raft, where the Raft log only contains pointers to the actual events in the stream. Events are immediately written to the stream, but only those up to the high-water mark are allowed to be read by clients. c) This simple approach won't work if out-of-order events come into play.}
   \label{fig:logless-raft}
 \end{figure}
@@ -913,280 +1104,205 @@ Ignoring out-of-order events, snapshotting the state and compacting the log is a
 
 There are also more approaches to logless state machine replication in the literature, that goes way beyond this. So far, they are only suited to smaller key-value stores, as they manage a full sequence of states, but research here could be deepened for larger structures such as an event store [@skrzypzcak2020towards].
 
-#### Buffered Inserts
+#### Buffered Inserts {#sec:buffered-inserts}
 
-Cf [@sec:cost-reduction]
+In his dissertion on Raft [@ongaro2014consensus], Ongaro describes batching and pipelining support for Raft log entries and explains their importance to system performance. Collecting and executing multiple requests (Raft log entries) in batches reduces I/O and network round-trips at a high level. Unfortunately, Ratis does not support batching itself. Therefore, we implemented a buffer ourselves to provide batching. In this subsection, we carry out implementation details, while we refer to subsection [@sec:buffer-theory] for more details. 
 
-From original diss file:///Users/christian.konrad/Documents/Paper/style%20inspiration/OngaroPhD.pdf:
+One caveat of our implementation is, that log entries lose atomicity: instead of having one log entry per event, a log entry resembles a batch insertion command. This is shown in figure \ref{fig:chronicle-raft-log} b). A better implementation would be to implement batching right in the log instead of outside the log. But, it is not that bad at all: many of the vendors we inspected suggest to producers to write events in batches anyway[^influx-batches]. With buffering inserts, we take the burden from the event producer to send in batches by enforcing that events are written in batches anyway. While this does not reduce network latency between the client and the ChronicleDB cluster, it reduces the inter-cluster latency by a significant order.
 
-"Raft supports batching and pipelining of log entries, and both are important for best performance.
-Many of the costs of request processing are amortized when multiple requests are collected into a
-batch. For example, it is much faster to send two entries over the network in one packet than in two
-separate packets, or to write two entries to disk at once. Thus, large batches optimize throughput
-and are useful when the system is under heavy load. "
+[^influx-batches]: InfluxDB, for instance, suggests as a best practice to write events in batches https://docs.influxdata.com/influxdb/v2.3/write-data/best-practices/optimize-writes/#batch-writes
 
-Unfortunately, ratis does not support batching itself. Therefore, we implemented a buffer ourselves to provide batching.
-(TODO mention that its better to implement batching in raft, so log entries stay atomic and do not bundle multiple operations per log entry like in our case)
+##### Buffer Implementation.
 
-It is recommended to insert events in batches to minimize the network overhead (cf. InfluxDB)...
-To make this easy for the user... don't move batching into the responsibility of the client or the user... ChronicleDB can be run with buffered inserts (optionally)... strong leader buffer (not implemented yet)
+Figure \ref{fig:ha-chronicle-architecture} illustrates the buffer architecture:
 
-TODO buffer also allows for concurrency, as multiple threads can write to the buffer, while its content is ordered on flush. Mitigates overlapping writes, as buffer content is always ordered by event time.
+\todo{UML of the buffer}
 
-TODO buffer must be on a single leader, otherwhise order of the batches can not be ensured (would need a merge layer for batch writes...)
-
-and also improve overall latency using buffer... cf. ring buffer in cockroach
-
-https://docs.influxdata.com/influxdb/v2.3/write-data/best-practices/optimize-writes/#batch-writes
-
-
-TODO log is sequentially ordered by time of imsert... using java concurrency mechanisms... what if communicated via rest? not linearized
-TODO buffer: fire and forget. wo/ buffer + sync: strong linearizable
-TODO buffer violates strong consistency: Events are only ordered in the buffer, and the event sets of the buffers are ordered via raft log, but when applying to state machines, the events of the buffers can overlap. Events are still ordered in the event store, but inserting them needs a lot of OOO.
-TODO for future work: Only allow the leader to apply to its buffer. We didn't managed to do this in this work due to time issues, but this is should be the final architecture to ensure strong consistency
-
-... buffer allows for concurrent appends... multihreaded writing and reading from the buffer... buffer flushed when full or after timeout... but must also follow single-leader practices (see above)
-
-TODO when not applying single-leader characteristics to the buffer, the buffer would dramatically increase the chance for bulky out-of-order inserts that are too large for the spare space in the blocks, resulting in a hard slowdown... We need to enforce single-leader to the buffer. (Unfortunetally, the current experimental implementation does not enforce single-leader to the buffer atm). But with single-leader, the buffer reduces chance of OOO because it pre-sorts before flushing. 
-
-\todo{Move to general architecture overview}
-Two modes: Async fire-and-forget and synchronous. The latter is important when a client needs the guarantee that one event is written before it continues sending futher events. The async mode allows for very high throughput. With horizontal scaling, it is possible to keep a constantly high throughput rates (events/s). With higher replication factor, it decreases (TODO how does Zeebe keep throughput constant when latency increases???). Thanks to the buffer, intermediate higher event emitting rates can be compensated, if the mean rate stays below the max throughput... Otherwhise, the overall system slows down and probably crashes ATM (future work: Monitoring of the system, truely elastic, but due to append-only and linearizability we can not mitigate everything with partitioning if write rates stay too high for a minimum replica set; there will be a upper bound. Same would apply to eventual consistency btw: If mean write rate stays higher than max throughput, the system will neve become consistent (i.e., replica states will never converge (TODO should we mention that in fundamentals/cost of replication?)))
-
-\begin{figure}[h]
-  \centering
-  \includegraphics[width=1\textwidth]{images/ha-chronicle-architecture.pdf}
-  \caption{Architecture of a ChronicleDB cluster for high availability}
-  \label{fig:ha-chronicle-architecture}
-\end{figure}
-
-Figure \ref{fig:ha-chronicle-architecture} illustrates the architecture:
-
-\todo{Grammar check}
 \begin{enumerate}[label=(\arabic*)]
-  \item A client emits events to be inserted into the store. This happens either through a remote API (in this case, a REST API) or directly on a one of the nodes via the Java API for an embedded design.
+  \item A client emits events to be inserted into the store. This happens either through a remote API (in this case, a \texttt{REST} API) or directly on one of the nodes via the Java API in case of an embedded design.
   \item The partition manager of the ChronicleDB engine finds the right partition for the insertion request and the current leader for this replica group to serve the request. The partition and leader mapping is cached for a performanant in-memory lookup. The request is sent to this leader, while the client is notified for direct access of the leader for subsequent requests.
-  \item The inserts are added to a non-blocking buffer that allows for synchronized concurrent inserts and writes. The buffer is flushed once it overflows, at least after a certain timeout after the last insert. The buffer is optional and both its maximum size and timeout are configurable.
+  \item The inserts are added to a buffer that allows for synchronized concurrent inserts and writes. The buffer is implemented using a \texttt{LinkedBlockingQueue}. The buffer is flushed using the \texttt{drainTo} method of the \texttt{LinkedBlockingQueue} once it overflows or at least after a certain timeout after the last insert. The buffer is optional and both its maximum size and timeout are configurable.
   \item The flushed buffer content is inserted into the event store in a batch operation. Before inserting, the events are ordered in-place in the buffer to prevent out-of-order inserts in the given set. The flush and insertion happen in a single, atomic operation.
-  \item The insert of the events happens in a batch. The insert operation, including the event payloads, is appended to the raft log, replicated and applied to the state machine. Following the Raft consensus protocol, the insertion is acknowledged once a majority of the nodes committed the operation. The state machine manages a state object, that itself encapsulates the actual ChronicleDB event store index.
+  \item The insert of the events happens in a batch. The insert operation, including the event payloads, is appended to the Raft log, replicated and applied to the state machine. Following the Raft consensus protocol, the insertion is acknowledged once a majority of the nodes committed the operation. The state machine manages a state object, that itself encapsulates the actual ChronicleDB event store index.
 \end{enumerate}
  
-\todo{Is it true that flush and insert is one atomic operation?}
+\todo{Algo of the buffer}
 
-TODO sketch the raft log (one log entry is one batch insert operation (or one create aggregate op))
+##### Buffer Benefits.
 
-TODO log holds kind of transactions?
-"Standard database systems are not designed for supporting such write-intensive workloads. Their separation of data and transaction logs generally incurs high overheads."
+- By ordering all events in a batch and ordering the batches itself (through the Raft log), we ensure linearizability.
+- Our buffer implementation helps to increase the real-time consistency and to cope with out-of-order entries. The maximum size and timeout of the buffer can be configured in a way that it covers the inconsistency window, sorting out-of-order events in advance before inserting them into the actual event streams.
+- The buffer also allows for concurrent writes by multiple clients, as multiple threads can write to the buffer, while its content is ordered on flush. This mitigates overlapping writes, as the buffer content is always ordered by event time, which is even more strict than the strong consistency guarantees that do not enforce ordering on concurrent writes.
+- Writing events in a fire-and-forget mode to the buffer allows for very high throughput. With horizontal scaling, it is possible to keep a constantly high throughput rate (events/s). Thanks to the buffer, intermediate higher event emitting rates can be compensated, if the mean emitting rate stays below the maximum tolerated throughput. Otherwhise, the overall system slows down and probably crashes, as the stream may not converge (cf. subsection [@sec:time-bound-partial-consistency]).
 
---> Compared to RDBMS, not near the overhead of real transaction logs (including locks etc)
+##### Buffer Size Considerations.
 
-"Data loss due to system failures or system overload is generally not acceptable" <-- Buffer can fail and causes loss of its data - TODO mention in future work that we should have somehow persistence of the buffer or use another type of buffer 
+There are multiple factors that influence the optimal buffer size:
 
-\todo{Describe the state machine and the state manager}
-
-
-TODO list this possible improvement ideas for our buffer
-TODO mention that in practice, people use a ring buffer
-TODO ring buffer??? 
-- https://groups.google.com/g/lmax-disruptor/c/lWqnUaclPIM
-- https://github.com/yburke94/Raft.net "This framework makes heavy use of ring buffers to facilitate message passing between threads."
-
-"When a command is executed against the cluster leader, it is placed in the leader ring buffer. This buffer has 4 consumer threads that perform the following for each entry in the ring buffer (in order):
-
-Encode the log entry (done using ProtBuf).
-Writing the log entry to disk (using the journaler).
-Replicating the log entry to peer nodes.
-Updating the internal state of the node."
-
-also https://github.com/hashicorp/raft/blob/main/log_cache.go 
-"// LogCache wraps any LogStore implementation to provide an
-// in-memory ring buffer. This is used to cache access to
-// the recently written entries. For implementations that do not
-// cache themselves, this can provide a substantial boost by
-// avoiding disk I/O on recent entries."
-
-Also https://blog.bernd-ruecker.com/how-we-built-a-highly-scalable-distributed-state-machine-f2595e3c0422
-
-"This also allows you to use multiple threads without violating the single writer principle described above. So whenever you send an event to Zeebe, the receiver will add the data to a buffer. From there another thread will actually take over and process the data. Another buffer is used for bytes that need to be written to disk."
-
-- TODO pretty architecture diagram (buffer state, timeout, flush... + what's in the raft log)
-- TODO reasoning, performance and concurrency considerations
-- TODO compare the 2 buffer approaches (blocking vs. non-blocking)
-- TODO explain impact of buffer sizes
-- TODO explain similarities with Raft Log Buffer
-- TODO if reasonable, list algos
-- TODO the buffer considerations must be made based on the RPO: The buffer timeout must be smaller than the RPO
-- TODO as the buffer holds data temporarily on a single node (leader), if the leader crashes, this data is lost (so it's not strong consistent)
-
-<!--
-- What if multiple clients (= devices) write to the same schema?
--> Easy solution: We could use one stream per client/device
-- If we go for a single stream: We are linearized regarding ingestion time (but not for overlapping requests, which is the characteristic here)
-- But not for event time (no strict consistency), so we can expect a lot of OOO
-- But: The buffer also helps here to avoid OOO. Strict concistency is too expensive: Assuming the clocks of all devices are the same (which is rare; we only have that with infra in full control (cf. Google example)), we would still need to order events before storing in the store, but we won't know if there are still events to come (due to network latency of some clients). This would require extremely expensive coordination between clients. This is only of theoretical interest: we don't need that in practice due to OOO handling and the buffer
--->
-
+- **Throughput**: Since we currently rely on the basic Raft log implementation of Ratis, a sufficient buffer size should be selected to allow for high throughput. In our evaluation, we demonstrate the impact of the buffer size on the overall throughput.
+- **The inconsistency window**: The buffer size and timeout can be chosen to cover the inconsistency window, so there is a high chance to provide consistency to real-time applications even with out-of-order entries.
+- **The RPO**: As we mentioned in subsection [@sec:geo-replication], some organizations have a metric, called the Recovery Point Objective (RPO), that is the maximum number of lost writes the application can tolerate when recovering from a disaster. Since the buffer entries are transient and get lost on a crash, the buffer size must be chosen accordingly. Considering some _graceful shutdown_ techniques, the risk of data loss on a crash can be further reduced.
 
 ##### Limitations.
 
-As we pointed out in subsection [@sec:buffer-theory], we should acknowledging each write to the producer by keeping a callback reference for each write. This is challening and we haven't implemented that in the prototype. At present, only a successful write to the buffer is confirmed, but this does not guarantee a successful write to the quorum.
+- As we pointed out in subsection [@sec:buffer-theory], we should acknowledging each write to the producer by keeping a callback reference for each write. This is important when a client needs the guarantee that some events are written before it continues sending further events.  Implementing this is challening and we haven't implemented that in the prototype. At present, only a successful write to the buffer is confirmed, but this does not guarantee a successful write to the quorum.
+- Our buffer implementation always orders events by event time, more precisely: by the start timestamp. If a different sequence is required, it should be made configurable accordingly.
+- To avoid writing big batches of events that are out-of-order when multiple clients write to the cluster, only the current leader of a Raft group should be allowed to accept these writes and add them to its buffer. For our evaluation, we ignored the multi-client case, therefore we are missing this restriction in our prototype yet. Currently, the buffer sits in the event store facade, so each node is allowed to write to its buffer and file a batch request to the leader node once the buffers are flushed. We strongly recommend to enforce the single leader semantics.
 
-#### Partitioning using Multi-Raft Groups
+#### Messaging between Raft Nodes {#sec:messaging}
 
-- Allows for scaling
-- The throughput of a single event store instance has an upper bound (based on I/O capabilities of the underlying machine, the OS, concurrent access to the ressources of that machine, the implementation of ChronicleDBs index and last, usually with the most impact, the replication protocol and the underlying network)
+Apache Ratis supports a few messaging protocols for communication between nodes (for messages written to the Raft logs as well as Raft-internal messages, such as for leader election). We have chosen `gRPC`, since it comes with some benefits:
 
-cf. [@sec:partitioning]
-- Basic vertical partitioning by stream, no sharding
-- One raft group = one partition containing an instance of a certain state machine, distributed over n nodes (n = replication factor)
-- PriorityBlockingQueue for simple load balancing
-    - Naive implementation (balanced per absolute # of partitions, not by time splits or per actual load); better partitioning approaches see background#Partitioning and Sharding + conclusion
-- Show diagram of partitioning approach
-- "data partitions can be defined according to both time slice and time-series ID" [@wang2020iotdb]
-- In this implementation, currently only per stream ID
-- Raft built-in network reconfig allows for rebalancing (cf. [@sec:partitioning]) without compromising availability
+- It runs on `HTTP/2`, which has a lower latency compared to `HTTP/1.1`, and is more secure thanks to `TLS 1.2`.
+- It uses `Protocol Buffers` (also referred to as `protobuf` for short) as its _interface description language_, which allows us for efficient, schema-safe messaging with out-of-the-box serialization. 
 
-But no real sharding: Events belonging to a single schema are not not split in the current solution.
-But: Consider time splits in future work
+All Ratis messages are defined as `protobuf` schemas, too, which makes it transparent and easy to understand what nodes exchange during Raft protocol instances.
 
-when rebalancing, replicas may be moved across nodes.  TODO show my figures on rebalancing
+Commands issued against state machines are represented via messages, and we define the schema of these messages with `protobuf`. Every such command must be functional, serializable and side-effect free. The messages can be sent by `RaftClients`, as shown in subsection [@sec:event-store-state-machine]. Example messages have been shown in the same subsection.
 
-\begin{figure}[h]
+Messages are categorized by write and read messages. In Ratis, writes are called transactional messages, while reads are called queries. This may be misleading since it does not provide transactions in the sense of ACID databases. It is rather to be understood as a single, atomic command execution: it is either executed and acknowledged on the state machine or no state transition happens in case of a failure. Yet this depends on the implementation of the commands and executors, and it is certainly possible to design message executors that are not atomic or deterministic, or that do not roll back changes in case of failure.
+
+<!--
+TODO UML for messaging, including executors, state managers, query and transaction messages, executor interface, protobuf...
+-->
+
+##### Adding New Messages.
+
+Adding new messages (i.e., new supported commands for state machines) requires the following steps:
+
+\begin{enumerate}[label=(\arabic*)]
+  \item Definition of the message schema in \texttt{protobuf}.
+  \item Generating Java code (message classes) out of the schemas.
+  \item Implementing the \texttt{ExecutableMessage} interface in case of an all-new state machine implementation, for example \texttt{EventStoreOperationMessage}. This wraps the generated message instances from \texttt{protobuf} and adds additional metadata and type hierarchies that are not available in \texttt{protobuf}.
+  \item Expanding the factory methods of the parent message object to create the various message instances (for example, to insert an event).
+  \item Implement the \texttt{OperationExecutor} interface, one for each \texttt{protobuf} message type defined. \texttt{OperationExecutors} must implement the \texttt{apply} method which defines how this single operation message is to be executed on the state machine. This method receives the payload of the \texttt{protobuf} message and a reference to the state of the state machine. There are two additional interfaces, where exactly one must be implemented: either the \texttt{TransactionOperationExecutor} or the \texttt{QueryOperationExecutor}. Only the first is allowed to mutate the state of the state machine, and it should be an atomic operation. To handle failed, non-atomic operation executions, the \texttt{TransactionOperationExecutor} interface provides a \texttt{cancel} method to implement neccessary rollbacks or compensations, in case that an operation can not be designed to be atomic and/or idempotent. It returns a \texttt{Future} containing the response of the operation for the client or an error message if it fails.
+\end{enumerate}
+
+##### Future Improvements.
+
+In future work, we would wrap this RaftClient in a Java SDK as it gives us `gRPC` messaging for free and we don't need to reimplement all commands again for `REST`/`HTTP`. `REST` runs on `HTTP/1.1` which adds additional network round-trip and (de-)serialization time, thus slowing down the overall system. `gRPC` is more efficient than REST as it leverages `HTTP/2` and works well with our already existing binary `protobuf` definitions, without introducing additional (de-)serialization steps. However, this requires us to re-engineer the gateway implementation of the cluster manager; the clients must first ask the cluster manager which node they should talk to before sending the request. We sketched this in figure \ref{fig:chronicle-java-sdk}. Currently in our demo application, this is handled on the server side by the `ChronicleEngine` for simplicity reasons.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.5\textwidth]{images/chronicle-java-sdk.pdf}
+  \caption[Java SDK and gRPC API for ChronicleDB]{The bottleneck of json serialization of events and additional network round-trip can be reduced by introducing a gRPC API. This requires a discovery step where the client SDK asks the cluster for the leader and Raft group ID of the stream it wants to talk to.}
+  \label{fig:chronicle-java-sdk}
+\end{figure}
+
+There is great potential for the application of model-based programming and code generation. We have shown how to add additional messages, which can quickly become cumbersome. With the `protobuf` definitions and additional Java annotations, one could imagine to generate a huge portion of this code—including messages, message wrappers, factories, and operation executors.
+
+We also recommend readers to keep an eye on the further development of `gRPC` regarding support for the new `HTTP/3` protocol, which is built on top of `QUIC` and `UDP` instead of `TCP`. `QUIC` was approved as an IETF standard in 2021 [@iyengar2021quic], while `HTTP/3` was approved recently in June 2022 [@iyengar2022http3]. `HTTP/3` can further reduce latency, especially in settings with a lot of roundtrips, such as in Raft.  
+
+[^grpc-http3]: The request for `HTTP3` support in `gRPC` is tracked in this issue: https://github.com/grpc/grpc/issues/19126
+
+#### Partitioning and Horizontal Scalability {#sec:multi-raft-partitioning}
+
+The throughput of a single event stream instance has an upper bound, based on I/O capabilities of the underlying machine, the OS, concurrent access to the ressources of that machine, the implementation of the ChronicleDB index and lastly—usually with the most impact—the replication protocol and the underlying network. To be able to scale beyond this limit and to overcome the latency trade-offs introduced by Raft, we need to introduce partitioning (cf. section [@sec:partitioning]).
+
+With partitioning, we can make the distributed ChronicleDB horizontally scalable. For our prototype, we implemented a basic approach that runs one partition per event stream, with simple load balancing based on the number of available nodes and required replicas.
+
+##### Multi-Raft.
+
+Ratis allows for Multi-Raft, which supports running multiple Raft groups on a single clusters. When you run multiple basic Raft instances, one for each partition (stream), on a single cluster, each of these comes with their own leaders and heartbeats. Unless we constrain the Raft group participants or the number of topics, this creates an explosion of network traffic between nodes. In Multi-Raft, this is handled differently. There are dedicated leaders for each group, but only a single heartbeat round-trip for all nodes. A node, once it partakes in at least one Raft group, becomes a Raft server. The Raft server is responsible for sending and/or receiving AppendEntries messages and hearbeats (empty such messages). The Raft server itself is logically split into multiple Raft divisions. One division represents one Raft server taking part in one Raft cluster. On the division level, each server can be either a leader, follower or candidate. We illustrate our basic Multi-Raft approach in figure \ref{fig:multi-raft-architecture}.
+
+\begin{figure}[H]
   \centering
   \includegraphics[width=0.8\textwidth]{images/multi-raft-architecture.pdf}
-  \caption{Partitioning and replication with multiple raft groups}
+  \caption[Partitioning and replication with multiple Raft groups]{Partitioning and replication with multiple Raft groups. When a client accesses a a Raft group on the cluster for the first time, it accesses any available node it has on its bootstrap list. If this node is not the leader, it updates the clients bootstrap list. Subsequently, the client writes and queries this leader node until a new leader has been voted. A node can participate in multiple Raft groups, having either a leader, follower or candidate role for this group.}
   \label{fig:multi-raft-architecture}
 \end{figure}
 
+##### Load-Balancing.
 
-partition = raft group on a node (in Ratis, called a division?)
+With Multi-Raft, we can achieve very basic load-balancing by evenly distributing replicas on available nodes. We achieve this using a `PriorityBlockingQueue` that orders nodes by the number of already registered groups on that nodes. We adopted this approach from the Apache Ratis examples. This is illustrated in figure \ref{fig:multi-raft-load-balancing-basic}, where 6 partitions (including metadata/cluster management) are distributed on 5 nodes with a replication factor of 3 (note that the cluster management is deployed on each node to increase its availability, fault-tolerance and locality).
 
-\paragraph{Time Splits.}
-
-In figure xxx, $A_{t_1}^L$ denotes a... when we restrict OOO for historic time splits, we could also replicate them leader-less, as there won't be any writes (TODO aggregate indexes on older splits)... and read from every available node... 
-
-Time splits allow for read scaling; but for chronicleDB we need some strategies to execute queries and aggregates across time splits. (TODO describe strategies; TODO image showing query range |---| with one full and one half split; full split will just moved into memory (= the root of the index tree) while for the half split, the right leaf of the tree needs to be found)
-
-
-TODO describe the benefit in read scaling with time splits (while writes on the same stream won't scale, as all of them (if we restrict OOO on historic splits) happen on the most recent split) with numbers if possible
-
-\begin{figure}[h]
+\begin{figure}[H]
   \centering
-  \includegraphics[width=1\textwidth]{images/multi-raft-load-balancing.pdf}
-  \caption[Load-balanced partitioning using time splits]{Partitioning using time splits with a replication factor of 3, load balanced on 5 nodes. Metadata is replicated on every node (at least on every node in the bootstrap list) to ensure cross-cluster disaster resilience and fault tolerance and allows the partitions on the respective nodes to directly read the metadata on its own node.}
+  \includegraphics[width=0.95\textwidth]{images/multi-raft-load-balancing-basic.pdf}
+  \caption[Basic load-balancing with Multi-Raft]{Basic load-balancing with Multi-Raft. Partitions with a replication factor of 3 are evenly distributed across 5 nodes. Metadata is replicated on every node to ensure cross-cluster disaster resilience and fault tolerance and allows the partitions on the respective nodes to directly read the metadata on its own node.}
+  \label{fig:multi-raft-load-balancing-basic}
+\end{figure}
+
+In the next paragraphs, we take a look at further possible improvements, that did not make it into our prototype.
+
+##### Time Splits.
+
+Since event streams are append-only structures, historical data quickly becomes immutable (at least after the inconsistency window). In addition, ChronicleDB splits the stream storage by time splits. We can take advantage of this by introducing partitioning by those time splits. The time splits in ChronicleDB sit in their own $\textrm{TAB}^+$ index trees, as well as in seperate files, which makes it naturally suitable for partitioning.
+
+Time splits allow for improved read scaling. Historic time splits are read-only (we will assume that out-of-order events do not happen in historic splits), thus the single-leader requirement of Raft can be dropped here. Furthermore, historic time splits could also be replicated using a different replication protocol, such as primary-copy, or simply by installing Raft snapshots, since we don't care about write consistency anymore. Generally, they would naturally "grow", once the index tree is "chopped" when a new time split should be created. When this happens, a new partition could be instantiated immediately (or better in advance to stay available during this period) and the cluster manager routes writes to the new partition, while the old partition is locked for writes and made available to be read on all nodes. We sketch such a configuration in figure \ref{fig:multi-raft-load-balancing}. Moreover, the replication factor can also be increased for historical splits by installing snapshots, which further reduces read latency and provides data locality in the case of multiple availability regions.
+
+We haven't implemented partitioning by time splits yet, since we need some strategies to execute queries and aggregate requests across time splits.
+
+Partitioning by time splits is also available in other time series databases and event stores, such as IoTDB (here, it is called _time slices_) [@wang2020iotdb].
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.95\textwidth]{images/multi-raft-load-balancing.pdf}
+  \caption[Load-balanced partitioning using time splits]{Partitioning using time splits with a replication factor of 3, load balanced on 5 nodes. For historic time splits, the single-leader requirement could be dropped since they are read-only, resulting in that every replica can serve query requests. The superscript here describes if a node is either a leader or follower, while the subscript denotes the starting timestamp of the split.}
   \label{fig:multi-raft-load-balancing}
 \end{figure}
 
-( TODO is this extra hard replication on metadata neccessary? -> may describe possible byzantine tolerance. But what if you scale with hundreds of nodes? -> discuss this in conclusion)
+##### Sharding (Write Splits).
 
-\paragraph{Sharding (Write Splits).}
+While partitioning by time splits lowers the read latency, sharding (effectively resulting in _write splits_) lowers the write latency, allowing the event store to scale with the number of writing clients. We illustrate a possible setup for sharding in figure \ref{fig:multi-raft-historic-splits-sharding}.
 
-TODO also mention hash split keys to have write-scaling.
-This allows to scale with the number of writing clients. 
-Once a historic time split can be created (and a new set of write splits), the current split can be merged in the background by another job (if current latency allows for it) or just marked as historic splits.
-The write splits allow for faster writes, but when querying or aggregating, right strategies to resolve the operation across the shards need to be found. Every shard only offers sequential consistent data; they need to be merged to return the actual linearized stream. But thanks to the sequential ordering of each shard, we can just use in-memory merging, e.g. with a min-heap in $\mathcal{O}(N k \log k)$ time and $\mathcal{O}(Nk)$ space complexity, where $N$ is the number of events per shard (in case of balanced shards) and $k$ the number of shards (TODO reference)... which benefits from smaller time splits and also tumbling windows) and intelligent caching (TODO is there a better merge strategy for reads? The problem is: We write while we read; but if we exclude OOO we can guarantee that a cached read range won't change! problems only occur with OOO) 
+Sharding in consistently ordered append-only structures is not trivial. Since sharding would only lower write latency when writes across shards are no longer linearized, write consistency must be sacrificed. Instead of strong consistency, each partition would only offer sequential consistency at maximum. Therefore, we haven't implemented this in our prototype. While sacrificing linearization on writes, we need to re-introduce linearization on reads, at least for the recent time split. 
 
-TODO as shown by other event store vendors, sharding increases the throughput linearly
+- When historic time splits are generated, the shards of the current split could be merged in the background into a buffer (i.e., a ring buffer) while another thread writes the immediate results into the historic split.
+- To achieve linearizability on recent splits when querying shards, we need to merge shards of the same event schema in the query engine. Thanks to the sequential ordering of each shard, we can just use in-memory merging and cache our results for already merged intervals (the cache must be partially invalidated if out-of-order events occur). For instance, merging using a min-heap can be done with $\mathcal{O}(N k \log k)$ time and $\mathcal{O}(Nk)$ space complexity, where $N$ is the number of events per shard (in case of balanced shards) and $k$ the number of shards. With tumbling time windows and parallelization, we can greatly improve the time complexity, since individual time windows be merged independently. We illustrate this in figure \ref{fig:event-stream-merging}.
 
-\begin{figure}[h]
+\begin{figure}[H]
   \centering
   \includegraphics[width=1\textwidth]{images/multi-raft-historic-splits-sharding.pdf}
   \caption[Multi-raft cluster with historic time splits and sharding]{A multi-raft cluster with historic time splits and sharding of the current time split to improve write throughput and latency}
   \label{fig:multi-raft-historic-splits-sharding}
 \end{figure}
 
-\begin{figure}[h]
+\begin{figure}[H]
   \centering
   \includegraphics[width=1\textwidth]{images/event-stream-merging.pdf}
   \caption[Two event stream shards merged on a query]{Illustration of two event stream shards merged on a query with tumbling windows}
   \label{fig:event-stream-merging}
 \end{figure}
 
-TODO illutrate query over historic trees
-
-|--- leaf --- root --- root --- |
-
-<!-- tumbling windows 
-
-https://ordina-jworks.github.io/kafka/2018/10/23/kafka-stream-introduction.html
-
--->
-
-<!-- See for discussions around shard capacity and max throughput https://pt.slideshare.net/frodriguezolivera/aws-kinesis-streams?next_slideshow=true -->
-
-
-TODO glossary with new words in the margin
-
 ##### Consistency Across Partitions.
 
-With our partitioning approach, we do not provide strong consistency across streams, since we do not ensure that the order of events to be written into each event stream matches their insertion time. This is fine, since we are only interested in the actual event time. If there is causality between streams, this only becomes relevant when querying across multiple such streams and should be handled by the distributed query processor. We haven't implemented this in the context of this work.
+With our partitioning approach, we do not provide strong consistency across streams, since we do not ensure that the order of events to be written into each event stream matches their insertion time (cf. subsection [@sec:system-consistency-across-partitions]). This is fine, since we are only interested in the actual event time. If there is causality between streams, this only becomes relevant when querying across multiple such streams and should be handled by the distributed query processor, as shown in figure \ref{fig:query-consistency} (also see the previous paragraphs for a parallelizable merge approach). We haven't implemented this in our prototype in the context of this work.
 
-For the sharding case, it looks as follows: Even though sharding (in combination with horizontal scalability) significantly increases overall throughput, it causes a stream to lose consistency without proper inter-shard coordination, which increases latency and thus decreases throughput again. How this could look like architecture-wise is illustrated in figure \ref{fig:chronicle-consumer-producer}. We also described this in the sense of causal consistency in subsection [@sec:stream-causal-consistency].
+For the sharding case, it looks as follows: even though sharding (in combination with horizontal scalability) significantly increases overall throughput, it causes a stream to lose write consistency as we forgo inter-shard coordination—which would only increase latency again. We need to restore the consistency again when querying the shards, i.e. by merging. How this could look like architecture-wise is illustrated in figure \ref{fig:chronicle-consumer-producer}. We also described this in the sense of causal consistency in subsection [@sec:stream-causal-consistency].
 
-Since we do not support sharding of a single stream currently in the demo application, we do not need to care about cross-shard consistency (i.e., guaranteeing events are written in event order to the shards). Across streams, we can not guarantee that either, since each stream is handled by its own partition, thus by its own Raft group. We limit our implementation to the one-partition-per-stream case, thus we are not able to evaluate the impact of sharding on the overall througput.
+Even across streams for different event schemas, consistency cannot be guaranteed because eeach stream is handled by its own partition and thus its own Raft group. We limit our implementation to the one-partition-per-stream case, thus we are not able to evaluate the impact of sharding on the overall througput.
 
-\begin{figure}[h]
+\begin{figure}[H]
   \centering
-  \includegraphics[width=1\textwidth]{images/chronicle-consumer-producer.pdf}
+  \includegraphics[width=0.9\textwidth]{images/chronicle-consumer-producer.pdf}
   \caption[Relation between producers and consumers in ChronicleDB]{Schematic illustration of the relation between producers and consumers, and how consistency across shards may look like. The merge step is also illustrated in figure \ref{fig:event-stream-merging}.}
   \label{fig:chronicle-consumer-producer}
 \end{figure}
 
-##### Truly Multi-Raft
+##### Rebalancing.
 
-"As the number of topics increases, so do the number of Raft groups, each with their own leaders and heartbeats. Unless we constrain the Raft group participants or the number of topics, this creates an explosion of network traffic between nodes."
+Once a node crashes, it should be replaced by another available node, to ensure a quorum can still be maintained for each Raft group. There are two cases of node crashes from the perspective of a single Raft group: The crash of a follower and the crash of the leader. On both, the network reconfiguration protocol of Raft must come into play to allow a new node to join the group, while the protocol differs on both cases. The network reconfiguration in Raft allows for rebalancing without compromising availability. We illustrate these cases in figures \ref{fig:multi-raft-follower-fails}} and \ref{fig:multi-raft-leader-fails}. Note that our prototype is missing the rebalancing yet.
 
-TODO from https://bravenewgeek.com/building-a-distributed-log-from-scratch-part-2-data-replication/
-
-"There are a couple ways we can go about addressing this. One option is to run a fixed number of Raft groups and use a consistent hash to map a topic to a group. This can work well if we know roughly the number of topics beforehand since we can size the number of Raft groups accordingly. If you expect only 10 topics, running 10 Raft groups is probably reasonable. But if you expect 10,000 topics, you probably don’t want 10,000 Raft groups."
-
-"Another option is to run an entire node’s worth of topics as a single group using a layer on top of Raft. This is what CockroachDB does to scale Raft in proportion to the number of key ranges using a layer on top of Raft they call MultiRaft. This requires some cooperation from the Raft implementation, so it’s a bit more involved than the partitioning technique but eschews the repartitioning problem and redundant heartbeating."
-
-TODO problem also accounts for sharding. So, sharding is only feasible when done truly on multiple machines
-
-##### Load Balancing
-
-\todo{Describe my basic approach of balancing partitions}
-
-##### Rebalancing
-
-\begin{figure}[h]
+\begin{figure}[H]
   \centering
   \includegraphics[width=1\textwidth]{images/multi-raft-follower-fails.pdf}
   \caption[Rebalancing in the event of a follower failure]{Rebalancing in the event of a node failure that leads to a raft group with too few replicas, while the leader stays intact. a) A fault makes a node crash (fail-stop). The meta quorum detects this crash and notifies the leader of this group. b) The leader requests a membership change from the meta quorum. The quorum selects a node based on balancing rules and triggers a network reconfiguration. The node is added as a new follower to the group. The leader then installs the current state snapshot on this new follower replica.}
   \label{fig:multi-raft-follower-fails}
 \end{figure}
 
-TODO leader fails
-
-\begin{figure}[h]
+\begin{figure}[H]
   \centering
   \includegraphics[width=1\textwidth]{images/multi-raft-leader-fails.pdf}
   \caption[Rebalancing in the event of a leader failure]{Rebalancing in the event of a leader failure. a) As the followers no longer receive heartbeats from the leader of their group, they start a vote. The winner of the vote becomes the new leader of this group. b) The cluster manager can now assign a new follower similar to the case in figure \ref{fig:multi-raft-follower-fails}.}
   \label{fig:multi-raft-leader-fails}
 \end{figure}
 
-TODO reference raft voting mechanism here again
-
-TODO rebalancing when node comes back
-
+<!--
 #### Fail-Over Design
 
 TODO Network reconfiguration, together with chronicleDB failover
-
-#### Messaging between Raft Nodes
-
-- using gRPC and Protocol Buffers
-- Serialisation
-- Every command must be functional, serializable and side-effect free
-- Commands wrap event inserts
-
-- Describe briefly the messaging format
-- ExecutableMessages with Executors framework
-- 1:1 protobuf message per java message wrapper
-- protobuf: the message. Java: How to apply the message's command on the state machine's state
-- Makes it scalable, modular, message-based instead of monolithic state machines
-    - If suitable depends on requirements. If state machine operations should be encapsuled and a closed set, just wrap a StateManager around it and reference it in the MessageExecutors
-- High potential for model based programming / code generation (could generate executors and java message objects from proto+annotations)
+-->
 
 #### Edge-Cloud Design
 
@@ -1220,16 +1336,77 @@ TODO draw edge-computing diagram for chronicleDB
 "there are many embedded systems where scalable distributed storage is not the outright solution. For example, in [16], virtual machines of a physical server are monitored within a central monitoring virtual machine, which does not allow a distributed storage solution due to security reasons. Other examples are self-driving cars and airplanes that need to manage huge data rates within a local system."
 --> But they are all at least locally replicated... otherwhise, not fault and absolutely not byzantine tolerant, which is a big safety issue in these systems!!!
 
-### Test Application
+### Evaluation Application {#sec:test-application}
 
-To test the implementation of the replicated event store and the middlewares supporting it, a test application is needed. In the context of this thesis, a synthetic application is constructed to perform trade-off studies. The application is composed of...
+To test and evaluate the implementation of the replicated event store and the middlewares supporting it, a test application is needed. In the context of this work, a synthetic application is implemented to perform trade-off studies. The application is build with the following stack:
 
-- Spring Boot
-- REST, facades...
+- Spring Boot as the Java Framework to provide ChronicleDB on a Raft as a service.
+- React to provide a lightweight user interface frontend for evaluation purposes.
+- Maven and Webpack to build the whole application.
+- Docker to run it in containers.
+
+
+
+The evaluation application does not use the `HTTP REST` API to insert events, as `REST` runs on `HTTP/1.1` which adds additional network round-trip and (de-)serialization time, thus slowing down the overall system. We expect a final implementation of ChronicleDB to expose a `gRPC` API, which is more efficient than REST as it leverages `HTTP/2` and works well with binary `protobuf` definitions, without introducing additional (de-)serialization steps.
+
+<!--
+#### Running a Cluster
+
+Deploying a node locally to run in a test cluster is done as follows:
+
+```
+PEERS=n1:localhost:6000,n2:localhost:6001,n3:localhost:6002
+
+ID=n1
+SERVER_PORT=8080
+META_PORT=6000
+
+java -jar target/chronicledb-raft-0.0.1-SNAPSHOT.jar \
+--node-id=$ID \
+--server.address=localhost \
+--server.port=$SERVER_PORT \
+--metadata-port=$META_PORT \
+--storage=$STORAGE_DIR/$ID \
+--peers=n1:localhost:6000,n2:localhost:6001,n3:localhost:6002
+```
+TODO explain
+
+Respectively on all nodes
 
 #### Running in Docker Containers
 
 - TODO simple cluster start with docker-compose
+
+```
+services:
+  n1:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    image: chronicledb-raft:latest
+    command: --node-id=n1 --server.address=n1 --storage=/chronicledb-raft --peers=n1:9999,n2:9999,n3:9999
+    ports:
+     - "8080:8000"
+  n2:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    image: chronicledb-raft:latest
+    command: --node-id=n2 --server.address=n2 --storage=/chronicledb-raft --peers=n1:9999,n2:9999,n3:9999
+    ports:
+      - "8081:8000"
+  n3:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    image: chronicledb-raft:latest
+    command: --node-id=n3 --server.address=n3 --storage=/chronicledb-raft --peers=n1:9999,n2:9999,n3:9999
+    ports:
+      - "8082:8000"
+```
+
+TODO feeding in env file for properties
+-->
 
 <!--
 
@@ -1240,18 +1417,8 @@ To test the implementation of the replicated event store and the middlewares sup
 
 -->
 
-#### End-User APIs
+#### User Interface
 
-> This may be covered in previous sections
-
-**Java API**: 
-- Replicated Chronicle Engine
-- Buffer Settings
-
-**HTTP/REST**:
-- Lorem ipsum
-
-**User Interface**:
 > Only brief description with a few screenshots
 
 Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.

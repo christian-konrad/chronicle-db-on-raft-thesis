@@ -285,6 +285,9 @@ Lorem ipsum...
 
 #### InfluxDB
 
+two separate groups of processes: data nodes and meta nodes. Exposing 3 ports: Data, Metadata/Management and Public (HTTP/`REST`). Similar to many other solutions like InfluxDB, Apache IoTDB... (but by accident, not intentional :) )
+See https://docs.influxdata.com/enterprise_influxdb/v1.8/concepts/clustering/
+
 Metadata: Strong consistent (with Raft)
 Data: Eventually consistent (according to own statement, in practice only under very high throughputs)
 
@@ -364,6 +367,11 @@ https://github.com/toni-moreno/syncflux
 Lorem ipsum...
 
 #### Apache IoTDB
+
+Partitioning by time splits is also available in IoTDB (here, it is called _time slices_) [@wang2020iotdb].
+
+
+https://iotdb.apache.org/UserGuide/Master/Cluster/Cluster-Setup.html 
 
 [@wang2020iotdb]
 - Made to work on the edge!

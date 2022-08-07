@@ -82,7 +82,10 @@ TODO the final consistency model should be decided on
 
 We recommend that you should try to go for strong consistency, apply different discussed techniques (sharding/partitioning, partial replication... etc) and then work your way down the consistency levels until your system satisfies the practical (!) requirements, as theoretical considerations often do not manifest in real world applications. TODO cite again many of the strong consistent but HA and low latency systems we have discussed throughout the work
 
-TODO out-of-order: Violates strong consistency (not from the point of view of the event store, but from the point of view of client applications expecting a reliable stream of events); maybe allow to choose two consistency levels: strong consistency with exceptional out-of-order and "actual strong consistency"?
+TODO out-of-order: Violates strong consistency (not from the point of view of the event store, but from the point of view of client applications expecting a reliable stream of events); maybe allow to choose two consistency levels: strong consistency with additional out-of-order and "actual strong consistency"?
+
+
+There is a few recent literature with interesting approaches to state machine replication for streams, such as building the replication layer itself on top of a stream processing engine [@lawniczak2021stream]. We recommend to keep track of the literature and research here, since this is a relatively young area.
 
 #### Multiple Consistency Levels
 
@@ -121,15 +124,16 @@ There are also other strategies to improve the throughput that do not violate co
 
 TODO refer to system design; sharding of a single stream
 
-- TODO if there will ever be a concept of transactions here, adjusting the protocol the be coordination-free may be suitable, as with Eris, to avoid high latency by transaction and replication roundtrips, but it requires control of the infrastructure (i.e., the network layer)
+- TODO if there will ever be a concept of transactions here, adjusting the protocol the be coordination-free may be suitable, as with Eris, to avoid high latency by transaction and replication round-trips, but it requires control of the infrastructure (i.e., the network layer)
 
 #### Elasticity: Auto Scaling and Recovery
 
 - Multi-leader etc., TODO reference to the raft extensions section
-- Using Kubernetes
+- Using Kubernetes?
 - Bring it together with Kubernetes Replicas
 - What about failure detection in general?
 - Does it make sense to move failure detection to K18n? Would this just add a new layer of dependency on a management process, that we initially wanted to avoid?
+- Monitoring throughput and convergence; continously calculating maximum tolerated throughput that does not result in a negative convergence rate.
 
 #### Geo-Replication
 
@@ -148,6 +152,8 @@ For Raft improvements and extensions in general, see subsection [@sec:raft-exten
 
 \todo{mention here AND in system design}
 TODO the log is a very naive implementation. Popular applications even use efficient embedded (in-memory?) storage engines such as RocksDB (like CockroachDB https://github.com/cockroachdb/cockroach/issues/38322) - and they also come with WAL logs, so we have a multi-layer architecture of the raft log. Even if this comes with some issues, we can learn from it and use a better log approach. Our naive approach (the Ratis default one) can slow down the system. Makes sense to have the raft log running on a different thread to not block other operations and improve I/O
+
+allow for multi-threaded: one thread writes to the log, the other replicates
 
 TODO even consider log-less replication, to satisfy the "The log is the database" thing again, as described in [@skrzypzcak2020towards]
  In contrast to the log-based architecture, replicas agree on a sequence of replica states instead of a sequence of commands
@@ -177,7 +183,9 @@ A weakness of Raft compared to Paxos is the absence of the learner role. By intr
 - Hadoop / HDFS
 - S3
 
-### gRPC and Protocol Buffers API
+### `gRPC` and `Protocol Buffers` API
+
+Java SDK... see [@sec:messaging]
 
 - Performance Boost
 - Protobuf must be married with ChronicleDB schemas
