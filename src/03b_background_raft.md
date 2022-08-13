@@ -122,6 +122,40 @@ whose components are hard to separate"
 \end{table}
 
 
+### Main Differences to Viewstamped Replication
+
+TODO https://groups.google.com/g/raft-dev/c/cBNLTZT2q8o
+
+"The only major difference is the how a node chooses who to give a vote too. In Raft, a node grants a vote to the first node who askes (plus the extra conditions on commitment) whereas in VR, a node grants its vote to a node as a deterministic function of the term number (Round robin style). "
+
+"Raft using <term,index> in test for log consistency instead of including the whole log like VR"
+
+Ongaro: "You're right, Heidi, that Raft and VR/VRR are similar, and we
+acknowledge this in the first page of the paper."
+
+"At a high level, you could argue they're exactly the same. Lamport
+would probably call them both Paxos. Their messaging pattern is
+similar. Why they work is similar, and their proofs of correctness
+could be similar.
+
+At a low level, you could argue they're very different. Raft's
+mechanism is compact (VRR uses 10 message types where Raft uses 4 to
+accomplish the same tasks). Raft spells out how to do leader election
+with randomized timeouts and how to avoid transferring entire logs."
+
+And of course membership changes are entirely different.
+
+Viewstamped replication is not completely described compared to Raft, and not that understandable
+
+"We (John and I) actually didn't know about the VRR paper until after
+we had started Raft."
+
+Know of any performance evaluation between these two protocols? Nope.
+Normal-case operation would be the same, so you'd probably have to
+compare leader changes.
+
+--> Biggest difference in leader change protocol
+
 ### Replicated State Machine
 
 See [@garg2010implementing]
@@ -215,9 +249,11 @@ TODO partition-tolerance: Even while strong-consistent, raft also is ...
 
 \paragraph{The Voting Phase.}
 
-When a node joins the cluster, it joins as a follower. After a random timeout, it starts an election by voting for itself, turning into a candidate. To add pseudo-synchronous behavior (to mitigate the FLP impossibility problem), it will restart the election again if no leader was decided after another timeout. Every new election introduces a new term, closing the previous one. If a candidate node receives votes from a quorum (an absolute majority of the nodes), it immediately turns into a leader, sending out heartbeats to notify all other nodes of the successful vote. If due to network latency, partitioning or other problems a new leader node discovers any node with a higher term then the own one, it turns back into a follower to potentially start a new vote for a new term, to restore consistency. The same applies to candidates. If any candidate receives a heartbeat from a newly assigned leader, it turns back into a follower. This ensures that there is only one leader for any given term—at least if there is no network partition. The whole voting phase and the transitions are illustrated in a state diagram in figure \ref{fig:raft-transitions}.
+When a node joins the cluster, it joins as a follower. After a random timeout, it starts an election by voting for itself, turning into a candidate. To add pseudo-synchronous behavior (to mitigate the FLP impossibility problem), it will restart the election again if no leader was decided after another timeout. Every new election introduces a new term, closing the previous one. If a candidate node receives votes from a quorum (an absolute majority of the nodes), it immediately turns into a leader, sending out heartbeats to notify all other nodes of the successful vote. If due to network latency, partitioning or other problems a new leader node discovers any node with a higher term then the own one, it turns back into a follower to potentially start a new vote for a new term, to restore consistency. The same applies to candidates. If any candidate receives a heartbeat from a newly assigned leader, it turns back into a follower. This ensures that there is only one leader for any given term—at least if there is no network partition[^leader-election-viewstamped]. The whole voting phase and the transitions are illustrated in a state diagram in figure \ref{fig:raft-transitions}. 
 
-\begin{figure}[h]
+[^leader-election-viewstamped]: This leader election protocol is similar to the view change protocol of viewstamped replication, where a term is called a view.
+
+\begin{figure}[H]
   \centering
   \includegraphics[width=1\textwidth]{images/raft-transitions.pdf}
   \caption[Transitions between roles of a cluster node in Raft]{Transitions between roles of a cluster node in Raft. When a node joins the cluster, it starts as a follower. After a random timeout, it starts an election by voting for itself, turning into a candidate. To add pseudo-synchronous behavior to mitigate the FLP impossibility problem, it starts a new election after the timeout. Every new election introduces a new term, closing the previous one.}
@@ -226,16 +262,16 @@ When a node joins the cluster, it joins as a follower. After a random timeout, i
 
 #### Raft Log
 
-\begin{figure}[h]
+\begin{figure}[H]
   \centering
-  \includegraphics[width=0.35\textwidth]{images/raft-log-entry-anatomy.pdf}
+  \includegraphics[width=0.3\textwidth]{images/raft-log-entry-anatomy.pdf}
   \caption[Anatomy of a Raft log entry]{Anatomy of a Raft log entry. A Raft log entry contains the term and the index of its creation, as well as the command payload.}
   \label{fig:raft-log-entry-anatomy}
 \end{figure}
 
-\begin{figure}[h]
+\begin{figure}[H]
   \centering
-  \includegraphics[width=1\textwidth]{images/raft-log-committed-entries.pdf}
+  \includegraphics[width=0.95\textwidth]{images/raft-log-committed-entries.pdf}
   \caption[Anatomy of a Raft log entry]{Raft logs of different nodes of a cluster. Every log entry contains the current term and index as well as its command. Entries are committed if they have been acknowledged by a quorum, thus safe to be applied to the state.}
   \label{fig:raft-log-committed-entries}
 \end{figure}

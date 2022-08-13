@@ -20,7 +20,7 @@ Developed architecture / system design / implementation: 1/3
 
 \epigraph{\hfill Problems are not stop signs, they are guidelines.}{--- \textup{Robert H. Schuller}}
 
-The biggest challenge in this work was to find an appropriate trade-off between latency, availability and consistency, and therefore to find an appropriate consistency model and based on this, finding a replication protocol that satisfies the traded-off requirements. In addition, we tried to find proper ways to soften the consequences of the compromises. The trade-offs could only be made after a thorough investigation of the potentially targeted use cases of a distributed ChronicleDB (subsection [@sec:use-cases-distributed-event-store]) and a general discussion of consistency in event stores (subsection [@sec:consistency-choice]). In addition, handling of out-of-order events is challenging, especially in the face of consistency. It violates consistency, but not from the point of view of the event store, but rather from the point of view of client applications that expect a reliable stream of events. Some replication protocols require a write-ahead-log (WAL), which violates the "The log is the database" philosophy of ChronicleDB.
+The biggest challenge in this work was to find an appropriate trade-off between latency, availability and consistency, and therefore to find an appropriate consistency model and based on this, finding a replication protocol that satisfies the traded-off requirements. In addition, we tried to find proper ways to soften the consequences of the compromises. The trade-offs could only be made after an investigation of the potentially targeted use cases of a distributed ChronicleDB and a general discussion of consistency in event stores (subsection [@sec:consistency-choice]). In addition, handling of out-of-order events is challenging, especially in the face of consistency. It violates consistency, but not from the point of view of the event store, but rather from the point of view of client applications that expect a reliable stream of events. Some replication protocols require a write-ahead-log (WAL), which violates the "The log is the database" philosophy of ChronicleDB.
 
 Throughout the next sections, we will show how we tackled these challenges, and in chapter [@sec:conclusion], we will show how these could be further mitigated in the future. But first, we limit the scope of this work to the part of the challenges that we tried to solve in the following subsection.
 
@@ -42,7 +42,7 @@ So far, ChronicleDB does not support transactions, which is actually rare for ev
 
 \paragraph{Distributed Queries.}
 
-The following implementation in this work focuses on write replication. To query an event stream with shards on different nodes, distributed queries must be performed, which is an entirely separate, complex area of interest that exceeds the scope of this work. We refer here to the literature of distributed queries and implementations in popular distributed database systems [yu1984distributed; kossmann2000state; azhir2022join]. In this work, we have not yet implemented the query interface, even for single-shard queries.
+The following implementation in this work focuses on write replication. To query an event stream with shards on different nodes, distributed queries must be performed, which is an entirely separate, complex area of interest that exceeds the scope of this work. We refer here to the literature of distributed queries and implementations in popular distributed database systems [@yu1984distributed; @kossmann2000state; @azhir2022join]. In this work, we have not yet implemented the query interface, even for single-shard queries.
 
 \paragraph{Multi-Threaded Event Queue Workers and Partitioning.}
 
@@ -94,7 +94,7 @@ In this subsection, we elaborate our consistency model decision in detail, based
 
 <!-- Elaborate in this section in detail why we want strong consistency, also with examples. Later repeat the upper dependability requirements and mark the tradeoffs. -->
 
-Throughout this discussion, we will use the following notation (some of the definitions are based on Koerber [@koerber2021accelerating] and Seidemann et al. [@seidemann2019chronicledb]):
+Throughout this discussion, we will use the notation and definitions from section [@sec:events], plus the following additional definitions:
 
 \begin{definition}[Event Time]
 The event time describes the time that an event occured, in contrast to the insertion time, that denotes the time an event was inserted into an event stream. We will denote timestamps in event time with $t$.
@@ -104,37 +104,11 @@ The event time describes the time that an event occured, in contrast to the inse
 The read time describes the real time of a client that reads an event stream. We denote timestamps in read time with $r$.
 \end{definition}
 
-\begin{definition}[Event]
-
-An event $e_t$ is a tuple of several non-temporal, primitive attributes $(a_1, \dots, a_n)$ that resembles a notification about observations of facts and state changes from the real world at a timestamp $t$\footnote{There can be two events at the same timestamp $t$. In general, the subscript of $e$ denotes the index of the event in an event stream, based on event time ordering. We ignore this case in this work to simplify the following discussions and because it is not needed for understanding. Unless otherwise specified, $e_t$ denotes an event that happened at timestamp $t$ in event time.}. An event is immutable and persisted in an event stream. Not to be confused with the definition of an event in probability theory.
-\end{definition}
-
-\begin{definition}[Event Stream]
-An event stream $E$ is a potentially unbounded sequence of events $\langle e_1, e_2, \dots \rangle$ that is totally ordered by event time. We call the domain of event streams $\mathcal{E}$.
-\end{definition}
-
-\begin{definition}[Time Window]
-$E_{[t_i,t_j)}$ refers to a time window of an event stream, which is a slice of the stream containing all the events with timestamps in the time interval $[t_i,t_j)$ (excluding events at timestamp $t_j$).
-
-A time windowing function $W_d$ applied to an event stream $E$ results in a non-overlapping sequence of such time windows. The time windowing function for the duration $d$ is defined as 
-\begin{equation*}
-    \begin{split}
-        W_d(E) = \langle \\
-        & E_{[t_1,t_1 + d)}, \\
-        & E_{[t_1 + d,t_1 + 2d)},\\ \dots \rangle
-    \end{split}
-\end{equation*}
-
-Note that we use a simplified definition of windowing here as we only care about tumbling time windows, which means that windows don't overlap.
-\end{definition}
-
 Furthermore, we use the following notation:
 
 - $t$ reflects a single timestamp,
 - $e_t \in E$ if the event $e_t$ is included in the event stream $E$,
 - $E = \langle \dots, e_1 \rangle \xrightarrow{\mathtt{insert}(e_2)} \langle \dots, e_1, e_2 \rangle = E'$ describes a state transition of an event stream.
-
-\todo{this whole discussion may also fit into fundamentals, and here only a reference?}
 
 #### Consistency Perspectives
 
@@ -152,7 +126,7 @@ However, in many use cases, clients care about event time. We pay special attent
 \begin{figure}[h]
   \centering
   \includegraphics[width=1\textwidth]{images/event-store-consistency-levels.pdf}
-  \caption[Consistency levels for event streams]{Consistency levels for event streams. a) With eventual consistency, no insertion order is guaranteed at all across replicas. b) With strong consistency on the data level, each replica shows the same consistent insertion ordering, but because of out-of-order events, it can still be inconsistent from the client perspective. c) Without out-of-order, strong consistency on the data level provides strong consistency also on the client level, as it guarantees that ordering by insert time $\equiv$ ordering by event time.}
+  \caption[Consistency levels for event streams]{Consistency levels for event streams. a) With eventual consistency, no insertion order is guaranteed at all across replicas. b) With strong consistency on the data level, each replica shows the same consistent insertion ordering, but because of out-of-order events, it can still be inconsistent from the client perspective. c) Without out-of-order, strong consistency on the data level provides strong consistency also on the client level, as it guarantees that ordering by insertion time $\equiv$ ordering by event time.}
   \label{fig:event-store-consistency-levels}
 \end{figure}
 
@@ -170,8 +144,6 @@ Thus, for event stores, we can describe consistency as the desired trade-off bet
 <!--
 \myquote{``It is not the state of the ChronicleDB state machine that is the critical factor, but the state of the applications that consume one or more event streams from the event store.''}
 -->
-
-\todo{Later refer back to here when we introduce partial time bound consistency (i.e. real-time eventual consistency)}
 
 ##### The Problem with Out-Of-Order Events.
 
@@ -194,7 +166,9 @@ In the shopping cart example from [@sec:stream-causal-consistency], if the `chec
 
 What are the problems that are tried to be solved with event stores? There are both analytical and operational use cases. In the analytical use cases, real-time and historical data is combined for insight generation. In the operational case, events trigger new events, transactions and operations, such as in event sourcing.
 
-In general, we distinguish between _real-time_ and _non-real-time applications_ when it comes to stream and event processing. This also introduces two seperate client consistency perspectives: the real-time client perspective and the non-real-time client perspective. A stream that appears consistent to a non-real-time consumer may not appear consistent to a real-time consumer. Commonly applied system architecture approaches provide both real-time and non-real-time processing to users and clients. Two popular architectures that provide this approach are the _Kappa architecture_ and the _Lambda architecture_. Both architectures allow for real-time and historical analytics in a single setup. The Lambda and Kappa architectures require that event processing reflects the latest state in both batch and real-time streaming layers (called the _speed layer_ in Lambda), hence requiring consistency. A merging layer allows to query the system for both historical and real-time data at the same time. At the heart of these architectures is an append-only data source—such as ChronicleDB, since it allows for both continous and ad-hoc queries [@marz2011lambda][^lambda-note] [@lin2017lambda].
+In general, we distinguish between _real-time_ and _non-real-time applications_ when it comes to stream and event processing[^koerber-offline-online-processing]. This also introduces two seperate client consistency perspectives: the real-time client perspective and the non-real-time client perspective. A stream that appears consistent to a non-real-time consumer may not appear consistent to a real-time consumer. Commonly applied system architecture approaches provide both real-time and non-real-time processing to users and clients. Two popular architectures that provide this approach are the _Kappa architecture_ and the _Lambda architecture_. Both architectures allow for real-time and historical analytics in a single setup. The Lambda and Kappa architectures require that event processing reflects the latest state in both batch and real-time streaming layers (called the _speed layer_ in Lambda), hence requiring consistency. A merging layer allows to query the system for both historical and real-time data at the same time. At the heart of these architectures is an append-only data source—such as ChronicleDB, since it allows for both continous and ad-hoc queries [@marz2011lambda][^lambda-note] [@lin2017lambda].
+
+[^koerber-offline-online-processing]: Real-time and non-real-time stream processing are also referred to as _online_ and _offline_ stream processing. We refer the interested reader to the dissertation of Körber on these two types of processing [@koerber2021accelerating].
 
 [^lambda-note]: While we reference the blog post of Nathan Marz here which is described as the first mention of the Lambda architecture in 2011 [@marz2011lambda], what is in that post should be taken with a grain of salt, as some of the statements made here about "beating the CAP theorem" are simply wrong. Nevertheless, it is still worth a read, as it builds on similar ideas as "Immutability changes everything" by Pet Helland [@helland2015immutability].
 
@@ -271,11 +245,13 @@ On the other hand, _out-of-order processing_ (OOP) systems do tolerate such even
 
 An out-of-order processing system continues to process a stream until a specified condition applies. While the ordering guarantees of IOP allow the progress of stream processing to be acknowledged after each processed in-order event, in OOP, progress is confirmed only when such a condition occurs. These conditions can be expressed using _punctuation_.
 
-Punctuation works similar to punctuation in written language and marks the end of a substream (analogous to the full stop marking the end of a sentence). This allows us to view an infinite, unbounded event stream as a mixture of finite streams [@tucker2003exploiting]. Inside of such a sequence, order does not matter. No further event violate previously received punctuation. OOO is allowed to happen in such a "sentence", but not across sentences.
+Punctuation works similar to punctuation in written language and marks the end of a substream (analogous to the full stop marking the end of a sentence). This allows us to view an infinite, unbounded event stream as a mixture of finite streams [@tucker2003exploiting]. Inside of such a sequence, order does not matter. No further event violate previously received punctuation. OOO is allowed to happen in such a "sentence", but not across sentences. Punctuation provides a guarantee to a stream that all events arriving after the punctuation will have an event timestamp greater than that of the punctuation.
 
 With punctuations, only the punctuations must be ordered, and events between the punctuations are allowed to be unordered, but must be the same set of events (no out-of-order events are allowed to come after their punctation). To identify the correct set of a sequence, the punctuation message `punctuate({e_1, e_2, \dots})` contains the ids of those events to expect in the sequence. This is similar to the "weak consistency" approach, where only expliticitly synchronized parts must appear in order, and everything in between can be unordered. This means that for all events $e$ with $e.t \geq p_1.t \wedge e.t < p_2.t$, $p_1 \prec e \prec p_2$, while any order between events is valid, where $p_1$ and $p_2$ are the punctuations around $e$.
 
-In ChronicleDB, a similar approach could be adopted to mitigate the out-of-order problem. With this approach, events would not be required to be inserted in event order, while the punctuation allows for strong ordering guarantees in the aftermath. It would also require event producers to support punctuation. It could either be implemented right in the replication protocol by introducing it in the log and weaking the consistency guarentees between punctuation, or in the event streams themselves. We haven't found any literature on this topic yet, nor have we figured out how this could be implemented (what if punctuations arive themselves out-of-order?).
+<!-- Another approach that extends punctuation are _heartbeats_ [@srivastava2004flexible]. -->
+
+In ChronicleDB, a similar approach could be adopted to mitigate the out-of-order problem. With this approach, events would not be required to be inserted in event order, while the punctuation allows for strong ordering guarantees in the aftermath. It would also require event producers to support punctuation. There is literature covering the case that event producers can not produce punctuations themselves, which requires the stream processor or event store to deduce these themselves (called a _heartbeat_ then) [@srivastava2004flexible]. Punctuation processing could either be implemented right in the replication protocol by introducing it in the log and weaking the consistency guarentees between punctuation, or in the event streams themselves. We haven't figured out how this could be implemented, though (what if punctuations arive themselves out-of-order?).
 
 \todo{Draw chart for the shopping cart case with punctuation}
 
@@ -346,7 +322,7 @@ So far, it appears that some applications require a strict notion of correctness
 
 #### Causal Consistency {#sec:stream-causal-consistency}
 
-In an event store, causal consistency must be evaluated from a client perspective, since the only write operation is the `insert`, and there are no mutations of existing events.
+In an event store, causal consistency must be evaluated from a client perspective, since the only write operation is the `insert`, and there are no mutations of existing events. Events can have intra-stream as well as inter-stream causal relationships, and these relationships must not be explicitly modeled between stream [@sharon2009eventcausality].
 
 One example for causal relations between events comes from the event sourcing domain: remember the shopping cart example from section [@sec:calm]. Even if `insertItem` and `removeItem` commands can be designed to be monotonic, thus non-causal from a data perspective since their order does not matter for each other, a `checkout` command is causally related to all these previous commands for this particular shopping cart session, thus it must be ordered after this commands. In event-sourcing systems, such commands should never arrive out-of-order if executed in realtime, because it could render the derived aggregate wrong that defines the items included in the checkout. We illustrated this in figure \ref{fig:checkout-example}.
 
@@ -494,7 +470,7 @@ In real-time systems, writes and reads occur continously. Until writes stop, an 
 
 Looking at a fixed time window, it will only never convergence if and only if delayed (out-of-order) events are never written to them. If this happens, there was either a fault that prevented the event from appearing, a extremely long network delay, or, the most problematic case, the overall throughput is too high, lowering the convergence tremendously. Regular convergence behavior of a fixed time window is illustrated in figure \ref{fig:convergence}. We will see in the next paragraphs, that we can describe a probabilistic guarantee for time windows to converge. 
 
-\begin{figure}[h]
+\begin{figure}[H]
   \centering
   \includegraphics[width=0.6\textwidth]{images/convergence.pdf}
   \caption[Convergence of a fixed time window]{Looking at the time window at the head of the stream, we see that it converges after a period of inconsistency when events, including out-of-order events, arrive at the window}
@@ -503,7 +479,7 @@ Looking at a fixed time window, it will only never convergence if and only if de
 
 Continously looking at the head of the stream (the most current time window), under continous writes it will never convergence. If the throughput is acceptable, we will observe a steady convergence rate of 0 (if we write in batches, we may see some stairs-shaped curve). We use this observation in the following paragraphs to describe a way to improve write latency and give better consistency guarantees for reads.
 
-\begin{figure}[h]
+\begin{figure}[H]
   \centering
   \includegraphics[width=0.6\textwidth]{images/convergence-head.pdf}
   \caption[Convergence of the head of the stream]{Simplified illustration of the convergence behavior of the head of an event stream. Continously looking at a time window at the head of the stream (i.e. moving it while we move in real-time), we see that the head of the stream never converges until writes to the stream stop. We can identify throughput spikes. If the average convergence rate is 0, the throughput at this stream and node is healthy.}
@@ -512,14 +488,14 @@ Continously looking at the head of the stream (the most current time window), un
 
 A continously negative convergence rate is a cause for concern and signaling that the current throughput may be too high for the system to handle, causing entropy between nodes and clients and finally slowing down the system. This could serve as an ideal signal for elastic auto-scaling: When entropy is detected, new nodes can be provisioned and added to the cluster to handle and balance the additional load. But since only the producing client knows the ground truth of events, it must be responsible to detect convergence by comparing what is written and incoming write acknowledgements. This won't work in an asynchronous fire-and-forget mode, though.
 
-\begin{figure}[h]
+\begin{figure}[H]
   \centering
   \includegraphics[width=0.6\textwidth]{images/consistency-function.pdf}
   \caption[Illustration of consistency functions over time windows]{Two illustrative consistency functions over time windows for a high and a low throughput scenario. Because out-of-order events are distributed in an exponential manner across a stream as the chance for a time window to converge increases over time, the consistency increases when we travel back in the stream. The rate of out-of-order events increases with throughput—and also with the level of concurrency.}
   \label{fig:consistency-function}
 \end{figure}
 
-\begin{figure}[h]
+\begin{figure}[H]
   \centering
   \includegraphics[width=0.8\textwidth]{images/eventually-consistent-stream.pdf}
   \caption[Event stream with out-of-order-events]{Event stream with out-of-order events arriving later in real time, thus only providing eventual consistency to the client. In general, out-of-order events are distributed in an exponential manner, i.e., out-of-order events happen closely to their source. a) The stream is missing some events from the ground truth that are not yet sent to and committed by the store. With decreasing event time, the stream becomes more consistent. b) Eventually at a later point in real time, a past portion of the stream converged, while for a recent time period out-of-order events may still arrive.}
@@ -536,25 +512,23 @@ With out-of-order events, and especially with eventual consistency, there is no 
 
 The inconsistency window is either not allowed to be read by consumers or the consumers must explicitly require it, knowing that they may receive inconsistent results.
 
-\begin{figure}[h]
+\begin{figure}[H]
   \centering
   \includegraphics[width=0.9\textwidth]{images/inconsistency-window.pdf}
-  \caption[Inconsistency window]{Illustration of the inconsistency window. The events in this window are not visible to consuming clients because out-of-order events are likely to appear here.}
+  \caption[Inconsistency window]{Illustration of the inconsistency window. The events in this window are not immediately visible to consuming clients because out-of-order events are likely to appear here.}
   \label{fig:inconsistency-window}
 \end{figure}
 
-\begin{figure}[h]
+\begin{definition}[Out-Of-Order Probability]
+The out-of-order probability $P_{\mathtt{OOO}}(E_{[t_i, t_j]})$ describes the chance for one out-of-order event to appear in the stream in the time interval $[t_i, t_j]$. We illustrate this in figure \ref{fig:ooo-probability}.
+\end{definition}
+
+\begin{figure}[H]
   \centering
   \includegraphics[width=0.9\textwidth]{images/ooo-probability.pdf}
   \caption[Out-of-order probability]{Illustration of the out-of-order probability for the inconsistency window and the remainder of the stream.}
   \label{fig:ooo-probability}
 \end{figure}
-
-\begin{definition}[Out-Of-Order Probability]
-The out-of-order probability $P_{\mathtt{OOO}}(E_{[t_i, t_j]})$ describes the chance for one out-of-order event to appear in the stream in the time interval $[t_i, t_j]$.
-
-We illustrate this in \ref{fig:ooo-probability}.
-\end{definition}
 
 \begin{definition}[Inconsistency Probability]
 The inconsistency probability of a time window describes the probability of that window to be inconsistent, thus $P_{\mathtt{IC}}(E_{[t_i, t_j]}) = 1 - P(C(E_{[t_i, t_j]}))$.
@@ -589,7 +563,7 @@ When deciding for the consistency probability, clients need to find a balance th
 
 \begin{figure}[h]
   \centering
-  \includegraphics[width=0.6\textwidth]{images/ooo-distribution.pdf}
+  \includegraphics[width=0.55\textwidth]{images/ooo-distribution.pdf}
   \caption[Distribution of out-of-order events]{Distribution of out-of-order events in an event stream, relative to the current timestamp}
   \label{fig:ooo-distribution}
 \end{figure}
@@ -604,11 +578,11 @@ By investigating the convergence behavior of a stream, we can argue about differ
 
 #### Buffered Inserts {#sec:buffer-theory}
 
-One solution to cope with out-of-order events is to buffer `insert` operations temporarily before writing them to the stream. The buffer is flushed and all events written in a batch once its content reaches a certain size or after a certain timeout after the last write. On flush, events in the buffer are ordered by event time, instead of insertion time, ensuring consistency for the batch write. This also decreases latency introduced by the replication protocol dramatically, since the network round-trips are reduced, which we will elaborate later in this chapter.
+One solution to cope with out-of-order events is to buffer `insert` operations temporarily before writing them to the stream. The buffer is flushed and all events written in a batch once its content reaches a certain size or after a certain timeout after the last write. On flush, events in the buffer are ordered by event time, instead of insertion time, ensuring consistency for the batch write. This also decreases latency introduced by the replication protocol dramatically, since the network round-trips are reduced, which we will elaborate later in this chapter. We found similar approaches in the literature [@srivastava2004flexible].
 
 \todo{Refer to this section later again in implementation}
 
-The the buffer size and timeout can be chosen in a way that it covers the max delay of out-of-order events—respectively the inconsistency window. This has a similar effect to implementing the inconsistency window in the query processor, with the difference that events in the buffer are only hold in-memory on a single machine instead of being written directly to the event stream, thus causing the risk of data loss of the events in this buffer.
+The the buffer size and timeout can be chosen in a way that it covers the max delay of out-of-order events—respectively the inconsistency window. This has a similar effect to implementing the inconsistency window in the query processor, with the difference that events in the buffer are only hold in-memory on a single machine instead of being written directly to the event stream, thus causing the risk of data loss of the events in this buffer. While in our approach, the user must define the buffer size, to guarantee consistency, the buffer size should be adjusted according to _progress requirements_.
 
 The effect of a write buffer on the overall consistency is shown in figure \ref{fig:consistency-function-buffered}.
 
@@ -652,7 +626,7 @@ https://www.cockroachlabs.com/blog/limits-of-the-cap-theorem/
 I believe that maintaining eventual consistency in the application layer is too heavy of a burden for developers. Read-repair code is extremely susceptible to developer error; if and when you make a mistake, faulty read-repairs will introduce irreversible corruption into the database.
 -->
 
-Accordingly, we opted for strong consistency as the strongest of the identified models. It allows the event store to act as a platform that suits all use cases at least regarding safety. In addition, this allows us to built for a set of use cases where data safety is a top priority, and enables use cases where patterns that include the non-occurrence of events are to be detected. With strong consistency, we can start with a prototypical implementation that is easy to understand, compared to other protocols. We then evaluate this implementation to understand the trade-offs for latency and availability not only in theory, but also in practice. We are aware that this introduces network latency and decreases the maximum throughput on a single stream, while this effect can be mitigated with horizontal scaling through partitioning and sharding. Many popular distributed databases have proven that extremely high throughput rates are possible even with strong consistency, as we have shown in section [@sec:previous-work]. This serves as a basis for future work, that could result in a distributed ChronicleDB that allows users to choose their consistency level on a per-stream basis, or even across streams. 
+Accordingly, we opted for strong consistency as the strongest of the identified models. It allows the event store to act as a platform that suits all use cases at least regarding safety. In addition, this allows us to built for a set of use cases where data safety is a top priority, and enables use cases where patterns that include the non-occurrence of events are to be detected. New distributed storage systems that we analyzed have proven that very high throughput is still possible in practice when a strongly consistent replication protocol is applied (see subchapter [@sec:previous-work] for examples). With strong consistency, we can start with a prototypical implementation that is easy to understand, compared to other protocols. We then evaluate this implementation to understand the trade-offs for latency and availability not only in theory, but also in practice. We are aware that this introduces network latency and decreases the maximum throughput on a single stream, while this effect can be mitigated with horizontal scaling through partitioning and sharding. Many popular distributed databases have proven that extremely high throughput rates are possible even with strong consistency, as we have shown in section [@sec:previous-work]. This serves as a basis for future work, that could result in a distributed ChronicleDB that allows users to choose their consistency level on a per-stream basis, or even across streams. What we found so far—and this is backed by our observations of other distributed systems—is that metadata should always be distributed with strong consistency, even if data is replicated with a lower consistency level, so that the clients and the cluster nodes themselves never assume an inconsistent cluster state, which can lead to erroneous behavior.
 
 We identified a few strategies how to cope with out-of-order events for those clients with strong ordering requirements by event time. We decided to implement a lightweight buffer to cover the inconsistency window, while we do not implement advanced techniques due to the limited scope of this work. For clients that want to process events by insertion time, linearizability on the data perspective is sufficient to ensure consistency on the client perspective, even if the events occur out-of-order.
 
@@ -702,7 +676,7 @@ Before introducing the library we have chosen, we list the requirements we have 
 
 ##### Requirements.
 
-We are looking for a library written in Java, since ChronicleDB is written in Java and we want to integrate it tightly with the actual event store implementation, rather than offering it as a service alongside ChronicleDB (cf. ZooKeeper).
+We are looking for a library written in `Java`, since ChronicleDB is written in `Java` and we want to integrate it tightly with the actual event store implementation, rather than offering it as a service alongside ChronicleDB (cf. ZooKeeper).
 
 We are also looking for
 
@@ -715,12 +689,12 @@ We are also looking for
 
 We went for _Apache Ratis_ [@apache2022ratis] [@apacheratis2022github] since it satisfies all our requirements and more:
 
-- It is written in Java, 
+- It is written in `Java`, 
 - It can be used as an embedded library rather than a dedicated service,
 - It is feature-complete,
 - It allows to implement both the state machine and the log yourself, but also provides basic implementations for a quick start,
 - It uses `gRPC` (`HTTP/2`) as the messaging protocol both under the hood and for replication messaging,
-- It is used in a production-ready implementation (Apache Ozone),
+- It is used in a production-ready, high-throughput, data-intense implementation (Apache Ozone [@apache2022ozone]),
 - It is offered under a non-copyleft open-source license (Apache 2.0),
 - The project is relatively popular on GitHub[^github-stars],
 - The team continously works on the library,
@@ -740,7 +714,7 @@ Ratis comes of course with some caveats:
 
 [^ratis-release]: We are using Ratis in version `2.1.0`; as the time of this writing, there is a version `2.3.0` released.
 
-Unfortunately, we haven't found any Java Library with such a correctness verification. We compared its source code to the $\textrm{TLA}^{+}$ specification of Raft and it looks quite valid, while we can not exclude any exceptions in the runtime behavior.
+Unfortunately, we haven't found any `Java` Library with such a correctness verification. We compared its source code to the $\textrm{TLA}^{+}$ specification of Raft and it looks quite valid, while we can not exclude any exceptions in the runtime behavior.
 
 ##### Differences to Basic Raft.
 
@@ -768,7 +742,7 @@ Other alternatives are listed as follows and why we didn't choose them.
 - **Hazelcast**: Hazelcast is a full-fledged platform for building real-time applications with stream processing capabilities, that also uses Raft under the hood. This sounds very suitable for our case, as this is exactly what we want to build. But Hazelcast is not a embeddable library, but a platform with a magnitude of other features (in-memory key-value store, embedded stream and batch processing, pub/sub messaging). It is available as an open-source edition with community support, but you still build your application on top of the Hazelcast platform, instead of integrating Hazelcast. This introduces additional complexity, especially as we want to build ChronicleDB as a platform itself, which would require a lot of re-engineering of Hazelcast. Hazelcast is therefore aimed at application engineers rather than platform engineers. To embed Hazelcast instead of running it as a platform, you need to register yourself as a commercial partner of the Hazelcast, Inc. company.
 - **etcd/raft**: The most popular Raft implementation out there. As it is written in _Go_ (aka. Golang), it is not suitable for our case (only if we build replication in ChronicleDB around a microservice architecture, which is not our goal). We list it here for the sake of completeness. etcd/raft powers etcd, a high-throughput key-value store, which itself is the fundamental basis for Kubernetes.
 
-We use Java for simplicity, as ChronicleDB is written in Java. For best performance and future-proof support (at the time of this writing), it is recommended to implement the library yourself or to use one of the popular Golang implementations: etcd/raft or hashicorp/raft. One could even use the _Gorum framework_ in Golang—with some adjustments as in [@pedersen2018analysis]. Go is a relatively new language that is very popular in the realm of distributed systems, since it provides a powerful yet easy built-in networking library similar to Erlang, and the language semantics are simple which makes it easier to write, read and maintain distributed algorithms in Go, compared to other languages. Another reason is the already broad support in this area from package providers, which makes it easier to get started.
+We use `Java` for simplicity, as ChronicleDB is written in `Java`. For best performance and future-proof support (at the time of this writing), it is recommended to implement the library yourself or to use one of the popular Golang implementations: etcd/raft or hashicorp/raft. One could even use the _Gorum framework_ in Golang—with some adjustments as in [@pedersen2018analysis]. Go is a relatively new language that is very popular in the realm of distributed systems, since it provides a powerful yet easy built-in networking library similar to Erlang, and the language semantics are simple which makes it easier to write, read and maintain distributed algorithms in Go, compared to other languages. Another reason is the already broad support in this area from package providers, which makes it easier to get started.
 
 Another alternative we have considered is to write the replication layer ourselves from scratch. This would have allowed us to implement a replication layer that allows the consumer of the event store to decide on the level of consistency. We have not found a library that allows this, so this must always be implemented by yourself. As we have seen so far, there is no out-of-the-box implementation of multiple protocols that can just be toggled in between. We found the approach in Apache IoT DB to switch the protocol by wrapping it in a provider, but only for Raft, multi-leader consensus and standalone use[^iot-db]. Another approach would be to limit the toggleability to a per-stream basis and deploy two completely different replication protocols or libraries. Due to the sheer complexity of such an undertaking, we quickly dismissed the idea.
 
@@ -798,7 +772,7 @@ To allow for any queries, the original query interface of the ChronicleDBs `lamb
 
 ##### Message Protocol.
 
-We use `gRPC` with `Protocol Buffers` for intra-cluster messaging between nodes. But, we currently only offer `HTTP/1.1` for clients to communicate with a deployment of ChronicleDB (next to the Java API for the embedded case). We recommend using `gRPC` (which is built upon `HTTP/2`), `AMQP`, or other protocols that are best suited for high-velocity event messaging.
+We use `gRPC` with `Protocol Buffers` for intra-cluster messaging between nodes. But, we currently only offer `HTTP/1.1` for clients to communicate with a deployment of ChronicleDB (next to the `Java` API for the embedded case). We recommend using `gRPC` (which is built upon `HTTP/2`), `AMQP`, or other protocols that are best suited for high-velocity event messaging.
 
 ##### Advanced Out-Of-Order Handling.
 
@@ -818,7 +792,7 @@ We haven't implemented a snapshotting mechanism so far. Currently, when the syst
 
 This subsection outlines the architecture of ChronicleDB on a Raft. The system is implemented in 3 layers, as illustrated in figure \ref{fig:chronicle-raft-layers}:
 
-- **Replication Layer**: This layer is built with Apache Ratis. We use the Java API of Apache Ratis to implement a Multi-Raft cluster running a distributed ChronicleDB state machine. This layer is described in subsections [@sec:cluster-management]—[@sec:multi-raft-partitioning].
+- **Replication Layer**: This layer is built with Apache Ratis. We use the `Java` API of Apache Ratis to implement a Multi-Raft cluster running a distributed ChronicleDB state machine. This layer is described in subsections [@sec:cluster-management]—[@sec:multi-raft-partitioning].
 - **Messaging Layer**: In this layer, messaging between Raft nodes is defined with Google `Protocol Buffers` and sent over `gRPC`. We elaborate the details of this layer in subsection [@sec:messaging]. In addition, there is also messaging between ChronicleDB and clients, which is currently solved with `REST` on `HTTP/1.1` (cf. subsection [@sec:implementation-limitations]).
 - **Data Layer**: This is the layer that holds the actual ChronicleDB implementation by wrapping the embedded ChronicleDB `EventStore` implementation and providing an implementation of the `ChronicleEngine` as the API for producers and consumers. We present our changes in this layer in subsection [@sec:chronicledb-core-changes].
 
@@ -844,7 +818,7 @@ A few adjustments where to be made on the original implementation of ChronicleDB
 
 [^jepc]: mathematik.uni-marburg.de/~bhossbach/jepc/index.html
 
-With this setup, ChronicleDB can be deloyed embedded as a library in other Java applications.
+With this setup, ChronicleDB can be deloyed embedded as a library in other `Java` applications.
 
 On top of this exists the `lambda-engine`, which is a Spring Boot app providing both real-time query and batch processing APIs, based on the Lambda architecture. In addition, it allows to deploy ChronicleDB standalone rather then embedded, exposing a `REST` API for clients to insert and query events (and aggregates).
 
@@ -903,7 +877,9 @@ The cluster manager is implemented as a replicated state machine itself, as it m
   \label{fig:management-server}
 \end{figure}
 
-In Apache Ratis, every instance of a `RaftServer` runs on its own port. Therefore, we need to provide two ports per node, one for messaging and replication of the application logic, and one for the cluster management. While this adds complexity for cluster operators, it ensures that both servers are decoupled. This is similar to what other vendors are doing (InfluxDB, Apache IoTDB, see subchapter [@sec:previous-work]). Although one could imagine running cluster management and application logic on separate machines, we run them on the same machines for efficiency and complexity reasons. This is illustrated in figure \ref{fig:multi-raft-load-balancing}. In addition, there is one public port for client requests. In our example setup on AWS, as well as in our local Docker setup, we made both ports for cluster management and application replication private. We recommend this to reduce the risk of someone messing up the protocol messaging, and thereby the consistency of the system.
+In Apache Ratis, every instance of a `RaftServer` runs on its own port. Therefore, we need to provide two ports per node, one for messaging and replication of the application logic, and one for the cluster management[^meta-nodes]. While this adds complexity for cluster operators, it ensures that both servers are decoupled. This is similar to what other vendors are doing (InfluxDB, Apache IoTDB, see subchapter [@sec:previous-work]). Although one could imagine running cluster management and application logic on separate machines, we run them on the same machines for efficiency and complexity reasons. This is illustrated in figure \ref{fig:multi-raft-load-balancing}. In addition, there is one public port for client requests. In our example setup on AWS, as well as in our local Docker setup, we made both ports for cluster management and application replication private. We recommend this to reduce the risk of someone messing up the protocol messaging, and thereby the consistency of the system.
+
+[^meta-nodes]: The literature commonly refers to a node partaking in cluster management as a _meta node_, since it manages, stores, and replicates the metadata of the system, in contrast to the _data nodes_, which replicate the actual payload data. A physical node can have both the role of a meta and data node at the same time.
 
 The Raft log of the cluster management state machine does not persist every command, simply to avoid additional I/O and log compaction complexity for very frequent commands such as heartbeats.
 
@@ -913,7 +889,7 @@ Ratis provides three classes that are mandatory to run a cluster on Raft.
 
 A _Raft group_ is a logical instance, containing a set of nodes that replicate a single state machine instance. Each physical node can participate in multiple Raft groups, meaning it can take on different roles at the same time. This relation is called a _division_. A division is a relational tuple describing a node, a Raft group, and the role of this node in this group.
 
-A _Raft client_ is a client instance that can send requests to a single Raft group. On instantiation, the Raft client is given the Raft group ID and a bootstrap list of nodes to reach out to. Once a Raft client reached out to a single node, it receives information about the whole group and what the current leader is, and communicates directly to the leader from this point. A Raft client is mandatory for sending any message to a Raft group. A write request sent from a Raft client is written and replicated to Raft logs of a quorum of the nodes in the group, before it is applied to the state machine. Raft clients can be run on any Java service on any machine as long as they can reach one Raft server of a Raft group and know the ID of the Raft group to connect to.
+A _Raft client_ is a client instance that can send requests to a single Raft group. On instantiation, the Raft client is given the Raft group ID and a bootstrap list of nodes to reach out to. Once a Raft client reached out to a single node, it receives information about the whole group and what the current leader is, and communicates directly to the leader from this point. A Raft client is mandatory for sending any message to a Raft group. A write request sent from a Raft client is written and replicated to Raft logs of a quorum of the nodes in the group, before it is applied to the state machine. Raft clients can be run on any `Java` service on any machine as long as they can reach one Raft server of a Raft group and know the ID of the Raft group to connect to.
 
 A _Raft server_ is the instantiating of Raft on a single node. Ratis supports Multi-Raft, so a Raft server can run multiple Raft groups.
 
@@ -1116,10 +1092,8 @@ One caveat of our implementation is, that log entries lose atomicity: instead of
 
 Figure \ref{fig:ha-chronicle-architecture} illustrates the buffer architecture:
 
-\todo{UML of the buffer}
-
 \begin{enumerate}[label=(\arabic*)]
-  \item A client emits events to be inserted into the store. This happens either through a remote API (in this case, a \texttt{REST} API) or directly on one of the nodes via the Java API in case of an embedded design.
+  \item A client emits events to be inserted into the store. This happens either through a remote API (in this case, a \texttt{REST} API) or directly on one of the nodes via the `Java` API in case of an embedded design.
   \item The partition manager of the ChronicleDB engine finds the right partition for the insertion request and the current leader for this replica group to serve the request. The partition and leader mapping is cached for a performanant in-memory lookup. The request is sent to this leader, while the client is notified for direct access of the leader for subsequent requests.
   \item The inserts are added to a buffer that allows for synchronized concurrent inserts and writes. The buffer is implemented using a \texttt{LinkedBlockingQueue}. The buffer is flushed using the \texttt{drainTo} method of the \texttt{LinkedBlockingQueue} once it overflows or at least after a certain timeout after the last insert. The buffer is optional and both its maximum size and timeout are configurable.
   \item The flushed buffer content is inserted into the event store in a batch operation. Before inserting, the events are ordered in-place in the buffer to prevent out-of-order inserts in the given set. The flush and insertion happen in a single, atomic operation.
@@ -1128,7 +1102,7 @@ Figure \ref{fig:ha-chronicle-architecture} illustrates the buffer architecture:
  
 \todo{Algo of the buffer}
 
-##### Buffer Benefits.
+##### Advantages of the Buffer.
 
 - By ordering all events in a batch and ordering the batches itself (through the Raft log), we ensure linearizability.
 - Our buffer implementation helps to increase the real-time consistency and to cope with out-of-order entries. The maximum size and timeout of the buffer can be configured in a way that it covers the inconsistency window, sorting out-of-order events in advance before inserting them into the actual event streams.
@@ -1141,7 +1115,7 @@ There are multiple factors that influence the optimal buffer size:
 
 - **Throughput**: Since we currently rely on the basic Raft log implementation of Ratis, a sufficient buffer size should be selected to allow for high throughput. In our evaluation, we demonstrate the impact of the buffer size on the overall throughput.
 - **The inconsistency window**: The buffer size and timeout can be chosen to cover the inconsistency window, so there is a high chance to provide consistency to real-time applications even with out-of-order entries.
-- **The RPO**: As we mentioned in subsection [@sec:geo-replication], some organizations have a metric, called the Recovery Point Objective (RPO), that is the maximum number of lost writes the application can tolerate when recovering from a disaster. Since the buffer entries are transient and get lost on a crash, the buffer size must be chosen accordingly. Considering some _graceful shutdown_ techniques, the risk of data loss on a crash can be further reduced.
+- **The RPO**: As mentioned in subsection [@sec:geo-replication], some organizations have a metric called the Recovery Point Objective (RPO), which specifies the maximum number of lost writes that the application can tolerate when recovering from a disaster. Since the buffer entries are transient and get lost on a crash, the buffer size must be chosen accordingly. Considering some _graceful shutdown_ techniques, the risk of data loss on a crash can be further reduced.
 
 ##### Limitations.
 
@@ -1160,11 +1134,22 @@ All Ratis messages are defined as `protobuf` schemas, too, which makes it transp
 
 Commands issued against state machines are represented via messages, and we define the schema of these messages with `protobuf`. Every such command must be functional, serializable and side-effect free. The messages can be sent by `RaftClients`, as shown in subsection [@sec:event-store-state-machine]. Example messages have been shown in the same subsection.
 
-Messages are categorized by write and read messages. In Ratis, writes are called transactional messages, while reads are called queries. This may be misleading since it does not provide transactions in the sense of ACID databases. It is rather to be understood as a single, atomic command execution: it is either executed and acknowledged on the state machine or no state transition happens in case of a failure. Yet this depends on the implementation of the commands and executors, and it is certainly possible to design message executors that are not atomic or deterministic, or that do not roll back changes in case of failure.
+Messages are categorized by write and read messages. In Ratis, writes are called transactional messages, while reads are called queries, as illustrated in figure \ref{fig:state-machine-interface}. This may be misleading since it does not provide transactions in the sense of ACID databases. It is rather to be understood as a single, atomic command execution: it is either executed and acknowledged on the state machine or no state transition happens in case of a failure. Yet this depends on the implementation of the commands and executors, and it is certainly possible to design message executors that are not atomic or deterministic, or that do not roll back changes in case of failure.
 
-<!--
-TODO UML for messaging, including executors, state managers, query and transaction messages, executor interface, protobuf...
--->
+##### Messaging and Execution Architecture.
+
+One goal of our messaging architecture is to avoid writing monolithic state machine code. We want to decouple the replication protocol and the application logic in case we need to switch to a replication protocol other than Apache Ratis one day. Our architecture of the messages and the execution interface shown in figure \ref{fig:chronicle-uml-classes-messages} is replication-protocol agnostic. This allows us to reuse the same messaging interface for future improvements and even completely different consistency layers, e.g., the executors could be used in a job worker like fashion to parallelize workload in eventual consistent operations, such as queries that can be served at the same time. In addition, we have schema-safety thanks to `protobuf` code generation.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=1\textwidth]{images/chronicle-uml-classes-messages.pdf}
+  \caption[UML class diagram for the messaging architecture]{UML class diagram showing the classes and interfaces used to describe messages and operations. The message interface is implemented to wrap the schema classes generated from protobuf interface definitions, while the executor interface is implemented to describe the actual execution logic. The messages and execution logic itself is decoupled from the state machine code. This seperation allows to describe the operations agnostic from the replication protocol and implementation.}
+  \label{fig:chronicle-uml-classes-messages}
+\end{figure}
+
+##### Serialization.
+
+As we already layed down, every message must be serializable so it can be sent between Raft nodes and persisted in the Raft log. It also allows us to sent these from clients that are not written in `Java`. Since our main command is the `insert` command, we must also serialize the events that form the payload of this message. Since the payload of an event is variable, depending on the event schema, serializing it with `protobuf` is not trivial. Instead of defining a variable `protobuf` schema to serialize events, we simply use the built-in event serializer of ChronicleDB. This also prevents additional deserialization steps, since we can just pass the binary representation of the event through the message layer, until it is applied by the state machine.
 
 ##### Adding New Messages.
 
@@ -1172,7 +1157,7 @@ Adding new messages (i.e., new supported commands for state machines) requires t
 
 \begin{enumerate}[label=(\arabic*)]
   \item Definition of the message schema in \texttt{protobuf}.
-  \item Generating Java code (message classes) out of the schemas.
+  \item Generating \texttt{Java} code (message classes) out of the schemas.
   \item Implementing the \texttt{ExecutableMessage} interface in case of an all-new state machine implementation, for example \texttt{EventStoreOperationMessage}. This wraps the generated message instances from \texttt{protobuf} and adds additional metadata and type hierarchies that are not available in \texttt{protobuf}.
   \item Expanding the factory methods of the parent message object to create the various message instances (for example, to insert an event).
   \item Implement the \texttt{OperationExecutor} interface, one for each \texttt{protobuf} message type defined. \texttt{OperationExecutors} must implement the \texttt{apply} method which defines how this single operation message is to be executed on the state machine. This method receives the payload of the \texttt{protobuf} message and a reference to the state of the state machine. There are two additional interfaces, where exactly one must be implemented: either the \texttt{TransactionOperationExecutor} or the \texttt{QueryOperationExecutor}. Only the first is allowed to mutate the state of the state machine, and it should be an atomic operation. To handle failed, non-atomic operation executions, the \texttt{TransactionOperationExecutor} interface provides a \texttt{cancel} method to implement neccessary rollbacks or compensations, in case that an operation can not be designed to be atomic and/or idempotent. It returns a \texttt{Future} containing the response of the operation for the client or an error message if it fails.
@@ -1180,7 +1165,7 @@ Adding new messages (i.e., new supported commands for state machines) requires t
 
 ##### Future Improvements.
 
-In future work, we would wrap this RaftClient in a Java SDK as it gives us `gRPC` messaging for free and we don't need to reimplement all commands again for `REST`/`HTTP`. `REST` runs on `HTTP/1.1` which adds additional network round-trip and (de-)serialization time, thus slowing down the overall system. `gRPC` is more efficient than REST as it leverages `HTTP/2` and works well with our already existing binary `protobuf` definitions, without introducing additional (de-)serialization steps. However, this requires us to re-engineer the gateway implementation of the cluster manager; the clients must first ask the cluster manager which node they should talk to before sending the request. We sketched this in figure \ref{fig:chronicle-java-sdk}. Currently in our demo application, this is handled on the server side by the `ChronicleEngine` for simplicity reasons.
+In future work, we would wrap this RaftClient in a `Java` SDK as it gives us `gRPC` messaging for free and we don't need to reimplement all commands again for `REST`/`HTTP`. `REST` runs on `HTTP/1.1` which adds additional network round-trip and (de-)serialization time, thus slowing down the overall system. `gRPC` is more efficient than REST as it leverages `HTTP/2` and works well with our already existing binary `protobuf` definitions, without introducing additional (de-)serialization steps. However, this requires us to re-engineer the gateway implementation of the cluster manager; the clients must first ask the cluster manager which node they should talk to before sending the request. We sketched this in figure \ref{fig:chronicle-java-sdk}. Currently in our demo application, this is handled on the server side by the `ChronicleEngine` for simplicity reasons. This also allows us to avoid another additional serialization step when deploying ChronicleDB as a service, since clients could directly serialize into ChronicleDB's target format instead of a `JSON` string first, which must be deserialized and serialized again on server side.
 
 \begin{figure}[H]
   \centering
@@ -1189,11 +1174,11 @@ In future work, we would wrap this RaftClient in a Java SDK as it gives us `gRPC
   \label{fig:chronicle-java-sdk}
 \end{figure}
 
-There is great potential for the application of model-based programming and code generation. We have shown how to add additional messages, which can quickly become cumbersome. With the `protobuf` definitions and additional Java annotations, one could imagine to generate a huge portion of this code—including messages, message wrappers, factories, and operation executors.
+There is great potential for the application of model-based programming and code generation. We have shown how to add additional messages, which can quickly become cumbersome. With the `protobuf` definitions and additional `Java` annotations, one could imagine to generate a huge portion of this code—including messages, message wrappers, factories, and operation executors.
 
-We also recommend readers to keep an eye on the further development of `gRPC` regarding support for the new `HTTP/3` protocol, which is built on top of `QUIC` and `UDP` instead of `TCP`. `QUIC` was approved as an IETF standard in 2021 [@iyengar2021quic], while `HTTP/3` was approved recently in June 2022 [@iyengar2022http3]. `HTTP/3` can further reduce latency, especially in settings with a lot of roundtrips, such as in Raft.  
+We also recommend readers to keep an eye on the further development of `gRPC` regarding support for the new `HTTP/3` protocol[^grpc-http3], which is built on top of `QUIC` and `UDP` instead of `TCP`. `QUIC` was approved as an IETF standard in 2021 [@iyengar2021quic], while `HTTP/3` was approved recently in June 2022 [@iyengar2022http3]. `HTTP/3` can further reduce latency, especially in settings with a lot of roundtrips, such as in Raft.  
 
-[^grpc-http3]: The request for `HTTP3` support in `gRPC` is tracked in this issue: https://github.com/grpc/grpc/issues/19126
+[^grpc-http3]: The request for `HTTP3` support in `gRPC` is tracked in this issue on GitHub: https://github.com/grpc/grpc/issues/19126
 
 #### Partitioning and Horizontal Scalability {#sec:multi-raft-partitioning}
 
@@ -1227,13 +1212,13 @@ In the next paragraphs, we take a look at further possible improvements, that di
 
 ##### Time Splits.
 
-Since event streams are append-only structures, historical data quickly becomes immutable (at least after the inconsistency window). In addition, ChronicleDB splits the stream storage by time splits. We can take advantage of this by introducing partitioning by those time splits. The time splits in ChronicleDB sit in their own $\textrm{TAB}^+$ index trees, as well as in seperate files, which makes it naturally suitable for partitioning.
+Since event streams are append-only structures, historical data quickly becomes immutable (at least after the inconsistency window). In addition, ChronicleDB splits the stream storage by time splits (see section [@sec:time-splitting] for reference). We can take further advantage of this by introducing partitioning by those time splits. The time splits in ChronicleDB sit in their own $\textrm{TAB}^+$ index trees, as well as in seperate files, which makes it naturally suitable for partitioning.
 
 Time splits allow for improved read scaling. Historic time splits are read-only (we will assume that out-of-order events do not happen in historic splits), thus the single-leader requirement of Raft can be dropped here. Furthermore, historic time splits could also be replicated using a different replication protocol, such as primary-copy, or simply by installing Raft snapshots, since we don't care about write consistency anymore. Generally, they would naturally "grow", once the index tree is "chopped" when a new time split should be created. When this happens, a new partition could be instantiated immediately (or better in advance to stay available during this period) and the cluster manager routes writes to the new partition, while the old partition is locked for writes and made available to be read on all nodes. We sketch such a configuration in figure \ref{fig:multi-raft-load-balancing}. Moreover, the replication factor can also be increased for historical splits by installing snapshots, which further reduces read latency and provides data locality in the case of multiple availability regions.
 
 We haven't implemented partitioning by time splits yet, since we need some strategies to execute queries and aggregate requests across time splits.
 
-Partitioning by time splits is also available in other time series databases and event stores, such as IoTDB (here, it is called _time slices_) [@wang2020iotdb].
+Partitioning by time splits is also available in other time series databases and event stores, such as IoTDB (there, it is called _time slices_) [@wang2020iotdb].
 
 \begin{figure}[H]
   \centering
@@ -1306,51 +1291,87 @@ TODO Network reconfiguration, together with chronicleDB failover
 
 #### Edge-Cloud Design
 
-TODO what is edge cloud? [@cao2020overview]
+By adding a replication and partioning layer to ChronicleDB, while keeping its capabilities of running standalone on a single server or embedded in another application, ChronicleDB meets the basic requirements to run in an edge-cloud architecture. 
 
-\begin{figure}[h]
+We illustrated the edge architecture, including its three layers, in section [@sec:edge-computing]. ChronicleDB fits into all three layers, thanks to its different deployment modes. An example setup for the edge-cloud is illustrated in figure \ref{fig:chronicle-edge-architecture}.
+
+##### Terminal Layer.
+
+ChronicleDB is originally designed and optimized to run on the terminal layer. It can be used as a "centralized storage system for cheap disks running as an embedded storage solution within a system (e.g., a self-driving car)" [@seidemann2019chronicledb]. It then runs as a lightweight library tightly integrated in the application code, with zero network latency, allowing for the highest throughput on the perspective of a single stream.
+
+##### Edge Layer.
+
+On the edge layer, ChronicleDB allows to aggregate a multitude of events from devices in the terminal layer. In general, the complexity of the events between the layers increases, while the volume per stream decreases: While the terminal layer produces raw events, the edge layer provides filtered and aggegrated events to the cloud layer that are ready to be consumed in reporting applications. The basic idea is to run _Event Processing Agents_ (EPA) in the sense of Complex Event Processing on the edge layer and use ChronicleDB in standalone mode as an event sink. By running ChronicleDB on the edge, it provides highest data locality and event processing power close to clients, providing lower response times since dedicated ressources on the edge can be used for processing that are not available in the cloud to these extents.
+
+##### Cloud Layer.
+
+On the cloud layer, ChronicleDB is deployed in the distributed version that we presented in this work. In the cloud, the goal is to scale with the number of devices, respectively streams, from the terminal layer, while providing high-availability and fault-tolerance. While ChronicleDB in the cloud does not provide the same high throughput on a per-stream basis as embedded on a device in the terminal layer, it shows its advantages in horizontal scaling, as it beats the throughput of the embedded version on a multi-stream basis.
+
+##### Between the Layers.
+
+To close the gap between the ChronicleDB instances on the different layers, one could either use an event processing solution, a pub/sub system or continously querying one ChronicleDB deployment with another. The latter is only suitable between the edge and the cloud, and to stream edge or cloud events into the terminal layer, since we can not query streams from devices on the terminal layer in a pull fashion—this is better to be implemented in a push fashion. We refer at this point to the related literature.
+
+\begin{figure}[H]
   \centering
   \includegraphics[width=1\textwidth]{images/chronicle-edge-architecture.pdf}
   \caption[Architecture of ChronicleDB in an edge-cloud setting]{Potential architecture of running ChronicleDB in an edge-cloud setting, next to and in combination with stream processing systems. It can act both to ingest and serve data before processing, as well as a data lake after processing. Different applications can query the ChronicleDB event store, either ad-hoc or continously. Both real-time and non-real-time systems can read streams from ChronicleDB, which can result in different consistency levels required.}
   \label{fig:chronicle-edge-architecture}
 \end{figure}
 
-\todo{Reference to fundamentals}
-
-TODO draw edge-computing diagram for chronicleDB
-
-\todo{Rephrase}
-- This implementation is designed to fit three deployment models, one for each layer of the edge computing architecture [@cao2020overview]: 
-1. Embedded event store to run as a library tightly integrated in the application code with highly efficient file-based storage on edge appliance on the _terminal layer_ (= original embedded event store/index)  
-2. Standalone event store on industrial PC (= original standalone ChronicleEngine) with EPAs... for the _edge layer_
-3. Distributed event store in raft cluster mode for the _cloud layer_
-
-- ChronicleDB is originally designed and optimized to run on the terminal layer:
-"centralized storage system for cheap disks running as an embedded storage solution within a system (e.g., a self-driving car)" etc.
-
-- It therefore has both a standalone, embedded version, i.e. to be deployed directly on the IoT devices to be lightweight and ultra-fast, and the replicated solution to be deployed in the cloud for high-availability, fault-tolerance etc etc that can scale with the number of devices / streams
-- What is currenlty missing is the sync between the embedded and the cloud one (TODO is this ROWA or Primary-Copy?); a good approach would be to have a Event Processing Agent (EPA, TODO reference) in the sense of Complex Event Processing (CEP, [@buchmann2009complex]) in between to aggregate the raw events to useful ones (the output of the sensors ), maybe built with Apache Spark, Kafka, RabbitMQ...
-
-"ChronicleDB supports an embedded as well as a network mode"
-
-"there are many embedded systems where scalable distributed storage is not the outright solution. For example, in [16], virtual machines of a physical server are monitored within a central monitoring virtual machine, which does not allow a distributed storage solution due to security reasons. Other examples are self-driving cars and airplanes that need to manage huge data rates within a local system."
---> But they are all at least locally replicated... otherwhise, not fault and absolutely not byzantine tolerant, which is a big safety issue in these systems!!!
-
 ### Evaluation Application {#sec:test-application}
 
 To test and evaluate the implementation of the replicated event store and the middlewares supporting it, a test application is needed. In the context of this work, a synthetic application is implemented to perform trade-off studies. The application is build with the following stack:
 
-- Spring Boot as the Java Framework to provide ChronicleDB on a Raft as a service.
+- Spring Boot as the `Java` Framework to provide ChronicleDB on a Raft as a service.
 - React to provide a lightweight user interface frontend for evaluation purposes.
 - Maven and Webpack to build the whole application.
 - Docker to run it in containers.
 
+This setup allows us to evaluate ChronicleDB both locally and in the cloud.
+
+#### Supported ChronicleDB Feature Scope
+
+We do not support all baseline features of ChronicleDB now in our distributed prototype. We support the following two main operations that we used to evaluate our implementation:
+
+- **Insertions**: We support inserting events, either as single events, buffered, or in custom defined batches.
+- **Aggregation**: We support basic ad-hoc aggregation by implementing the `AggregatedEventStore` interface and using the aggregate feature of the `TABPlusTree` under the hood. We use this to evaluate the read performance.
+
+##### Limitations.
+
+We do not support queries at the moment, neither ad-hoc nor continuous queries. See section [@sec:implementation-limitations] for details. 
+
+<!-- We also do not support the creation of new streams on runtime, since we haven't managed to complete implementations here. Streams must be defined via code, and are created on server startup. -->
+
+#### Running Inserts
+
+The evaluation application does not use the `HTTP REST` API to insert events, as `REST` runs on `HTTP/1.1` which adds additional network round-trip and (de-)serialization time, thus slowing down the overall system (cf. subsection [@sec:messaging]). Instead, we run an evaluation service on one node of the cluster, that continuously generates random events and inserts them into the replicated event store to simulate a continuously emitting sensor device. This evaluation service can be started and stopped via a dedicated API, given params to control the velocity of inserts. In addition, we have written some simple `python` functions to call this evaluation service from a `Jupyter` notebook, not matter if ChronicleDB runs on a local or remote cluster. The notebook allows us and others to run the evaluation reliably and repeatable. This notebook can be found in the appendix.
 
 
-The evaluation application does not use the `HTTP REST` API to insert events, as `REST` runs on `HTTP/1.1` which adds additional network round-trip and (de-)serialization time, thus slowing down the overall system. We expect a final implementation of ChronicleDB to expose a `gRPC` API, which is more efficient than REST as it leverages `HTTP/2` and works well with binary `protobuf` definitions, without introducing additional (de-)serialization steps.
+#### Running a Cluster
+
+Deploying and running a ChronicleDB cluster looks similar to how you run any other distributed database cluster. When starting a node, you specify its ID in the cluster, its storage directories, the ports for metadata/management, replication and the public API, and tell each node the adresses of other nodes in the cluster (the bootstrap list of at least 3 nodes to form a quorum) so they can find each other (while this list is further populated by the cluster manager once a quorum of nodes can talk to each other).
+
+For instance, a single node on a local cluster (single machine) is started this way:
+
+```
+PEERS=n1:localhost:6000,n2:localhost:6001,n3:localhost:6002
+
+ID=n1
+SERVER_PORT=8080
+META_PORT=6000
+
+java -jar target/chronicledb-raft-0.0.1-alpha.jar \
+--node-id=$ID \
+--server.address=localhost \
+--server.port=$SERVER_PORT \
+--metadata-port=$META_PORT \
+--storage=$STORAGE_DIR/$ID \
+--peers=$PEERS
+```
+
+This makes it easy to run a ChronicleDB cluster in a container environment, such as docker. A whole cluster can be deployed with a single docker-compose.
 
 <!--
-#### Running a Cluster
 
 Deploying a node locally to run in a test cluster is done as follows:
 
@@ -1408,24 +1429,26 @@ services:
 TODO feeding in env file for properties
 -->
 
-<!--
-
-#### Running on Kubernetes
-
-- TODO only cover it in this section if I get a working prototype running
-- Helm Charts
-
--->
-
 #### User Interface
 
-> Only brief description with a few screenshots
+The prototype comes with a simple user interface that helps to access various functions the cluster manager, such as checking the vitality of the cluster. It serves an overview over all running raft groups and the current roles of each node in that groups. It also allows to manage event streams and to run aggregations on them, mainly to continuously observe the throughput in evaluation settings. It is also used to evaluate and demonstrate the aggregations themselves.
 
-Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.
+It allows navigation between cluster nodes and can also be used to check the impact of the cluster's strong consistency from the user perspective, simply by running the user interfaces of all nodes in multiple browser windows and observing how changes are rendered simultaneously.
+
+\todo{Screenshot of a Raft Group}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.95\textwidth]{images/chronicledb-screenshot-1.png}
+  \caption[Screenshot of the ChronicleDB event store UI]{Screenshot of the ChronicleDB event store UI}
+  \label{fig:chronicledb-screenshot-1}
+\end{figure}
 
 ### Implementation Summary
 
-- TODO short summary section to start a discussion
+In this subchapter, we presented our implementation of a replication and partitioning layer for ChronicleDB. We went over the system design, starting with a thorough discussion of consistency models and their impact on ChronicleDB as well as on clients. We worked out the requirements for the replication layer and decided on a consistency model that would meet those requirements. We decided for strong consistency, since this allows us to guarantee safety to clients, at least in the absence of out-of-order events. We discussed the impact of out-of-order events on write and read consistency, as well as various mitigation strategies, and decided to implement a write buffer as a simple and lightweight solution. We laid out the trade-offs of this solution and made suggestions for possible future improvements. Finally, we explained our choice for a replication protocol and a library that implements this protocol in `Java`. Based on this library, we presented the technical architecture of our prototype implementation, which also includes an evaluation service.
+
+In the next subchapter, we will use this evaluation service to evaluate our implementation, using the original standalone ChronicleDB implementation as a benchmark.
 
 <!--
 TODOS:

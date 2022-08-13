@@ -41,6 +41,7 @@ header-includes: |
     \usepackage{todonotes}
     \usepackage{booktabs}
     \usepackage{tabularx}
+    \newcolumntype{Z}{>{\raggedright\let\newline\\\arraybackslash\hspace{0pt}}X}
     \usepackage{draftwatermark}    	
     \SetWatermarkColor[gray]{0.95}
     \usepackage{lmodern}
@@ -50,10 +51,13 @@ header-includes: |
     \usepackage{makecell}
     \usepackage{float}
     \usepackage{pdfpages}
+    \usepackage{bigfoot}
     \renewcommand\theadfont{\normalsize}
     \renewcommand\theadfont{\bfseries}
+    \usepackage{etoolbox}
     \theoremstyle{definition}
     \newtheorem{definition}{Definition}[section]
+    \AtBeginEnvironment{definition}{\nopagebreak}
     \usepackage{xcolor}
     \usepackage{multicol}
     \newcommand{\myquote}[2][white!10]{%

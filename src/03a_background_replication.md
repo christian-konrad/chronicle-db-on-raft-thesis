@@ -7,8 +7,6 @@
 
 This section provides the reader with an overview of the topic of _distributed database systems_ (DDBS), defines the term _replication_, explains why replication is crucial for many of those systems, discusses various replication protocols, and concludes with a literature review of recent research in this area. The goal of this section is to provide the reader with a thorough understanding of what replication is, why, where, and when it is needed, and how replication protocols work.
 
-\todo{Glossary?}
-
 A _distributed system_ is a collection of autonomous computing elements that appears to its users as a single coherent system [@steen2007distributed]. To achieve this behavior, such a system needs to offer certain levels of _availability_, _consistency_, _scalability_ and _fault-tolerance_; therefore, many modern distributed systems rely heavily on replicated data stores that maintain multiple replicas of shared data [@liu2013replication]. Depending on the replication protocol, the data is accessible to clients at any of the replicas, and these replicas communicate changes to each other using message passing.
 
 Thus, a distributed database system is a distributed system that provides read and write access to data. Replication in these databases takes place to varying degrees: from simple replication of metadata and current system state to full replication of all payload data, depending on the requirements and characteristics of the system.
@@ -40,10 +38,6 @@ With vertical scaling, when you host a data store on a single server and it beco
 
 With an increasing number of users served, the number of nodes in a horizontally scalable system grows. In the ideal case, the number of nodes required to keep the perceived performance for users constant increases linearly with the number of distinct data entities served (such as tables or data streams with distinct schemas) [@williams2004web]; in other words, the transaction rate grows linearly with the computational power of the cluster. This is not neccessarily the case when a increasing number of users access the same stream/table or inter-node/inter-partition transactions are executed. In the latter case, vertical scaling or advanced partitioning techniques [@aaqib2019efficient] still come handy. In practise, many applications achieve near-linear scalability.
 
-\todo{NTH: show chart and math for near-linear scalability if time}
-
-\todo{Charts: vertical vs horicontal scalability (i.e. the zeebe one)}
-
 Opting in for horizontal scaling is beneficial for large-scale cloud and edge applications as it is easier to add new nodes to a system instead of scaling up existing ones, even if the initial costs are higher as the infrastructure and algorithms must be implemented in first place.
 
 The system design that enables horizontal scalability is also a key requirement for replication. To achieve fault tolerance and availability through replication, it is required to store replicas of a dataset on multiple nodes, therefore the book keeping and message passing infrastructure that is neccessary for partitioning is also a basic requirement for replication protocols [@liu2013replication].
@@ -52,17 +46,19 @@ The system design that enables horizontal scalability is also a key requirement 
 
 \epigraph{\hfill Anything that can go wrong will go wrong.}{--- \textup{Murphy's Law}}
 
-Modern real-time distributed systems are expected to be reliable, i.e., to function as expected without interruption, and to be safe, i.e., not to cause catastrophic accidents even if a subsystem misbehaves. For a distributed system to be both reliable and secure, it must be designed to be _fault-tolerant_, i.e., the application must be able to cope with node failures without interrupting service. In addition, it must also be able to withstand faults without operating incorrectly, i.e., responding to user requests with erroneous or malicious content. In large distributed systems, faults will happen - they are inevitable. Therefore, fault-tolerance is the realization and acknowledgement that there will be faults in a system. There is no system that is 100 % fault-tolerant. A system that can tolerate at least $k$ faulty nodes is called $k$-_fault-tolerant_.
+Modern real-time distributed systems are expected to be reliable, i.e., to function as expected without interruption, and to be safe, i.e., not to cause catastrophic accidents even if a subsystem misbehaves. For a distributed system to be both reliable and secure, it must be designed to be _fault-tolerant_, i.e., the application must be able to cope with node failures without interrupting service. In addition, it must also be able to withstand faults without operating incorrectly, i.e., responding to user requests with erroneous or malicious content. In large distributed systems, faults will happen - they are inevitable. Therefore, fault-tolerance is the realization and acknowledgement that there will be faults in a system. There is no system that is 100 % fault-tolerant. 
 
-\todo{K-fault-tolerance formatted as a definition?}
+\begin{definition}[$k$-Fault-Tolerance]
+A system that can tolerate at least $k$ faulty nodes is called $k$-\textit{fault-tolerant}.
+\end{definition}
 
-To understand how a system can be designed to be both reliable and secure, we review the definitions of reliability and security [@mulazzani1985reliability; @farooq2012metrics]:
+To understand how a system can be designed to be both reliable and secure, we review the definitions of reliability and security [@mulazzani1985reliability; @farooq2012metrics; @musa1993operational]:
 
-\todo{If sufficient time, use actual definition formatting for things like this instead of just paragraphs}
+\begin{definition}[Reliability]
+The \textit{reliability} of a system is the probability that its functions will execute successfully under a given set of environmental conditions (operational profile\footnote{An operational profile is a quantitative characterization of how a system will be operated by actual users\nopagebreak}) and over a given time period $t$, denoted by $R(t)$. Here $R(t) = P(T > t), t \geq 0$ where $T$ is a random variable denoting the time to failure. This function is also known as the \textit{survival function}.
+\end{definition}
 
-\paragraph{Reliability.} The _reliability_ of a system is the probability that its functions will execute successfully under a given set of environmental conditions (operational profile[^operational-profile]) and over a given time period $t$, denoted by $R(t)$. Here $R(t) = P(T > t), t \geq 0$ where $T$ is a random variable denoting the time to failure. This function is also known as the _survival function_.
-
-[^operational-profile]: An operational profile is a quantitative characterization of how a system will be operated by actual users [@musa1993operational]. Different users using the same system in different ways may experience different levels of reliability. An operational profile shows how to increase productivity and reliability by allowing us to quickly find the faults that impact the system reliability mostly and by finding the right test coverage.
+Different users using the same system in different ways may experience different levels of reliability. An operational profile shows how to increase productivity and reliability by allowing us to quickly find the faults that impact the system reliability mostly and by finding the right test coverage.
 
 There are also other dimensions of interest to express the reliability of a system:
 
@@ -74,6 +70,17 @@ There are also other dimensions of interest to express the reliability of a syst
 
 The second can be measured using the _Mean Time Between Failures_ (MTBF). The MTBF is a common and important measure and is especially critical for consensus protocols, a particular class of replication protocols, since the MTBF of a single node must be estimated in advance when defining the protocol's timing criteria,  which will be shown later in [Section 1.2](#sec:raft) when we describe the replication protocol of choice of this work. The MTBF itself is a combined metric: it is the sum of the _Mean Time To Failure_ (MTTF) and the _Mean Time To Repair_ (MTTR).
 
+\begin{definition}[Mean Time To Failure]
+The MTTF describes the mean time of uninterrupted \textit{uptime} of a system where it is operational, therefore the average time between a succesful system start and a failure:
+
+\begin{equation}\label{eq:mttf}
+\textrm{MTTF} \coloneqq \sum_i \frac{t_{\textrm{down},i} - t_{\textrm{up},i}}{n} = \sum_i \frac{u_i}{n}
+\end{equation}
+
+where $t_{\textrm{down}}$ is the start of the downtime after a failure, $t_{\textrm{up}}$ the start of the uptime before that failure, $u_i$ the current uptime period and $n$ the number of failures.
+\end{definition}
+
+<!--
 The MTTF describes the mean time of uninterrupted _uptime_ of a system where it is operational, therefore the average time between a succesful system start and a failure:
 
 \begin{equation}\label{eq:mttf}
@@ -81,6 +88,7 @@ The MTTF describes the mean time of uninterrupted _uptime_ of a system where it 
 \end{equation}
 
 where $t_{\textrm{down}}$ is the start of the downtime after a failure, $t_{\textrm{up}}$ the start of the uptime before that failure, $u_i$ the current uptime period and $n$ the number of failures.
+-->
 
 This only describes the uptime: the _downtime_ or repair time, including failure detection, reboot, error fixing and network reconfigurations are described by the MTTR. In some literature, the average amount of time it takes to detect a failure is additionally extracted as a dedicated metric, the _Mean Time To Detect_ (MTTD)[^MRDP]. 
 
@@ -106,9 +114,9 @@ $$ \textrm{MTBF} = \int_{0}^{\infty} R(t) dt $$
 
 One of the most important design techniques to achieve reliability, both in hardware and software, is redundancy [@cristian1991understanding]. There are two main patterns to achieve redundancy: retry and replication. Retry is _redundancy in time_, while replication is _redundancy in space_. Using a retry strategy, a _failure detector_ oftentimes is just a timeout. In this case, the MTTD is the timeout interval while the MTTR is the retry time. In replication, timeouts are also used to detect dead nodes (assuming a fail-stop failure model, as described in the following paragraphs) so they can be rebooted in the background or the network can be reconfigured (by the network itself or an external book keeper or orchestrator), commonly covered by the rules of the replication protocol and oftentimes without having a perceivable impact on reliability and availability for the user.
 
-\paragraph{Safety.} The safety of a system is the probability that no undesirable behavior or even _catastrophic accidents_ will occur during system operation over a specified period of time. Safety looks at the consequences and possible accidents, and how to deal with it.
-
-\todo{Explain what a catastrophic accident is}
+\begin{definition}[Safety]
+The safety of a system is the probability that no undesirable behavior will occur during system operation over a specified period of time. Safety looks at the consequences and possible accidents, and how to deal with it.
+\end{definition}
 
 Safety is an important requirement especially for critical infrastructure applications. Safety means that the system behavior is as expected, and no faulty or even malicious results are returned.
 
@@ -286,7 +294,7 @@ Building scalable and reliable distributed systems requires a trade-off between 
 
 Consistency is an ambiguous term in data systems: in the sense of the _ACID model_ (Atomic, Consistent, Isolated and Durable), it is a very different property than the one described in the _CAP theorem_ (we explain this later in this section). The ACID model describes consistency only in the context of database transactions, whereas consistency in the CAP model refers to a single request/response sequence of operations. We focus on the definition in the CAP theorem in this work. In the distributed systems literature in general, consistency is understood as a spectrum of models with different guarantees and correctness properties, as well as various constraints on performance.
 
-A database consistency model[^consistency-origins] determines the manner and timing in which a successful write or update is reflected in a subsequent read operation[^no-quantum-reads] of that same value. It describes the ordering guarantees for the execution of operations accessing the system and what values are allowed to be returned. There exists no one-size-fits-all approach: it is difficult to find one model that satisfies all main challenges associated with data consistency [@mkandla2021evaluation]. Consistency models describe the trade-offs between concurrency and ordering of operations, and thus between performance and correctness.
+A database consistency model[^consistency-origins] determines the manner and timing in which a successful write or update is reflected in a subsequent read operation[^no-quantum-reads] of that same value. It describes the ordering guarantees for the execution of operations accessing the system and what values are allowed to be returned [@fekete2009consistency]. There exists no one-size-fits-all approach: it is difficult to find one model that satisfies all main challenges associated with data consistency [@mkandla2021evaluation]. Consistency models describe the trade-offs between concurrency and ordering of operations, and thus between performance and correctness.
 
 [^consistency-origins]: Originally, consistency models were discussed in the context of concurrency of operations on a single machine or set of CPUs respectively in multi-threaded environments. Discussions of consistency models in distributed systems or even distributed database systems are not substantially different, since a distributed system is basically nothing more than a collection of machines on which multiple threads and processes can run concurrently or in parallel.
 
@@ -317,8 +325,6 @@ Following, a few of those consistency models are discussed, starting with the mo
   \label{fig:consistency-timeline-notation}
 \end{figure}
 
-\todo{Denote everything mathematically if sufficient time and if it does not unneccessary complexity}
-
 <!-- Strong Consistency -->
 
 ##### Strong Consistency (Linearizability).
@@ -337,8 +343,6 @@ Strong consistency is mandatory for use cases with zero tolerance for inconsiste
 - Stock exchange trades and analysis,
 - Event sourcing,
 - Aviation systems.
-
-\todo{Mention 2-phase commits (2PC)}
 
 \begin{figure}[h]
   \centering
@@ -491,7 +495,7 @@ There are some extensions to harden causal consistency slightly, namely _causal+
 <!-- Eventual -->
 ##### Eventual Consistency.
 
-To achieve a higher level of consistency, synchronization between replicas is usually required, increasing the latency and even rendering the system unavailable if network connections between the replicas fail. For this reason, modern replicated systems that put emphasis on throughput and latency often forgo synchronization altogether; such systems are commonly referred to as _eventually consistent_ [@vogels2009eventually]. Eventual consistency is a weak consistency model that does not guarantee any global ordering, but only _liveness_: intermediate states are allowed to be inconsistent, but after some time, in the absence of updates, all nodes should converge, returning the same resulting state set of operations [@terry1994session]. This is illustrated in \ref{fig:consistency-ordering-eventual}. As illustrated in figure \ref{fig:eventual-consistency-flow}, in eventually consistent distributed databases, a replica performs an operation requested by a client locally without any synchronisation with other replicas and immediately acknowledges the client of the response. The operation is passed asynchronously to the other replicas and, in the case of network partitioning, can be pending for a while. The time taken by the replicas to get consistent may or may not be defined, but the model clearly requires that in the absence of updates, all replicas converge toward identical copies. This often requires _conflict resolution_ techniques.
+To achieve a higher level of consistency, synchronization between replicas is usually required, increasing the latency and even rendering the system unavailable if network connections between the replicas fail. For this reason, modern replicated systems that put emphasis on throughput and latency often forgo synchronization altogether; such systems are commonly referred to as _eventually consistent_ [@vogels2009eventually]. Eventual consistency is a weak consistency model that does not guarantee any global ordering, but only _liveness_: intermediate states are allowed to be inconsistent, but after some time, in the absence of updates, all nodes should converge, returning the same resulting state set of operations [@terry1994session]. This is illustrated in \ref{fig:consistency-ordering-eventual}. Unlike strong consistency models that maintain the illusion of a single-site system, weaker models allow clients to see that the system has replicas. As illustrated in figure \ref{fig:eventual-consistency-flow}, in eventually consistent distributed databases, a replica performs an operation requested by a client locally without any synchronisation with other replicas and immediately acknowledges the client of the response. The operation is passed asynchronously to the other replicas and, in the case of network partitioning, can be pending for a while. The time taken by the replicas to get consistent may or may not be defined, but the model clearly requires that in the absence of updates, all replicas converge toward identical copies. This often requires _conflict resolution_ techniques.
 
 Eventual consistency could be somehow referred to as the incarnation of the liveness property described in subsection [@sec:safety-reliability] ("something good will eventual happen"), while safety is not neccessarily guaranteed: it depends on the use case and potential conflict resolution.
 
@@ -637,8 +641,6 @@ The author of the PACELC theorem criticizes the CAP theorem to just focus on fai
 
 The author introduced this theorem to support decision making in the design and implementation of a distributed database system, since consistency decisions must also be made outside of network partitions: the trade-off between consistency and latency is often even more important and arises as soon as a distributed database system introduces replication.
 
-\todo{Further explanation if sufficient time}
-
 #### The CALM Theorem {#sec:calm}
 
 The CALM theorem (Consistency As Logical Monotonicity) arose from a critique of the CAP theorem. It helps to understand whether a distributed problem can be solved with a strong or weak consistency model. While a strong consistency model always requires some form of coordination between nodes which increases latency, a weak model such as eventual consistency can eschew coordination entirely, but often at the cost of violating correctness properties. The CALM theorem allows the system designer to decide whether a weak consistency model can be applied without compromising correctness by considering possible monotonic properties. The theorem says "a problem has a consistent, coordination-free distributed implementation if and only if it is monotonic [@hellerstein2020keeping]".
@@ -714,7 +716,7 @@ There are two ways to partition data: Vertical and horizontal partitioning. Both
 
 <!-- Two approaches of partitioning -->
 
-<!-- TODO first introduce vertical partitioning, then horizontal. Then introduce sharding as horizontal partitioning distributed across multiple machines. in the literature we speak of _sharding_ when the data is distributed over several machines -->
+<!-- first introduce vertical partitioning, then horizontal. Then introduce sharding as horizontal partitioning distributed across multiple machines. in the literature we speak of _sharding_ when the data is distributed over several machines -->
 
 \begin{figure}[h]
   \centering
@@ -739,7 +741,7 @@ In horizontal partitioning, data collections are partitioned by records, while a
 
 \paragraph{Sharding.}
 
-Sharding goes beyond partitioning tables on a single machine by distributing horizontal partitions across multiple machines [bagui2015database]. This allows to distribute the transaction and query load across multiple servers (both logical or physical). 
+Sharding goes beyond partitioning tables on a single machine by distributing horizontal partitions across multiple machines [@bagui2015database]. This allows to distribute the transaction and query load across multiple servers (both logical or physical). 
 
 The optimal _shard key_ (resulting from the split criteria in the context of sharding) allows for _load balancing_, i.e. it distributes the workload as evenly as possible across the shards. It also maximizes coherence and locality within a partition and reduces the number of  queries and transactions across partitions. For instance, the MongoDB authors recommend choosing shard keys with a high level of randomness for write scaling and high locality for range queries [@kookarinrat2015analysis]. Good partitioning moves computation close to the node where that data resides, and the master replica of a shard close to where the most clients will write to it (in case of replication with a strong leader, see subsection [@sec:replication-protocols]). Such sharding strategies can also support geographical scalability, as shown in subsection [@sec:geo-replication]. It also takes the access frequency and importance of every partition into account, so that database users can specify different strategies for security, access permissions, management, monitoring, and backups of the individual partitions. 
 
@@ -752,8 +754,6 @@ Different horizontal partitions can also be served with different dependability 
 \paragraph{Rebalancing.}
 
 Over time, the content and form of a data collection may change, and the distribution of data in the shards may deviate from the distribution originally assumed, especially if _scheme evolution_ occurs. In addition to that, the network of the sharded application itself could be reconfigured, for example, by adding data centers or upscaling machines, or in response to a failure or even as a temporary mitigation of a disaster that renders an entire data center unavailable. When this happens, the load on the shards is no longer balanced, resulting in overloaded shards that become slower, which in turn leads to an overall increase in latency and lower availability. To mitigate this, a sharded system must be continuously monitored and _rebalanced_ in response to such an event or even proactively when a specific trend is apparent. Rebalancing should ideally be done in such a way that users do not notice it, meaning it should not slow down the system or even reduce its availability [@weingartenzero]: rebalancing should not be part of the MTTR (Mean Time To Repair; for reference, see subsection [@sec:availability]). Avoiding shard keys closely coupled to actual record values and instead using consistent hashing algorithms to generate sharding keys generally allow for easier rebalancing [@lamping2014fast].
-
-\todo{TODO consistent hashing in Cassandra if sufficient time}
 
 \paragraph{Partitioning and Replication.}
 
@@ -826,8 +826,6 @@ When it comes to read latency, it is recommended to place read replicas in close
 
 \paragraph{Increased Write Latency.}
 
-\todo{Reference this later in evaluation and also in cost of replication}
-
 In the strong consistency model, extending the intra-cluster replication protocol across clusters can be very expensive, as more nodes must take part in coordination to reach consensus. Replicating across wide-area networks adds a minimum round-trip time to every request, which can be tens of milliseconds or more across continents. The lower bound of possible latency optimization here is defined by the speed of light: for example, the minimum round-trip to coordinate replicas on AWS data centers across the Atlantic from Dublin, Ireland to North Virginia, USA ($\char`\~11.000$ km round-trip distance) is $\char`\~36.7$ ms (at the time of this writing, the actual round-trip ping time was $70.69$ ms). While read latency from geo-replicas near the location of the client is reduced, the write latency increases substantially. With synchronous writes, this reduces the maximum throughput to $27$ writes per second.
 
 \begin{figure}[h]
@@ -851,7 +849,7 @@ In state machine replication (which is discussed in subsection [@sec:state-machi
 
 Mirroring is also often used to clone data from a production cluster into a development or testing environment. Extending the distributed architecture to an edge-cloud network, these approaches are also suitable for feeding edge cluster data into one central cloud cluster (which could also be geo-replicated).
 
-### Edge Computing
+### Edge Computing {#sec:edge-computing}
 
 Edge computing (sometimes refered to as _fog computing_) is a paradigm that emerged to cope with the issue that traditional cloud computing is oftentimes no longer sufficient to support the high volume of data processing. In edge computing, operations are executed at the edge of the network, meaning there is an additional layer between the client's device and the cloud on the peripherals of the network that is very close to the client and provides data-locality. It is the consequent next step of geo-distribution. At the edge of the network, services are in general lightweight for local, small-scale data storage and processing [@cao2020overview].
 
@@ -934,8 +932,6 @@ In essence, it is worthwhile to constantly challenge applied consistency models 
 
 When deciding on a consistency model for a distributed database system, it is important to recognize that different applications built on top of the database will themselves have different consistency requirements, so it may be a good idea to provide multiple consistency models and flexibility in configuring these models for different types of operations in a database system. Many popular database system vendors allow their users to choose for the consistency model of their choice, even at the operations level. Some of those vendors offer true fine-grained consistency options, such as Microsoft Azure Cosmos DB, which offers even 5 models with gradually decreasing consistency constraints [@microsoft2022cosmosconsistency].
 
-\todo{RabbitMQ consistency choices (quorum queues vs mirror queues) if time}
-
 \paragraph{Immutability Changes Everything.}
 
 Immutability naturally creates monotonicity, as the set of data—let it be either a payload or commands on this payload, like the `itemInserted`/`itemRemoved` example in subsection [@sec:calm] above—can only grow. Helland claims in his paper "Immutability Changes Everything" that "We need immutability to coordinate at a distance and we can afford immutability, as storage gets cheaper" [@helland2015immutability]. The latter statement is somewhat reminiscent of Moore's Law.
@@ -971,7 +967,7 @@ When building a distributed system and thinking about the consistency models, it
 
 Not only the use case, but also the capabilities of the infrastructure the system will be deployed onto (i.e., the network)  and the overall technical architecture play an important factor in the decision. Under certain circumstances, it is possible to provide high levels of consistency and yet low latency and availability, e.g., by using multiple or even nested layers of different consistency models and intelligent partitioning techniques.
 
-The critique of the CAP theorem presented in the previous subsections allows for a more deliberate choice of consistency in practical systems, since several other properties can affect the actual requirements for consistency and dependability, often even more than the original theoretical properties of the CAP theorem. As an example, Google's distributed _NewSQL_ database system Spanner is in theory a CP class system [@corbett2013spanner]. It's design supports strong consistency with real-time clocks. In practice, however, things are different: given that the database is proprietary and runs on Google's own infrastructure, Google is in full control of every aspect of the system (including the clocks). The company can employ additional proactive strategies to mitigate network issues (such as predictive maintenance) and to reduce latency in Google's extremely widespread data center architecture. In addition, intelligent sharding techniques have been deployed (we discussed partitioning and sharding in subsection [@sec:partitioning]) that take advantage of this data center architecture. As a result, the system is highly available in practice (records to date even show availability of more than five nines (99.999 %) at the time of writing), and manifested network partitions are extremely rare. Eric Brewer, the author of the CAP theorem and now (at the time of writing) VP of infrastracture at Google, even claims that Spanner is technically CP but effectively CA [@brewer2017spanner]. We'll look at Spanner in more detail in section [@sec:previous-work]. It is important to realize that this is difficult in practice for open, self-managed distributed databases, or generally for smaller, less complex infrastructures, or when there is no control over the underlying network, as this requires a joint design of distributed algorithms and new network functions and protocols (cf. the Eris protocol in subsection [@sec:coordination-free-replication]). And after all, it is always a question of overall economic efficiency.
+The critique of the CAP theorem presented in the previous subsections allows for a more deliberate choice of consistency in practical systems, since several other properties can affect the actual requirements for consistency and dependability, often even more than the original theoretical properties of the CAP theorem. As an example, Google's distributed _NewSQL_ database system Spanner is in theory a CP class system [@corbett2013spanner]. It's design supports strong consistency with real-time clocks. In practice, however, things are different: given that the database is proprietary and runs on Google's own infrastructure, Google is in full control of every aspect of the system (including the clocks). The company can employ additional proactive strategies to mitigate network issues (such as predictive maintenance) and to reduce latency in Google's extremely widespread data center architecture. In addition, intelligent sharding techniques have been deployed (we discussed partitioning and sharding in subsection [@sec:partitioning]) that take advantage of this data center architecture. As a result, the system is highly available in practice (records to date even show availability of more than five nines (99.999 %) at the time of writing), and manifested network partitions are extremely rare. Eric Brewer, the author of the CAP theorem and now (at the time of writing) VP of infrastracture at Google, even claims that Spanner is technically CP but effectively CA [@brewer2017spanner]. <!--We'll look at Spanner in more detail in section [@sec:previous-work].-->It is important to realize that this is difficult in practice for open, self-managed distributed databases, or generally for smaller, less complex infrastructures, or when there is no control over the underlying network, as this requires a joint design of distributed algorithms and new network functions and protocols (cf. the Eris protocol in subsection [@sec:coordination-free-replication]). And after all, it is always a question of overall economic efficiency.
 
 In addition, the actual choice of a replication protocol adds another layer of considerations that must be factored into the decision. As a rule of thumb, the more tightly coupled the replicated database system and infrastructure, the easier it is to ensure strong consistency without compromising latency and availability.
 
@@ -1233,12 +1229,9 @@ State machine replication uses consensus under the hood to agree on a single val
 
 It appears that the state can be seen as a derived non-monotonic aggregate, while the commands in the log are trivial facts and operations on it. From this point of view, if the state appears to be or can be designed as a monotonic aggregate, weaker consistent replication protocols are more suitable, such as optimistic replication (see subsections [@sec:calm] and [@sec:optimistic-replication]).
 
-
 \paragraph{Byzantine-Fault Tolerance}.
 
 All these safety and liveness properties described in this subsection do not apply to byzantine failures, i.e., they only apply to _honest_ nodes. Basic state machine replication is only crash-fault tolerant, while there are also byzantine-fault tolerant state machine replication approaches, such as _Practical Byzantine Fault Tolerance_ (PBFT) [@castro1999practical]. Since byzantine-fault tolerance is not the focus of this paper, we will not discuss it in detail here, but refer to the relevant literature [@distler2021byzantine].
-
-\todo{Relation to Atomic Broadcasts?}
 
 <!--
 SMR requires an implementation of a total order broadcast protocol, which is known to be equivalent to the consensus problem.
@@ -1283,19 +1276,9 @@ in the same total order. A possible way of implementing
 total order broadcasts is through multiple executions of a
 consensus algorithm. Thus, the performance of the total order broadcast is directly dependent on the performance of
 the consensus algorithm. 
-
 -->
 
-<!--
-#### Other Kinds of Protocols
-
-- Master-Slave
-- Active-Passive (any difference to master-slave?^)
-- Primary-Copy
-- TODO Mention them here or just below?
--->
-
-#### Read One / Write All (ROWA)
+#### Read One / Write All (ROWA) {#sec:rowa}
 
 _Read one / write all_ is the simplest, yet weakest approach to strongly consistent replication. Its two properties are:
 
@@ -1316,7 +1299,7 @@ Compared to ROWA, this system can tolerate failures, at least those of the backu
 
 Primary-copy is often used in RDBMS to provide continously updated hot backups. There are different approaches in primary-copy replication to handle transactions. One approach involves performing transactions atomically on the primary copy first, before passing the result of the transaction to the replicas. 
 
-\paragraph{Primary-Copy with Logs and State Machines.}
+##### Primary-Copy with Logs and State Machines.
 
 It is possible to implement the primary-copy approach with a replicated log and state machines. Instead of the actual commands, this log holds the outcomes of the command executions, but still in a strict sequential ordering. The replication is achieved after the execution of a client request by the primary copy by writing the state diff to a replicated log, which can happen in a similar same way as in state machine replication by applying consensus respectively total order broadcasts. This is illustrated in figure \ref{fig:primary-copy-state-machine}. To achieve linearizability for strong consistency, the effects of writes should not be made visible to clients until the log entries have been committed to a quorum, which is far from trivial to implement. In addition, the primary copy should also contain the clients' responses in the log entries so that the backup servers can return the same response if the clients retry. 
 
@@ -1333,7 +1316,12 @@ In _active replication_, the clients are responsible to ensure consistency, ther
 
 This approach does not provide strong consistency, as the replicas immediately execute a command once they receive it, and this can happen at different points in time, depending on the individual latency and load of the nodes. Moreover, multiple clients may invoke the system simultaneously, and even if they do not write at the same time, the order of their requests to each node can only be guaranteed to follow the program order, ensuring at least sequential consistency (cf. the sequencing in figure \ref{fig:consistency-ordering-sequential} of subsection [@sec:consistency]). Unless a client waits for all nodes to acknowledge a write, sequential consistency is also not guaranteed, as some intermediate writes may never have been performed by some nodes.
 
-\todo{https://jaksa.files.wordpress.com/2009/02/active-passive-replication.gif}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.8\textwidth]{images/active-passive.pdf}
+  \caption{Active vs. passive replication}
+  \label{fig:active-passive}
+\end{figure}
 
 #### Optimistic Replication {#sec:optimistic-replication}
 
@@ -1350,112 +1338,71 @@ Such local updates are only tentative and their final outcome could change, as t
 
 Optimistic replication is especially suitable for problems that meet the monotonicity requirements as described in the CALM theorem (cf. subsection [@sec:calm]), as this class of problems requires no conflict resolution at all.
 
-\todo{Describe steps of OR: server/decentralized protocol defines order of events...}
-
-\todo{Possible to use CRDTs for chronicledb TAB+ tree?}
-
 \paragraph{Conflict-Free Replicated Data Types.}
 
 An example of optimistic replication for strong eventual consistency are _conflict-free replicated data types_ (CRDT). CRDTs were introduced by Shapiro et al. and describe data types with a data schema and operations on it that will be executed in replicated environments to ensure that objects always converge to a final state that is consistent across replicas [@shapiro2009crdts]. CRDTs ensure this by requiring that all operations must be designed to be conflict-free, since CRDTs are intended for use in decentralized architectures where operation reordering is difficult to achieve. Therefore, any operation must be both _idempotent_ (the same operation applied multiple times will result in the same outcome) and _commutative_ (the order of operations does not influence the result of the chained operations), which also requires them to be free of side effects [^secro].
 
 CRDTs take the consistency problem onto the level of data structures. They make use of optimistic replication to allow for such operations without the need of replicas to coordinate with each other (often allowing updates to be executed even offline) by relying on merge strategies to resolve consistency issues and conflicts, once the replicas synchronize again. They are designed in a way that the overall state resolves automatically, becoming eventually consistent. Due to the nature of the operations to be idempotent, CRDTs can only be used for a specific set of applications, such as distributed in-memory key-value stores like Redis, which is commonly used for caching [@redis2022crdts]. Another common set of use cases are real-time collaborative systems, such as live document editing (relying on suitable data structures to hold the characters with good time complexity properties for both random inserts and reads, such as an _AVL tree_ [@adelsonvelskii1963algorithm]) [@shapiro2009commutative]. CRDTs are not suitable for append-only logs, streams or event stores, as designing an operation to append a record or event with idempotency and commutativeness is too expensive.
 
-[^secro]: Recent research is trying to find such a replicated data type that does not require operations to be commutative. One approach describes _Strong Eventually Consistent Replicated Objects_ (SECROs), aiming to build such a data type with the same dependability properties as CRDTs [@de2019generic]. The authors achieve this by ensuring a total order of operations across all replicas, but still without synchronisation between the replicas: they show that it is possible to order the operations asynchronously.
+[^secro]: Recent research is trying to find such a replicated data type that does not require operations to be commutative. One approach describes _Strong Eventually Consistent Replicated Objects_ (SECROs), aiming to build such a data type with the same dependability properties as CRDTs [@de2019generic]. The authors achieve this by ensuring a total order of operations across all replicas, but still without synchronisation between the replicas: they show that it is possible to order the operations asynchronously. Another approach in very recent literature that builds upon replicated coordination-free tree is available in a preprint by Nair et al. [@nair2021coordination].
 
 CRDTs are not the only way to achieve optimistic replication. Before CRDTs, _operational transformations_ (OT) were the default approach for solving these kinds of problems, at least in academia. Due to their complexity and the difficulty to implement them and also to write formal proofs for different sets of operations needed in practical applications [@li2010admissibility], they were often replaced by alternative approaches like CRDTs, so we will not discuss them in detail in this work.
 
-\todo{Grammar checking}
 In theory, CRDTs are designed for decentralized systems in which there is no central authority to decide the end state. In practice, there is oftentimes a central instance, such as in SaaS offerings on the web. Decentralized conflict resolution is no longer a requirement for those systems, so CRDTs could be too heavy-weight. Moving the conflict resolution to a central instance (which actually could be a cluster of nodes with stronger consistency guarentees) reduces complexity in the implementation of optimistic replication. This is actually the case in multiplayer video games—especially massive multiplayer online games (MMOGs). They introduce a class of problems that need techniques to synchronize at least a partial state between a lot of clients. Strong consistency would cause this games to experience bad performance drops, since a game's client wouldn't be able to continue until it's state is consistent across all subscribers to that state, so the way to go is eventual consistency. One can learn a lot from these approaches and adopt it to other real-time applications, such as Figma did for their collaborative design tool, comprehensively described in a blog post [@figma2019multiplayer].
 
-\todo{Work finished up to this point.}
+#### Coordination-Free Consistent Replication {#sec:coordination-free-replication}
 
-#### Coordination-Free Replication {#sec:coordination-free-replication}
+_Coordination-free consistent replication_ is similar to optimistic replication in terms of reducing the need for coordination between replicas, but it still provides strong consistency. We illustrate this approach by presenting a specific implementation called _Eris_ that not only allows for coordination-free replication, but also coordination-free transactions [@li2017eris]. The idea behind Eris and similar coordination-free protocols is to separate message ordering from reliable delivery in state machine replication. Eris was proposed and developed at Microsoft Research in 2017. What makes Eris so special and enables the elimination of coordination is a novel network infrastructure—which also means that this approach cannot be used in distributed systems deployed on general TCP-like networks.
 
-TODO refer to [@sec:calm] and https://www.microsoft.com/en-us/research/publication/eris-coordination-free-consistent-transactions-using-network-multi-sequencing/ [@li2017eris]
+Eris was designed to avoid the overhead of additional round-trips for atomic transactions in strong consistent systems. Traditional layered designs that use separate protocols for atomic transactions inter-shard and for replication of operations intra-shard introduce redundant coordination since the two layers are decoupled (see figure \ref{fig:standard-partitioned-architecture}). Eris avoids this redundant coordination by unifying both replication and transaction coordination. Eris divides the responsibility for ordering and synchronisation between three parts: to ensure a consistent order of messages across shards (the basic requirement for strong consistency), it uses an _in-network concurrency control primitive_ together with a _multi-sequenced groupcast_. To ensure atomicity and reliability of message delivery, the Eris protocol makes sure that transactions are processed either by all shards or none. As a result, it also avoids coordination for replication, not just for transactions: "it can process a large class of distributed transactions in a single round-trip from the client to the storage system without any explicit coordination between shards or replicas". 
 
-and [@sec:consistency-decisions] for being in control of the network infrastructure. (This means you can't just build this eris thing on a regular TCP network...) so, this of course subject of research of the big cloud vendors / datacenter owners (AWS, Google, Microsoft)
+Eris uses a quorum-based protocol to maintain safety. Similar to active replication (cf. [@sec:active-replication]), Eris clients send independent transactions directly to the replicas in the affected shards using multi-sequenced groupcast and wait for replies from a majority quorum from each shard.
 
-Eris from microsoft research
+Eris is based on _NOPaxos_ [@li2016just]. NOPaxos extends Paxos by splitting sequencing (message ordering) and reliable message delivery. While the network layer is responsible for the first, the consensus protocol is responsible for the second[^nopaxos-tla]. In Eris, the sequencer in the network layer orders all messages and then sends the commits to every replica in the shards, and they directly acknowledge to the client. The _designated leaders_ of each shard send the actual transaction results. Then, the designated leader is responsible for synchronous execution of its part of the transaction, while the followers log it and execute it later asynchronously. We illustrated the coordination sequence for the ideal case in figure \label{fig:eris-coordination}. Compare it with figure \ref{fig:2pc-plus-consensus}, which demonstrates the coordination neccessary in traditional two layer models with 2PC and consensus protocols.
 
-"The Eris transaction processing system achieves high performance through a new division of responsibility between
-three parts. An in-network concurrency control primitive,
-multi-sequenced groupcast, establishes a consistent order of
-message delivery across shards, but does not ensure atomic
-or reliable delivery. The latter guarantees are provided by
-the Eris protocol, which makes sure that transactions are processed by all participant shards, or none at all. In combination,
-these allow linearizable execution of independent transactions,
-which make up a substantial part of many workloads. For
-other workloads, a general transaction layer builds arbitrary
-transactions out of multiple independent transactions.
-The net result of this approach is that Eris can execute
-independent transactions without any coordination
-... linearizable...
-Eris achieves strongly consistent, fault-tolerant,
-transactional storage with overhead within 10% compared to
-a system that provides no such guarantees."
+[^nopaxos-tla]: NOPaxos has been defined and validated in a $\textrm{TLA}^{+}$ specification: https://github.com/UWSysLab/NOPaxosTLA/blob/master/NOPaxos.tla
 
-Eris uses a quorum-based protocol to maintain safety 
-
-Eris clients send independent transactions directly to the replicas in the affected
-shards using multi-sequenced groupcast and wait for replies
-from a majority quorum from each shard
-
-"Unifying Replication and Transaction Coordination. Traditional layered designs use separate protocols for
-atomic commitment of transactions across shards and for replication of operations within an individual shard. While this
-separation provides modularity, it has been recently observed
-that it leads to redundant coordination between the two layers [66]. Protocols that integrate cross-shard coordination and
-intra-shard replication into a unified protocol have been able
-to achieve higher throughput and lower latency [38, 48, 66].
-This approach integrates particularly well with Eris’s innetwork concurrency control. Because requests are sequenced
-by the network, each individual replica in a shard can independently process requests in the same order. As a result, in
-the common case Eris can execute independent transactions
-in a single round trip, without requiring either cross-shard or
-intra-shard coordination."
-
-TODO how does eris even avoid coordination between replicas inside of a shard??
-
-answer: the sequencer in the network layer actually orders the stuff and then sends the commits to every replica in the shards, and they directly ack to the client, not to the DL. The DLs send the actual transaction results.
-Then, the designated learner is responsible form synchronous execution of it's part of the transaction, while the followers log it and execute it later async. This is similar to NOPaxos. (So, no acks and not coordination between replicas? How is this secure? Is there a TLA+ spec for this? TODO check TLA+ for NOPaxos or Eris)
-The authors write this:
-
-"Eris must be resilient to replica failures (in particular, DL
-failures)
-In Eris, failure of the DL is handled entirely within the shard by a
-protocol similar in spirit to standard leader change protocols"
-
-", we
-introduce a novel element to the Eris architecture: the Failure
-Coordinator (FC). The FC is a service that coordinates with
-the replicas to recover consistently from packet drops and
-sequencer failures. The FC must be replicated using standard
-means [39, 43, 51] to remain available. "
-
-is the network protocol a bottleneck? Not additional, as if the network crashes, the whole thing crashes anyway. 
-
-TODO what is then with partition tolerance???:
-"Eris must be resilient to ... network anomalies"
-
-\begin{figure}[h]
+\begin{figure}[H]
   \centering
   \includegraphics[width=0.7\textwidth]{images/eris-coordination.pdf}
   \caption[The coordination-free transaction and replication protocol Eris]{In the coordination-free transaction and replication protocol Eris, communication happens in a single round-trip in the normal case, while the transactions are consistently ordered by a sequencer on the network layer}
   \label{fig:eris-coordination}
 \end{figure}
 
+Since one must be in charge of the underlying network infrastructure and protocol to run the sequencer, Eris cannot simply be used by any distributed system on generic TCP-like networks. Approaches such as Eris are generally found at large cloud providers such as AWS, Google, or Microsoft.
+
 #### Chain Replication
 
-"Chain replication is a new approach to coordinating
-clusters of fail-stop storage servers. The approach is
-intended for supporting large-scale storage services
-that exhibit high throughput and availability without sacrificing strong consistency guarantees." [@van2004chain]
+_Chain replication_ is a strongly consistent protocol for the fail-stop case. When it was introduced in 2014, it aimed to provide high throughput and availability without sacrificing strong consistency [@van2004chain]. Chain replication allows to build a distributed storage system without an external cluster management process. The initial proposal for chain replication was targeting storage systems that sit between file systems and databases, such as key-value stores—and that is what chain replication is nowadays still used for. Chain replication is optimized for systems that offer
 
-There are deviations from the original, strong-consistency case, such as ChainReaction, which provides causal+ consistency (see TODO ref to paragraph) and geo-replication, and is able to leverage the presence of multiple replicas to distribute the load of read requests [@almeida2013chainreaction].
+- A `store` operation to create and store objects,
+- A `read` operation to retrieve a value from a single object,
+- And an `update` operation to atomically change the state of a single object.
 
-"Allows to build a distributed system without external cluster management process"
+Chain replication extends the primary-copy approach, which itself can extend the state machine approach (cf. subsection [@sec:primary-copy]). It is not using a quorum, but replicates objects to all nodes before an object is available for queries.
 
-TODO Comparison with primary-copy and state machine approaches
+In chain replication, the nodes replicating a given object are ordered in a sequence to form a _chain_. The first nodes in the chain is called the _head_, and the last nodes is called the _tail_. The roles of these nodes are now the following (as illustrated in figure \ref{fig:chain-replication}):
 
-TODO see https://medium.com/coinmonks/chain-replication-how-to-build-an-effective-kv-storage-part-1-2-b0ce10d5afc3
+- The reply for every request is generated and sent by the tail.
+- Each query request is served by the tail of the chain using the replica of the object stored at the tail.
+- Each update request is directed to the head of the chain. The update command is executed atomically on the object replica at the head, then it forwards the resulting state changes to the next node of the chain. This process repeats until the command is executed at the tail.
+
+This provides strong consistency since for a write to be acknowledged and to be served in a subsequent query, it must have passed every node in the chain first. At the same time, continuous writes are not blocked (thus, the system provides availability), since the head already committed the changes and is available to serve further writes.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.9\textwidth]{images/chain-replication.pdf}
+  \caption[Chain replication]{In chain replication, each write must pass every replica node before it is acknowledged and served in subsequent reads.}
+  \label{fig:chain-replication}
+\end{figure}
+
+The interesting part here is the failure handling. A failing node renders the chain broken and must be mitigated accordingly. Once a node comes back, it must be inserted into the chain again, receiving all updates since its last failure. In chain replication, a master node is elected (in the initial proposal, it was elected using Paxos) to act as a failure detector. If the master detects a failed node (i.e., using heartbeats) it removes it from the chain and updates the chain, similar to a linked list.
+
+Chain replication has some benefits, as well as some drawbacks. The head is the bottleneck of the chain for writes, since it provides write availability. Compared to quorum-based protocols, each node in the chain could act as the weakest link and slowing down serving of read requests. Hence, the failure detector must also detect slow nodes and handle them accordingly. Since only one node is allowed to answer read requests, chain replication can not scale with the number of clients and requests, and read latency does not decrease with the number of additional replicas in the chain, but actually increases.
+
+Since the initial proposal of chain replication, deviations from the original strong consistency protocol appeared in the literature to mitigate the drawbacks. One of these proposals is _ChainReaction_, which provides causal+ consistency and geo-replication, and is able to leverage the presence of multiple replicas to distribute the load of read requests [@almeida2013chainreaction].
+
+#### Summary
 
 In this subsection, we have presented common theoretical replication protocols. We sum them up in table \ref{table:replication-protocols-consistency-levels}. In the next subsection, we take a look at practical variants of these protocols as they are implemented in real-life applications.
 
@@ -1474,7 +1421,7 @@ In this subsection, we have presented common theoretical replication protocols. 
         Active & Up to Sequential & Low–High & Low–Highest \\
         Optimistic & Eventual & Low & Highest \\
         \makecell[r]{Coordination-Free* \\[-4pt] \scriptsize *Only useable in rare cases} & Strong & Medium & High \\
-        Chain & ? & ? & ? \\
+        Chain & Strong & Low—High & High \\
         \bottomrule
     \end{tabularx}
     \label{table:replication-protocols-consistency-levels}
@@ -1591,53 +1538,49 @@ Why are there two phases at all? As long as the whole cluster stays healthy, the
 
 #### ZooKeeper Atomic Broadcast (ZAB) {#sec:zookeeper}
 
-Introduced by Yahoo!, later became an Apache project. 
+The _ZooKeeper atomic broadcast_ (ZAB) protocol is the replication protocol that powers the ZooKeeper coordination service [@junqueira2011zab]. It was introduced by Yahoo! and later became an Apache project. It combines _atomic broadcast_ and primary-copy (cf. subsection [@sec:primary-copy])with leader election. Atomic broadcast (also known as _total order broadcast_) is similar to consensus, but generalized for all types of message broadcasts in a distributed system. In fact, the consensus problem for crash-faults can be reduced to atomic broadcast and vice-versa [@chandra1996unreliable]. Atomic broadcast puts the requirement on systems to "deliver the same messages in the same order".
 
-"ZooKeeper is a highly-available
-coordination service used in production Web systems such as
-the Yahoo! crawler for over three years."
+ZooKeeper uses ZAB to propagate state changes throughout the ZooKeeper cluster [@hunt2010zookeeper]. It implements a primary-copy scheme in which a primary node serves and executes client requests and uses ZAB to propagate the corresponding state changes to follower nodes. ZAB guarantees total ordering (linearizability), i.e., when it delivers a change of state, all other changes on which it depends must be delivered first. 
 
-It combines atomic broadcast (which is similar to consensus, but generalized for all types of message broadcasts in distributed system; consensus for crash-faults can be reduced to atomic broadcast and vice-versa, see TODO) and primary-copy (cf. subsection [@sec:primary-copy]) with leader-election
+ZAB extends the atomic broadcast protocol by introducing a _primary order_ property. It guarantees the correct order of state changes, even if different nodes act as the primary node over time, and allows multiple pending transactions. This allows ZooKeeper to buffer outstanding client requests and to send and execute prefixes of the buffer in batches.
 
-[@junqueira2011zab]
+##### Running ZooKeeper.
 
-ZooKeeper itself is linearizable [@hunt2010zookeeper], while ZAB as a primary-copy...
+ZooKeeper itself is an additional service that must be deployed as an external agent next to the actual system that should be coordinated, while ZooKeeper itself replicates its information with ZAB. This approach comes with disadvantages: it adds additional maintenance efforts (a second service must be maintained, running on a cluster of seperate (virtual) nodes), reduces the overall availability since a system using ZooKeeper relies on it and becomes unavailable as soon as ZooKeeper is unavailable (see subsection [@safety-reliability] for reference), or during a network partitioning, and reduces the overall latency of the replicated system, as coordination with the ZooKeeper cluster adds an additional step.
 
-". ZooKeeper implements a primary-backup scheme in which a primary process executes clients operations and uses Zab to propagate the corresponding incremental state changes to backup processes.  Zab must guarantee
-that if it delivers a given state change, then all other changes it
-depends upon must be delivered first."
+#### Viewstamped Replication {#sec:viewstamped}
 
-With ZooKeeper, a primary process receives all
-incoming client requests, executes them, and propagates the
-resulting non-commutative, incremental state changes in the
-form of transactions to the backup replicas using Zab, the
-ZooKeeper atomic broadcast protocol.
+The _viewstamped replication_ (VR) protocol is based on the primary-copy and state machine replication approach for fail-stop faults. It was initially developed by Oki and Liskov [@oki1988viewstamped] in 1988 and later revisited by Liskov and Cowling in 2012 [@liskov2012viewstamped] for low-latency leader election and optimal strict serializability. While it was developed around the same time as Paxos, the auhors did not had any knowledge of Paxos. It differs from Paxos in that it is a replication protocol and not just a consensus protocol. It uses consensus to agree on a sequence of operations as part of a replicated state machine, with a consensus mechanism that is actually quite similar to Paxos. But in contrast to Paxos, VR does not require disk I/O when running an instance of the consensus protocol.
 
-Critical to the design of Zab is the observation that each
-state change is incremental with respect to the previous state,
-so there is an implicit dependence on the order of the state
-changes. State changes consequently cannot be applied in any
-arbitrary order, and it is critical to guarantee that a prefix of the
-state changes generated by a given primary are delivered and
-applied to the service state. State changes are idempotent and
-applying the same state change multiple times does not lead to
-inconsistencies as long as the application order is consistent
-with the delivery order.
+Viewstamped replication is divided into four sub-protocols that describe
 
+- How client requests are handled,
+- How the group reorganizes when a primary node fails,
+- How a failed replica is able to rejoin the group,
+- And how to reconfigure the network in case of a new node joining or a node leaving the group.
 
-ZooKeeper itself is an additional service that must be deployed as an external agent next to the actual replicated or coordinated system, while ZooKeeper itself replicates its information with ZAB. This approach comes with disadvantages: it adds additional maintenance efforts (a second service must be maintained, running on a cluster of seperate (virtual) nodes), reduces the overall availability since a system using ZooKeeper relies on it and becomes unavailable as soon as ZooKeeper is unavailable (see subsection [@safety-reliability] for reference), or during a network partitioning, and reduces the overall latency of the replicated system, as coordination with the ZooKeeper cluster adds an additional step.
+We outline these protocols briefly in the next paragraphs, but we won't go into the details.
 
-#### Viewstamped Replication
+##### Request Handling.
 
-- Based on Primary-Copy https://pmg.csail.mit.edu/vr/oki88vr-abstract.html and State machine replication
-- offers a reconfiguration protocol
-- handles fail-stop but not Byzantine failures
+Client nodes run their requests through a client library (the VR proxy). The proxy then communicates with the replicas to run the operation on a quorum and returns the result to the client. VR uses a primary replica to order client requests; the other replicas act as copies that simply accept the order selected by the primary. A request is served once it is acknowledged by a quorum of the copies.
 
-ABC [@oki1988viewstamped], [@liskov2012viewstamped]
+##### Primary Failure.
 
+In case of a failure of the primary node, a new node is selected to be the next primary. This starts a new _view_. A view is a generation clock that denotes the phase of a particular node configuration. The system moves through a sequence of views over time. The primary is continously monitor by the copy nodes through heartbeat detection, and if it appears to be faulty, they instantiate a view change protocol to select a new primary.
+
+##### Node Recovery.
+
+When a replica recovers after a crash it cannot participate in request processing and view changes until it has a state at least as recent as when it failed. To restore the state of a crashed node, a recovery protocol is instantiated. After the recovery protocol, the recovering node is able to participate in the other protocols again. During the recovery protocol, the recovering node requests a recovery response from a quorum. The nodes respond with the current number of the view that they know and in addition, the primary answers with its full log. Only if a quorum of nodes replied with the same view number, the recovering node applies the log it received from the primary.
+
+##### Network Reconfiguration.
+
+To support network reconfiguration, next to the view number, an incrementing epoch number is introduced. The epoch number denotes the epoch of a network configuration. Nodes only process messages that match their known epoch number. If they receive a message including a higher epoch number, they move to this new epoch. When the reconfiguration protocol is instantiated by a client, a new epoch number is filed and the nodes set their status to _transitioning_. Nodes switch their status to _normal_ once they have received the complete log up to the start of the new epoch. Nodes that are being replaced only shut down once they ensured that their log has been transferred successfully.
+
+<!--
 #### Leaderless Byzantine State Machine Replication {#sec:leaderless}
-SMR in general means that there is a single leader (as in Paxos and Raft...)...
 
+SMR in general means that there is a single leader (as in Paxos and Raft...)...
 
 Geo-replication... Due to their reliance on a leader replica, classical SMR protocols offer
 limited scalability and availability under a geo-replicated setting. To solve this problem, recent protocols follow instead a leaderless approach, in which each replica is able
@@ -1647,87 +1590,29 @@ are complex and each one presents an ad-hoc approach to leaderlessness.
 there are multi-leader approaches (TODO reference multi-leader raft) and most recent literature deals with leaderless SMR like Tempo [@enes2021tempo] or Wintermute [@rezende2021leaderless]...
 
 Leaderless SMR shows its strengths especially when used in blockchains... high cost of replication... especially when strong consistent... see [Blockchain Consensus Protocols](#sec:blockchain-consensus)
+-->
 
 #### Blockchain Consensus Protocols {#sec:blockchain-consensus}
 
-TODO https://eprint.iacr.org/2021/911.pdf
+In recent years, the problem of byzantine fault tolerant consensus has raised significantly more attention due to the widespread success of blockchains and blockchain-based applications such as cryptocurrencies. Blockchains are distributed systems par excellence. In this section, we will cover briefly the realm of blockchains and how replication and consistency in blockchains work. We do this so the reader can better understand the requirements on modern-day replication protocols, but we won't go in-depth, since this would exceed the scope of this work. To discuss replication in blockchains, we must differentiate between permissioned and permission-less blockchains first [@xu2017taxonomy].
 
-In recent years, the problem of byzantine fault tolerant consensus has raised significantly more attention due to the widespread success of blockchains and blockchain-based applications, especially cryptocurrencies such as Bitcoin, which successfully solved the problem in a public setting without a central authority...
+##### Permissioned vs. Permission-Less Blockchains.
 
-Blockchains are distributed systems par excellence... Using strong consistent consensus protocols to ensure every node reads the same... Fail-stop is not a problem due to the large amounts of nodes in such a network, but byzantine fault-tolerance is crucial to those consensus protocols to secure a blockchain.
+In blockchains, strong consistency describes that all nodes have the same _ledger_ at the same time. During updates of the distributed ledger, any subsequent requests will have to wait until this update is committed. This is handled differently in permissioned and permission-less blockchains.
 
-Blockchain protocols generally belong to the class of BFT consensus algorithms, as crashed nodes are not a problem in general, but faulty values are. We describe this briefly in subsection [@sec:blockchain-consensus].
+While permissioned blockchains are generally operated by and inside closed organizations (or across multiple authorized organisation) on a manageable number of nodes, permission-less, public blockchains run on a much bigger scale, such as those for cryptocurrencies. Due to their permission-less property, everyone can participate in such a network without prior authorization, which makes byzantine-fault tolerance an important property in such blockchains.
 
-As shown in subsections [@calm] and [@consistency-decisions], monotonicly growing append-only systems can be replicated with eventual consistency in a coordination-free way. Blockchains are distributed ledgers that provide this monotonic characteristics... (do they all?) So, depending on the requirements of the chain, a great range of consistency levels are possible: strong consistency with coordination between nodes to agree not only on a final state, but also to output the same order of blocks and to only expose the ledger state when all are ready to expose... or eventual consistency are possible (TODO show examples for both)
+##### Hyperledger Fabric.
 
-<!-- 
- A blockchain [40] is an append-only, tamper-resistant distributed ledger of transactions organised in a chain of blocks, originally used for cryptocurrencies
+One example for permissioned blockchain systems is _Hyperledger Fabric_. We show this here to demonstrate the different requirements and usage of replication protocols between permissioned and permission-less chains. Hyperledger Fabric is a modular and extensible open-source system for implementing and operating permissioned blockchain implementations [@androulaki2018hyperledger]. It relies on an ordering service for strongly consistent ordering of blocks. Previously, it used Apache Kafka (cf. subsection [@sec:kafka]) as this ordering service, since it did not implement this service itself. As of version 1.4.1, it implements the ordering service itself using the implementation the Raft consensus protocol (cf. subchapter [@sec:raft]) from the etcd project [@hyperledger2020ordering]. The use of Kafka has been deprecated since version 2. The problem scope of permissioned blockchains is similar to that of other distributed data storage systems that manage immutable, append-only data, such as event stores (see subchapter [@sec:event-stores]). 
 
- Ethereum [49] popularised the concept of smart contracts as a mean to implement any
-application on top of a blockchain. These first proposals, however,
-have been criticised because the underlying blockchain protocol
-used to update the ledger, based on proof-of-work, is extremely
-energy consuming. New proposals then subsequently emerged
-proposing alternatives to proof-of-work, including a notable number using standard Byzantine fault-tolerant distributed consensus
-(BFT consensus for short)
--->
+##### Permission-Less Blockchains.
 
-"Within a Blockchain network system, the
-strong consistency model means that all nodes have the same ledger at the same time, and during the time when the
-distributed ledger is being updated with new data, any subsequent read/write requests will have to wait until the
-commit of this update"
+When asking someone about blockchains, most people will think about cryptocurrencies and other applications that run on permission-less blockchains. So far, we only covered practical protocols for crash-fault tolerance in distributed, but not decentralized networks. These protocols are not applicable in decentralized networks with a huge amount of nodes, such as in _permission-less blockchains_. As blockchains typically have hundreds to hundred of thousands of replicas and need to provide high levels of consistency, classic single-leader state machine protocols are not applicable here, as they will dramatically slow down the whole chain due to their cost of replication. In addition, crash-fault tolerance is a small problem in permission-less blockchains, compared to byzantine faults. In decentralized networks, nodes can join and leave the network at any time, and this should happen without reducing the availability of the network. Byzantine-faults are a major threat to such a network since they are not permissioned, which means that any node can participate in the consensus process, able to expose any arbitrary or faulty data in the consensus process. Since permission-less blockchains try to find consensus in critical applications such as cryptocurrencies without a central authority, they must be tamper-resistant. As we have shown in subsection, consensus in the byzantine case requires huge amounts of coordination between nodes, which is not feasible in networks with so many nodes.
 
-" The consistency property has raised some controversial debate. Some argue
-that Bitcoin systems only provide eventual consistency [6], which is a weak consistency. Others claim that Bitcoin guarantees strong consistency, not eventual consistency [7]." [@kanga2020management]
+With the advent of such blockchains, the amount of literature on byzantine-fault tolerant consensus protocols exploded, and is still a topic undergoing very frequent changes and innovations. This has led to an overload of the term _consensus protocols_, since some literature will only return blockchain protocols for this term. To mention a few of the most popular, there are protocols like _practical byzantine-fault tolerance_ (pBFT), _Proof of Work_ (PoW, with the first one the _Nakamoto consensus protocol_ [@nakamoto2008bitcoin]), and _Proof of Stake_ (such as in Ethereum 2.0). We refer to [@xiao2020survey] and [@wahab2018survey] for an overview of more such protocols. 
 
-BTC seeems to be sequentially consistent, as all nodes must agree on the same sequence, but only in program order, and not all must see transactions at the same time, and the consistency is controlled with the mining difficulty in the PoW consensus...
-
-"certain Blockchain applications are less risk-averse and may benefit from a weaker consistency guarantee for convenience and performance. "
-
-https://media.springernature.com/lw685/springer-static/image/art%3A10.1007%2Fs11276-019-02195-0/MediaObjects/11276_2019_2195_Fig1_HTML.png
-
-<!-- From https://tel.archives-ouvertes.fr/tel-03584254/document p24:
-
-In more detail the Bitcoin protocol works as follows: Processes communicate
-via reliable FIFO authenticated channels (implemented with TCP), thus modeling
-a partially synchronous system [58]. When a transaction is sent by a client it
-is placed in a shared pool, processes called miners collectively run a repeated
-consensus protocol to select which transaction will be appended to the ledger.
-In this consensus protocol, miners solve a cryptographic puzzle (proof-of-work)
-to produce a valid block of transactions (i.e. miners are basically going through
-a voting process, where they vote with their CPU power for valid blocks). This
-proof-of-work procedure is computationally expensive (therefore, economically
-expensive as well) to curb the effectiveness of Sybil attacks.
-The advantage of using this approach is that it scales well with the numbers
-of miners if one consider the system’s safety, since the more miners there are, the
-more secure the service becomes (i.e. it gets increasingly more expensive to do
-attacks). The downside is that Nakamoto’s consensus it is not strictly speaking
-consensus. It can be the case that two miners concurrently solve the puzzle and
-then append blocks to the blockchain in a way that neither block precedes the
-other. This is called in the Bitcoin community as a fork. Typically, processes
-continue to build on the block with the longest chain, that is, the one which has
-more work done.
-Dealing with forks highlight the disadvantages of the protocol, for instance: it
-takes a waiting time of about 10 minutes to grow the chain by one block and from
-an application point of view, waiting a few blocks is required (6 are recommended
-in Bitcoin [26]) to guarantee that the transaction remains in the authoritative
-chain. Therefore, the possibility of forks affects the consistency guarantees and
-throughput of transactions (about 3 to 10 transactions per second in Bitcoin).
-Many papers [11, 66, 110, 73] have been published with the intent of formalizing PoW protocols like Bitcoin and studying its consistency guarantees. In [66]
-the authors provide one of the first formalizations of the Bitcoin protocol and
-show that under synchronous environment assumptions the protocol guarantees
-whp. an eventual consistent prefix. More broadly, in [11] the authors introduce the notion of Eventual Prefix and show that Bitcoin and other permissionless protocols abide to it. In [73, 72] the authors argue that Bitcoin implements
-Monotonic Prefix Consistency whp.
-
--->
-
-PoW (like the Nakamoto Consensus Algorithm that powers Bitcoin [@nakamoto2008bitcoin]), PoS, PoX, PBFT (see previous paragraph and [@li2020scalable])... all are BFT if conditions apply (especially, no 51% attack - remember, you need $2k + 1$ nodes to tolerate $k$ byzantine faulty nodes) (most important to prevent those failures!), BFT State Machine Replication protocols..
-
-As blockchains typically have hundreds to hundred of thousands of replicas and need to provide high levels of consistency, classic single-leader state machine protocols are not applicable here, as they will dramatically slow down the whole chain due to their cost of replication.
-
-
-
-TODO this is nice to have, remove if not enough time to mention this. If yes, reference (https://arxiv.org/pdf/1810.03357.pdf and https://arxiv.org/pdf/1904.04098.pdf)
+To reduce the amount of coordination needed between nodes—which will otherwhise grow exponentially—many of these protocols rely on _probabilistic consensus algorithms_ which only guarantee eventual consistency, but to a high degree of probability [@chaudhry2018consensus]. In most cases, these algorithms provide practically strong consistency, but they are still prone to fatal faults, such as network partitioning (also known as a _ledger fork_), where different nodes in the network have a different view of the accepted order of blocks. Some of these non-agreed forks in the past led to the creation of a new cryptocurrency, such as in the example of _Bitcoin Cash_. Furthermore, the consistency discussion has sparked controversy. For instance, some argue that the Nakamoto consensus protocol of the Bitcoin network provides eventual consistency only, while others claim that Bitcoin guarantees strong consistency [@kanga2020management].
 
 ### Summary
 

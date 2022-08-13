@@ -96,6 +96,8 @@ TODO first describe expected latency decrease due to network round-trip/maximum 
 
 ### Comparison of Cluster Sizes
 
+TODO also aggregates
+
 ### Comparison of Buffer Types and Sizes
 
 TODO without buffer
@@ -114,9 +116,13 @@ writing every event to the Raft log slows down the system tremendously, due to i
 
 ### Querying and Aggregation
 
+TODO only aggregates
+
 ### Horizonal Scalability
 
 As we have seen so far, Raft introduces network latency and decreases the maximum throughput on a single stream, while this effect can be mitigated with horizontal scaling through partitioning and sharding. We compare serving multiple streams with ChronicleDB + Raft against standalone ChronicleDB.
+
+TODO measuring multi-stream basis
 
 \todo{measure!}
 
@@ -131,12 +137,30 @@ TODO any experimental setup to test fault tolerance anecdotably?
 ### Usability and Developer Experience
 -->
 
+## Profiling
+
+We profiled our implementation to find the most CPU and I/O intense steps. We found that event serialization takes up a good amount of time, since we serialize events of a batch write sequentially on a single thread.
+
+<!-- 
+
+TODO image
+
+TODO preserialization to estimate buffer size - need to measure again without this step
+
+-->
+
 ## Comparison with other Replicated Event Stores and Time Series Databases
 
 ### Implementation Characteristics
 
 ### Write Throughput and Latency
 
-Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.
+TODO we haven't tested other storage systems ourselves, so we assume here the numbers of previous research and of the vendors themselves.
+
+TigerBeetle: 1 million (TODO is this max, median? Find a paper)
+
+"QuestDB shows a peak throughput of almost 1 mio rows/s, while InfluxDB only comes up with around 330k rows/s ."
+
+TODO run tigerbeetles simulation service https://github.com/coilhq/tigerbeetle
 
 \pagebreak

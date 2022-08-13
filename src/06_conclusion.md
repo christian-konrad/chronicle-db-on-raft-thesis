@@ -137,7 +137,7 @@ TODO refer to system design; sharding of a single stream
 
 #### Geo-Replication
 
-Providing strong consistency with geo-replication is expected to be too expensive for high-throughput event stores, as shown in subsection [sec:geo-replication]. Depending on the locations of the geo-replicas, it will limit the maximum throughput dramatically. Batching writes, i.e. by using a buffer, can help, but only to a certain extend. 
+Providing strong consistency with geo-replication is expected to be too expensive for high-throughput event stores, as shown in subsection [@sec:geo-replication]. Depending on the locations of the geo-replicas, it will limit the maximum throughput dramatically. Batching writes, i.e. by using a buffer, can help, but only to a certain extend. 
 We recommend to invest time into investigating modern geo-replication approaches, e.g. such with weaker consistency models and coordination-free variants, justified to the cost of consistency. Note that not all use cases allow for this. In that cases, we suggest to look into improved sharding techniques or multi-leader or leaderless Raft, or just mirroring the data into read-only replicas (which maintain the correct event order).
 
 [@hsu2021cost] 
@@ -185,7 +185,7 @@ A weakness of Raft compared to Paxos is the absence of the learner role. By intr
 
 ### `gRPC` and `Protocol Buffers` API
 
-Java SDK... see [@sec:messaging]
+`Java` SDK... see [@sec:messaging]
 
 - Performance Boost
 - Protobuf must be married with ChronicleDB schemas
@@ -196,7 +196,7 @@ Java SDK... see [@sec:messaging]
 
 At the time of this writing, the Hashicorp Raft implementation in Go [https://github.com/hashicorp/raft] is the most popular, reliable and supported one... due to the characteristics of the Go language and ecosystem which make Go a perfect fit for challenges in distributed systems, there is a strong advice to use this implementation if you want to start with a proven solution... plug'n'play (is it?)... extensible (is it?)
 
-Apache Ratis has support problems... Java makes it somehow inefficient (does it?), but it is very extensible and customizable (big plus) and fits 1:1 in your Java environment (as for ChronicleDB and Spring Boot)...
+Apache Ratis has support problems... `Java` makes it somehow inefficient (does it?), but it is very extensible and customizable (big plus) and fits 1:1 in your `Java` environment (as for ChronicleDB and Spring Boot)...
 
 ### User Friendliness
 
