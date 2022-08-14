@@ -2,7 +2,7 @@
 title: Replication in Data Stream Management Systems\vspace{2ex}
 subtitle: > 
     ChronicleDB on a Raft\vspace{1ex}
-date: May 15th, 2022\vspace{4ex}
+date: August 15th, 2022\vspace{4ex}
 author: 
     - Christian Konrad
 institute: Philipps-Universität Marburg
