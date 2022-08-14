@@ -59,15 +59,13 @@ Positive findings from this research work would provide worthwhile benefits to d
 
 To the best knowledge, this work is the first attempt published in academia focusing on applying the Raft consensus protocol to event stores. There are a few event stores and time series databases used in industry that leverage Raft to achieve fault-tolerance and scalability (InfluxDB, IoTDB), but replication and consensus were only mentioned as a side note in academic research on those systems. 
 
-\todo{cite the side notes}
-
 In this thesis we discuss and analyse several different replication algorithms to find the one that fits our requirements for an event store. The contributions are:
 
 - A thorough discussion of consistency models and replication protocols for a distributed event store ready for the edge-cloud and capable of processing very high data throughput. A state-of-the-art replication protocol is then selected to handle this requirements in a future-proof way.
 - A systematic review of previous implementations of replication protocols, focusing on decisions related to consistency, dependability, levels of data replicated, and the replication protocols chosen.
-- An implementation of a replicated ChronicleDB event store based on Apache Ratis [@konrad2022chroniclecloud], to serve as a learning base for evaluating the consistency model and replication protocol that we found most useful. The code is available in open source in the public domain, at https://github.com/christian-konrad/raft-log-replication-demo.
+- An implementation of a replicated ChronicleDB event store based on Apache Ratis [@konrad2022chroniclecloud], to serve as a learning base for evaluating the consistency model and replication protocol that we found most useful[^code-available]. 
 
-\todo{Update repo link(s)}
+[^code-available]: The code is available as open-source in the public domain, at https://github.com/christian-konrad/chronicledb-cloud.
 
 - Benchmark-based performance evaluations of the implementation on event-store-specific metrics (event throughput, query speed) to study the throughput and scalability of network architectures with different numbers of nodes.
 

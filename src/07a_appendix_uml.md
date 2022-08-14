@@ -1,4 +1,4 @@
-## UML Class Diagrams
+\section*{UML Class Diagrams}
 
 \begin{figure}[H]
   \centering

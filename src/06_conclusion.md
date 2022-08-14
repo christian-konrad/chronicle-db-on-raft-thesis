@@ -165,12 +165,20 @@ with replicating the entry to the followers, which can reduce latency significan
 
 #### Buffer Improvements
 
+One caveat of our implementation is, that log entries lose atomicity: instead of having one log entry per event, a log entry resembles a batch insertion command. This is shown in figure \ref{fig:chronicle-raft-log} b). A better implementation would be to implement batching right in the log instead of outside the log. The `appendEntries` message of Raft allows to send multiple Raft entries at once. We currently don't take advantage of this.
+
 The traditional Raft algorithm executes a client’s request to meet linear consistency with sequential execution and sequential submission, which badly impacts performance.
 As a possible extension, Li et al. propopsed an additional asynchronous batch processing approach [@li2022improved] that increases the performance of raft in the face of concurrent requests, which in their experimental setup improved the raft performance by 2 to 3.6 times.
 
 #### Introduce Learner Roles
 
 A weakness of Raft compared to Paxos is the absence of the learner role. By introducing dedicated learner nodes, read latency can be improved by providing data-locality for certain shards. This comes especially handy for operating on the edge: It allows to provide read replicas on the edge, close to the clients, without compromising write latency.
+
+In addition, learners would help to put load of from the leader. With increasing load, the leader is more likely to delay the delivery of heartbeats. We experienced in our evaluation, that with spikes in throughput that are above the maximum tolerated throughput, the chance of blocking all of the the leader's threads increases. Once this happens, the leader won't send heartbeats anymore in time, which triggers leader election. This adds more latency and causes further client requests to accumulate, ending up in a loop of leader elections and finally a complete crash of the system. By moving the read load from the leader, the chance for this to happen decreases at least by some degrees.
+
+#### Client Pushback
+
+As we have shown in the above case, a too-high throughput rate can end up in desaster, rendering the whole cluster unavailable. To further prevent this, client requests should be pushed back once the group leader approaches its maximum throughput. This could be either implemented in the cluster by returning pushback messages, or additionally in the client library to provide an interface for developers to take action in such an event, for example by buffering on client side, or simply increasing the intervals between sensor measurements, if applicable.
 
 ### Distributed Queries
 

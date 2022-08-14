@@ -806,7 +806,7 @@ Many cloud vendors therefore recommend to run your data stores and services on a
 
 In a globally distributed database system, there is a direct correlation between the level of consistency and the durability of data in the event of a region-wide outage.
 
-\begin{figure}[h]
+\begin{figure}[H]
   \centering
   \includegraphics[width=1\textwidth]{images/availability-zones.pdf}
   \caption[Geo-replication scheme common among cloud infrastructure providers]{Geo-replication scheme common among cloud infrastructure providers: to provide disaster resilience, data is replicated to multiple availability zones in a single region. In addition, they can be mirrored to secondary regions to provide data locality for lower read latency, as well as resilience in the event of large-scale disasters.}
@@ -817,7 +817,7 @@ In a globally distributed database system, there is a direct correlation between
 
 When it comes to read latency, it is recommended to place read replicas in close geographic proximity to clients to ensure _data locality_. This reduces the round-trip time for requests and thus the read latency for clients. Figure \ref{fig:data-locality} illustrates this.
 
-\begin{figure}[h]
+\begin{figure}[H]
   \centering
   \includegraphics[width=1\textwidth]{images/data-locality.pdf}
   \caption[Mirroring data into read-only replicas in different regions]{By mirroring data into read-only replicas in different regions, data locality is increased and read latency can be reduced}
@@ -826,9 +826,9 @@ When it comes to read latency, it is recommended to place read replicas in close
 
 \paragraph{Increased Write Latency.}
 
-In the strong consistency model, extending the intra-cluster replication protocol across clusters can be very expensive, as more nodes must take part in coordination to reach consensus. Replicating across wide-area networks adds a minimum round-trip time to every request, which can be tens of milliseconds or more across continents. The lower bound of possible latency optimization here is defined by the speed of light: for example, the minimum round-trip to coordinate replicas on AWS data centers across the Atlantic from Dublin, Ireland to North Virginia, USA ($\char`\~11.000$ km round-trip distance) is $\char`\~36.7$ ms (at the time of this writing, the actual round-trip ping time was $70.69$ ms). While read latency from geo-replicas near the location of the client is reduced, the write latency increases substantially. With synchronous writes, this reduces the maximum throughput to $27$ writes per second.
+In the strong consistency model, extending the intra-cluster replication protocol across clusters can be very expensive, as more nodes must take part in coordination to reach consensus. Replicating across wide-area networks adds a minimum round-trip time to every request, which can be tens of milliseconds or more across continents. The lower bound of possible latency optimization here is defined by the speed of light: for example, the minimum round-trip to coordinate replicas on AWS data centers across the Atlantic from Dublin, Ireland to North Virginia, USA ($\sim 11.000$ km round-trip distance) is $\sim 36.7$ ms (at the time of this writing, the actual round-trip ping time was $70.69$ ms). While read latency from geo-replicas near the location of the client is reduced, the write latency increases substantially. With synchronous writes, this reduces the maximum throughput to $27$ writes per second.
 
-\begin{figure}[h]
+\begin{figure}[H]
   \centering
   \includegraphics[width=1\textwidth]{images/geo-replication-roundtrip.pdf}
   \caption[Round-trip for coordinating between two replicas across continents]{Illustration of the round-trip for coordinating between two replicas across continents}
@@ -1049,7 +1049,7 @@ Following are some example applications where consensus is needed:
 - key-value stores in general, 
 - distributed ledgers and ultimatively the Blockchain (note that some of the consensus protocols here implement less strict consistency models, but are still called consensus protocols).
 
-\paragraph{Synchronous vs. Asynchronous Consensus.}
+##### Synchronous vs. Asynchronous Consensus or: the FLP impossiblity result. {#sec:flp-impossibility}
 
 Certain different variations of how to understand a consensus protocol appear in the literature. They differ in the assumed properties of the messaging system, in the type of errors allowed to the processes, and in the notion of what a solution is. Most notable is the differentiation between _consensus protocols for asynchronous and synchronous message-passing systems_. Fischer et al. have proven in the famous _FLP impossibility result_ (called after their authors) that a deterministic consensus algorithm for achieving consensus in a fully asynchronous distributed system is impossible if even a single node crashes in a fail-stop manner [@fischer1985impossibility]. They investigated deterministic protocols that always terminate within a finite number of steps and showed that "every protocol for this problem has the possibility of nontermination, even with only one faulty process." This is based on the failure detection problem discussed earlier in subsection [@sec:possible-faults]: in such a system, a crashed process cannot be distinguished from a very slow one. The FLP result is an important finding for theoretical considerations.
 
@@ -1062,7 +1062,7 @@ Bracha et al. consider protocols that may never terminate, "but this would occur
 
 [^eventual-liveness]: So, to be formally correct, we say that nodes in a consensus protocol _eventually_ agree on a value and an order.
 
-\paragraph{Centralized vs. Decentralized Consensus.}
+##### Centralized vs. Decentralized Consensus.
 
 In _centralized consensus_, an additional authority is responsible for coordinating the nodes when a majority vote is pending. The _Zookeeper Atomic Broadcast_ (ZAB) protocol is one example for such a centralized protocol [@hunt2010zookeeper]. Such centralized protocols are problematic as the additional coordination service is the bottleneck—if the service can not be reached due to a failure or network partitioning, the whole system becomes unavailable—and must therefore be replicated with strong consistency, too.
 
@@ -1070,7 +1070,7 @@ In _distributed consensus_, a self-managed quorum is responsible for coordinatio
 
 Leader-less _decentralized consensus_ is the only option for consensus in highly decentralized multi-agent systems, such as _blockchains_. Decentralized consensus enables many actors to persist and share information securely and consistently without relying on a central authority or trusting other participants in the network.
 
-\paragraph{Single-Value vs. Multi-Value Consensus.}
+##### Single-Value vs. Multi-Value Consensus.
 
 Another way to categorize consensus protocols is by the set of values to which the protocol refers:
 
@@ -1078,7 +1078,7 @@ In _single-value consensus protocols_, nodes agree on a single value. Those prot
 
 In _multi-value consensus protocols_, the nodes also agree on a consistent ordering of the operations and values, forming a progressively-growing operation history. The correctness requirement is thereby two-fold: correct execution results for all requests and correct order of these requests. This may be achieved naively by running multiple iterations of a single-value consensus protocol that has been extended to include timestamps, but many optimizations of coordination and other considerations such as reconfiguration support can make multi-valued consensus protocols more efficient in practice. _Multi-Paxos_ is an example for such a protocol. 
 
-\paragraph{Crash-Fault-Tolerant vs. Byzantine-Fault-Tolerant Consensus.}
+##### Crash-Fault-Tolerant vs. Byzantine-Fault-Tolerant Consensus.
 
 Yet one more way to categorize consensus protocols is by fault-tolerance. As described in subsection [@sec:safety-reliability], a consensus protocol is called $k$-fault tolerant if in the presence of up to $k$ faulty nodes it reaches consensus with probability 1.
 
@@ -1093,7 +1093,7 @@ A protocol that solves the consensus problem in the face of faulty nodes must gu
 <!-- Crash-Fault Tolerant (CFT) Consensus Protocols -->
 <!-- ============================================== -->
 
-\paragraph{Crash-Fault Tolerant (CFT) Consensus Protocols.}
+##### Crash-Fault Tolerant (CFT) Consensus Protocols.
 
 A _crash-fault tolerant_ (CFT) consensus protocol provides fault-tolerance for fail-stop failures, but not for byzantine failures. We have shown in subsection [@sec:possible-faults] that for a system to tolerate up to $k$ faults, at least $k + 1$ nodes are required, but this only accounts for a read operation perspective. For such a system to still be able to reach consensus on write operations, even more nodes are required: $\left \lceil (n + 1)/2 \right \rceil$ correct nodes, thus more than half of all nodes, are necessary and sufficient to reach agreement [@bracha1983resilient]. We call this number a _quorum_. Based on this number, we know how big a cluster must be to tolerate $k$ crashed nodes: $n \geq 2k + 1$ where $n$ the size of the cluster.
 
@@ -1103,7 +1103,7 @@ A consensus protocol is fault-tolerant by masking failures. But in practice, the
 <!-- Byzantine-Fault Tolerant (BFT) Consensus Protocols -->
 <!-- ================================================== -->
 
-\paragraph{Byzantine-Fault Tolerant (BFT) Consensus Protocols.}
+##### Byzantine-Fault Tolerant (BFT) Consensus Protocols.
 
 \epigraph{It is not sufficient that everyone knows X. We also need everyone to know that everyone knows X, and that everyone knows that everyone knows that everyone knows X — which, as in the Byzantine Generals’ problem, is the classic hard problem of distributed data processing.}{--- \textup{James A. Donald}}
 
@@ -1124,11 +1124,11 @@ Every byzantine-fault tolerant consensus protocol is also fail-stop-fault tolera
 
 We won't go into much details here, as this work is limited to a problem scope where byzantine faults are rare (but not yet excluded).
 
-\paragraph{Weighted quorums.}
+##### Weighted quorums.
 
 Some consensus algorithms, like the Proof-of-Stake algorithm used for certain blockchains and cryptocurrency tokens, allow for weighted quorums. As a rule in general consensus protocols, the votes of all quorum members have the same weight in a vote. With weighted quorums, however, there may be cluster members whose vote is more important. Whether a system is $k$-fault-tolerant or not is now judged by the sum of the relative weights rather than the number of nodes. To perform a write operation, an agreement of the majority of the nodes is now no longer mandatory, if among them there are nodes whose vote has relatively more weight. 
 
-\paragraph{Network reconfigurations.}
+##### Network reconfigurations.
 
 If a node is removed from the cluster because it is faulty or has not responded for a certain period of time, and is then restored again, it attempts to rejoin the cluster. Also, when the system is scaled horizontally by adding new nodes, these nodes can join the cluster if the load balancer assigns them to do so, i.e., for a new shard. In the case of network partitioning, many nodes can no longer be reached, but the system should remain available. Or due to planned maintenance, the hardware of the nodes is upgraded, or the IP addresses of the nodes change if not statically assigned. In the case of blockchains, new nodes are added and removed at very short intervals. In all of these cases, the network is reconfigured, and generally clients are not expected to notice, i.e., the system remains available and consistent while the network is reconfigured, and latency does not degrade. The consensus protocols used in practice generally enable such seamless network reconfigurations, especially the decentralized protocols.
 
@@ -1439,9 +1439,9 @@ One of the most popular distributed consensus algorithms is the Paxos consensus 
 
 [^blockchain-exception]: One exception is the blockchain, which uses distributed, decentralized consensus protocols, see subsection [@sec:blockchain-consensus].
 
-\paragraph{History of Paxos.}
+##### History of Paxos.
 
-Paxos has been introduced by Leslie Lamport[^lamport-turing] in 1998 in the paper "The Part-Time Parliament" [@lamport1998paxos]. As allegorical as the title sounds, the paper also describes the Paxos algorithm in a picturesque approach. Just read the abstract to understand what we mean: "Recent archaeological discoveries on the island of Paxos reveal that the parliament functioned despite the peripatetic propensity of its part-time legislators. The legislators maintained consistent copies of the parliamentary record, despite their frequent forays from the chamber and the forgetfulness of their messengers. The Paxon parliament's protocol provides a new way of implementing the state machine approach to the design of distributed systems." The remainder of the paper is equally entertaining to read, but at the same time reveals a groundbreaking discovery in distributed consensus, but lacks enough detail to implement it. Due to the prevalence of Paxos, Lamport has attempted to make the algorithm more understandable and complete in his subsequent work [@lamport2001paxos], but it has been shown that people of all types (students as well as engineers) still have difficulty fully understanding it [@ongaro2013raft].
+Paxos has been introduced by Leslie Lamport[^lamport-turing] in 1998 in the paper "The Part-Time Parliament" [@lamport1998paxos]. As allegorical as the title sounds, the paper also describes the Paxos algorithm in a picturesque approach. Just read the abstract to understand what we mean: "Recent archaeological discoveries on the island of Paxos reveal that the parliament functioned despite the peripatetic propensity of its part-time legislators. The legislators maintained consistent copies of the parliamentary record, despite their frequent forays from the chamber and the forgetfulness of their messengers. The Paxon parliament's protocol provides a new way of implementing the state machine approach to the design of distributed systems." The remainder of the paper is equally entertaining to read, but at the same time reveals a groundbreaking discovery in distributed consensus, but lacks enough detail to implement it. Due to the prevalence of Paxos, Lamport has attempted to make the algorithm more understandable and complete in his subsequent work [@lamport2001paxos], but it has been shown that people of all types (students as well as engineers) still have difficulty fully understanding it [@ongaro2014raft].
 
 [^lamport-turing]: Leslie Lamport received the Turing Award in 2013 for all of his "fundamental contributions to the theory and practice of distributed and concurrent systems, notably the invention of concepts such as causality and logical clocks, safety and liveness, replicated state machines, and sequential consistency" [@lamport2013turing]. Among other things, he authored, discovered and invented the LaTeX typesetting system, the $\textrm{TLA}^{+}$ formal specification language, Paxos, State Machine Replication and the Byzantine Agreement problem.
 
@@ -1449,11 +1449,11 @@ Further improvements and alterations on Paxos where made in the past, some by La
 
 Next to the Paxos consensus algorithm, there is the _Paxos algorithm_, which uses instances of the Paxos consensus algorithm in sequence to achieve fault-tolerant state machine replication. To reduce confusion, the first is referred to as _Basic Paxos_, while the latter is called _Multi-Paxos_.
 
-\paragraph{Formal Verification.}
+##### Formal Verification.
 
 The Paxos consensus algorithm has been formally verified by Lamport using the $\textrm{TLA}^{+}$ formal specification language (see subsection [@sec:cost-of-replication] for reference)[@lamport2006fast]; Multi-Paxos has also been formally verified by Chand et al. [@chand2016formal].
 
-\paragraph{Consistency in Paxos.}
+##### Consistency in Paxos.
 
 As for most consensus protocols, Paxos provides strong consistency through linearizability. Multi-Paxos uses the state machine replication approach, while the protocol does not put much emphasis on the state machine. Multi-Paxos executes the same set of commands in the same order, on multiple participants. Paxos fullfills the liveness and safety requirements of consensus protocols (see subsection [@sec:consensus-protocols]).
 
@@ -1480,18 +1480,25 @@ In practice, one node can have two or all these roles at the same time. From the
 
 Paxos works in two phases to make sure multiple nodes agree on the same value in spite of partial network or node failures. The phases are illustrated in figure \ref{fig:paxos}. These phases can go in multiple rounds per Paxos instance if some failure happen (such as network partitioning, node crashes, message timeouts or conflicting proposers, to mention a few). In Basic Paxos, a Paxos instance ends once the client request is satisfied.
 
-\paragraph{Phase 1a: Prepare.}
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=1\textwidth]{images/paxos.pdf}
+  \caption[The Paxos consensus algorithm]{Idealistic message sequence in the Paxos consensus algorithm}
+  \label{fig:paxos}
+\end{figure}
+
+##### Phase 1a: Prepare.
 
 Once a client requested a write, a proposer accepts the request. It then chooses a new proposal version number $n$ (a generation clock, see subsection [@sec:state-machine-replication]) and sends a $\mathtt{prepare}(n)$ request to all the acceptors.
 
-\paragraph{Phase 1b: Promise.}
+##### Phase 1b: Promise.
 
 Acceptors receiving this request will compare that with the last proposal number it knows:
 
 - If the received $n$ is greater than any proposal number of a request they had already responded to, the acceptors responses with a promise. This promise comes with the guarantee that this acceptor will not accept any other proposals numbered less than $n$ from now on. If a acceptor recently accepted a previous proposal during this paxos instance, it sends the previous proposal number $n'$ and value $v'$ of the latest accepted proposal in $\mathtt{promise}(n, n', v')$, otherwhie it will just send $\mathtt{promise}(n)$.
 - Else, the acceptor rejects the request, as it has already seen a higher proposal number, and sends a $\mathtt{nack}$ response to notify the proposer that it can stop the round.
 
-\paragraph{Phase 2a: Accept.}
+##### Phase 2a: Accept.
 
 If the proposer receives promises from a quorum of the acceptors, then it will issue a request to accept a value $\mathtt{requestAccept}(n, v)$ with the proposal number $n$ and the value to write $v$. The value to write is either 
 - the value $v'$ associated with the highest proposal number $n'$ if any sent by the acceptors (to satisfy the consistency property that "at most one value can be learned" [@lamport2006fast]),
@@ -1499,31 +1506,24 @@ If the proposer receives promises from a quorum of the acceptors, then it will i
 
 If the proposer does not get enough promises to reach a quorum in a certain timeframe, it restarts the whole process.
 
-\paragraph{Phase 2b: Accepted.}
+##### Phase 2b: Accepted.
 
 If an acceptor receives an accept request, it accepts the proposal unless it has already responded to a prepare request with a number greater than $n$. Whenever an acceptor accepts a proposal, it responds to the proposer and all the learners with $\mathtt{accepted}(n, v)$. Once the proposer receives $\mathtt{accepted}(n, v)$ from a quorum, it decides on the value $v$, writes it to its state and replies to the client. Similarly, once a learner receives the command from a quorum, it also decides on this value.
 
-\begin{figure}[h]
-  \centering
-  \includegraphics[width=1\textwidth]{images/paxos.pdf}
-  \caption[The Paxos consensus algorithm]{Idealistic message sequence in the Paxos consensus algorithm}
-  \label{fig:paxos}
-\end{figure}
-
 There are also variants where there is an explicit third learning phase where not the acceptors talk to the learners, but the proposer sends a single $\mathtt{decide}(v)$ command to them after it decided on the value based on the quorum. This is illustrated in figure \ref{fig:paxos-learn-phase}. Another variant requires the learners to reply to the client, not the proposer. By setting one node to be both a proposer and a learner, the same behavior as in the presented approach can be achievend. All thse variants have slightly different consequences, especially when it comes to network partitioning. 
 
-\begin{figure}[h]
+\begin{figure}[h!]
   \centering
   \includegraphics[width=0.8\textwidth]{images/paxos-learn-phase.pdf}
   \caption[Alternative learn phase in Paxos]{Alternative learn phase in the Paxos consensus algorithm}
   \label{fig:paxos-learn-phase}
 \end{figure}
 
-paragraph{Multi-Paxos.}
+##### Multi-Paxos.
 
 Multi-Paxos[^no-clear-multi-paxos] allows for log replication, which leads to state machine replication, by allowing to agree on a sequence of values rather than just a single value. It runs seperate instances of Basic Paxos for each entry in the log. Additional to the proposal number, it comes with a monotonically increasing index number which is added to Prepare and Accept phase requests. Each single Paxos consensus instance can commit their values out-of-order, which makes the Multi-Paxos log working as follows: if a log is decided to a certain index, then all subsequently decisions will extend this log (i.e. the previously decided log up to the high-water mark is a common prefix). It is not guaranteed that the logs after the high-water mark are consistent in a quorum, though. They may have holes or even differing values at the same index, as long as they haven't been decided upon, as sketched in figure \ref{fig:multi-paxos-logs}. This is an important characteristic: the state machine should only be served with the operations in the log up to the high-water mark, and client requests only replied to successfully once the log entry and all all previous log entries are decided. After the mark, the logs may only eventually converge. Not all acceptors logs need to know the whole log up to the high-water mark, as only a quorum is needed. The learners are responsible to provide the consistent log up to the high-water mark to the state machines.
 
-\begin{figure}[h]
+\begin{figure}[H]
   \centering
   \includegraphics[width=0.75\textwidth]{images/multi-paxos-logs.pdf}
   \caption[Logs in Multi-Paxos]{Logs in Multi-Paxos may have holes and differ after the high-water mark. Only a quorum of correct log entries is needed to achieve consistency. At each index, the logs are viewed separately.}
@@ -1538,7 +1538,7 @@ Why are there two phases at all? As long as the whole cluster stays healthy, the
 
 #### ZooKeeper Atomic Broadcast (ZAB) {#sec:zookeeper}
 
-The _ZooKeeper atomic broadcast_ (ZAB) protocol is the replication protocol that powers the ZooKeeper coordination service [@junqueira2011zab]. It was introduced by Yahoo! and later became an Apache project. It combines _atomic broadcast_ and primary-copy (cf. subsection [@sec:primary-copy])with leader election. Atomic broadcast (also known as _total order broadcast_) is similar to consensus, but generalized for all types of message broadcasts in a distributed system. In fact, the consensus problem for crash-faults can be reduced to atomic broadcast and vice-versa [@chandra1996unreliable]. Atomic broadcast puts the requirement on systems to "deliver the same messages in the same order".
+The _ZooKeeper atomic broadcast_ (ZAB) protocol is the replication protocol that powers the ZooKeeper coordination service [@junqueira2011zab], which is one of the most popular open-source consensus systems. It was introduced by Yahoo! and later became an Apache project. It combines _atomic broadcast_ and primary-copy (cf. subsection [@sec:primary-copy])with leader election. Atomic broadcast (also known as _total order broadcast_) is similar to consensus, but generalized for all types of message broadcasts in a distributed system. In fact, the consensus problem for crash-faults can be reduced to atomic broadcast and vice-versa [@chandra1996unreliable]. Atomic broadcast puts the requirement on systems to "deliver the same messages in the same order".
 
 ZooKeeper uses ZAB to propagate state changes throughout the ZooKeeper cluster [@hunt2010zookeeper]. It implements a primary-copy scheme in which a primary node serves and executes client requests and uses ZAB to propagate the corresponding state changes to follower nodes. ZAB guarantees total ordering (linearizability), i.e., when it delivers a change of state, all other changes on which it depends must be delivered first. 
 
@@ -1546,13 +1546,13 @@ ZAB extends the atomic broadcast protocol by introducing a _primary order_ prope
 
 ##### Running ZooKeeper.
 
-ZooKeeper itself is an additional service that must be deployed as an external agent next to the actual system that should be coordinated, while ZooKeeper itself replicates its information with ZAB. This approach comes with disadvantages: it adds additional maintenance efforts (a second service must be maintained, running on a cluster of seperate (virtual) nodes), reduces the overall availability since a system using ZooKeeper relies on it and becomes unavailable as soon as ZooKeeper is unavailable (see subsection [@safety-reliability] for reference), or during a network partitioning, and reduces the overall latency of the replicated system, as coordination with the ZooKeeper cluster adds an additional step.
+ZooKeeper itself is an additional service that must be deployed as an external agent next to the actual system that should be coordinated, while ZooKeeper itself replicates its information with ZAB. This approach comes with disadvantages: it adds additional maintenance efforts (a second service must be maintained, running on a cluster of seperate (virtual) nodes), reduces the overall availability since a system using ZooKeeper relies on it and becomes unavailable as soon as ZooKeeper is unavailable (see subsection [@safety-reliability] for reference), or during a network partitioning, and reduces the overall latency of the replicated system, as coordination with the ZooKeeper cluster adds an additional step. Thanks to understandable consensus protocols such as Raft (see subchapter [@sec:raft]), which also comes with a lot of open-source libraries ready to use, ZooKeeper lost a lot of its popularity over the last years, where it was replaced with embedded consensus solutions in major systems.
 
 #### Viewstamped Replication {#sec:viewstamped}
 
-The _viewstamped replication_ (VR) protocol is based on the primary-copy and state machine replication approach for fail-stop faults. It was initially developed by Oki and Liskov [@oki1988viewstamped] in 1988 and later revisited by Liskov and Cowling in 2012 [@liskov2012viewstamped] for low-latency leader election and optimal strict serializability. While it was developed around the same time as Paxos, the auhors did not had any knowledge of Paxos. It differs from Paxos in that it is a replication protocol and not just a consensus protocol. It uses consensus to agree on a sequence of operations as part of a replicated state machine, with a consensus mechanism that is actually quite similar to Paxos. But in contrast to Paxos, VR does not require disk I/O when running an instance of the consensus protocol.
+The _Viewstamped Replication_ (VR) protocol is based on the primary-copy and state machine replication approach for fail-stop faults. It was initially developed by Oki and Liskov [@oki1988viewstamped] in 1988 and later revisited by Liskov and Cowling in 2012 [@liskov2012viewstamped] for low-latency leader election and optimal strict serializability. While it was developed around the same time as Paxos, the auhors did not had any knowledge of Paxos. It differs from Paxos in that it is a replication protocol and not just a consensus protocol. It uses consensus to agree on a sequence of operations as part of a replicated state machine, with a consensus mechanism that is actually quite similar to Paxos. But in contrast to Paxos, VR does not require disk I/O when running an instance of the consensus protocol.
 
-Viewstamped replication is divided into four sub-protocols that describe
+Viewstamped Replication is divided into four sub-protocols that describe
 
 - How client requests are handled,
 - How the group reorganizes when a primary node fails,
@@ -1567,7 +1567,7 @@ Client nodes run their requests through a client library (the VR proxy). The pro
 
 ##### Primary Failure.
 
-In case of a failure of the primary node, a new node is selected to be the next primary. This starts a new _view_. A view is a generation clock that denotes the phase of a particular node configuration. The system moves through a sequence of views over time. The primary is continously monitor by the copy nodes through heartbeat detection, and if it appears to be faulty, they instantiate a view change protocol to select a new primary.
+In case of a failure of the primary node, a new node is selected to be the next primary. This starts a new _view_. A view is a generation clock that denotes the phase of a particular node configuration. The system moves through a sequence of views over time. The primary is continously monitored by the copy nodes through heartbeat detection, and if it appears to be faulty, they instantiate a view change protocol to select a new primary.
 
 ##### Node Recovery.
 
@@ -1616,6 +1616,6 @@ To reduce the amount of coordination needed between nodes—which will otherwhis
 
 ### Summary
 
-In this chapter, we have shown that replication always involves tradeoffs. There are several theorems that state that you cannot have consistency at the same time with full availability and low latency. Several important consistency models have been discussed, including their tradeoffs and limitations. It was shown that the limitations strongly depend on the use cases of the replicated data store. Finally, relevant replication protocols were discussed with respect to these consistency models, both from a theoretical and practical point of view. We presented protocols that are heavily used in production systems such as Paxos, CRDTs, blockchain consensus protocols or Viewstamped Replication, as well as historic protocols such as ROWA and primary-copy that are only in expectional use as of today.
+In this chapter, we have shown that replication always involves tradeoffs. There are several theorems that state that you cannot have consistency at the same time with full availability and low latency. Several important consistency models have been discussed, including their tradeoffs and limitations. It was shown that the limitations strongly depend on the use cases of the replicated data store. Finally, relevant replication protocols were discussed with respect to these consistency models, both from a theoretical and practical point of view. We presented protocols that are heavily used in production systems such as Paxos, CRDTs, blockchain consensus protocols or Viewstamped Replication, as well as historic protocols such as ROWA and primary-copy.
 
 In the next chapter, we will take a closer look at one specific protocol for replicating state machines with strong consistency that yields interesting properties for our work: the Raft consensus protocol.

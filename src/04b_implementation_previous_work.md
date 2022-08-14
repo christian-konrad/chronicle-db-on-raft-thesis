@@ -281,7 +281,7 @@ No custom storage layout
 
 #### TigerBeetle
 
-TigerBeetle is an append-only accounting database with strict serializability [@coil2022tigerbeetlegithub]. Since it is used in financial use cases with high business criticality, strong consistency is a must. It uses viewstamped replication under the hood, which belongs to the class of state machine replication protocols (see subsection [@sec:viewstamped]). On their website, they claim that they provide a high throughput of approximately 1 million journal entries per second, while providing "extreme" fault-tolerance [@coil2022tigerbeetle]. They make this a clear unique selling point, since their website is called "TigerBeetle - A Million Transactions Per Second".
+TigerBeetle is an append-only accounting database with strict serializability [@coil2022tigerbeetlegithub]. Since it is used in financial use cases with high business criticality, strong consistency is a must. It uses Viewstamped Replication under the hood, which belongs to the class of state machine replication protocols (see subsection [@sec:viewstamped]). On their website, they claim that they provide a high throughput of approximately 1 million journal entries per second, while providing "extreme" fault-tolerance [@coil2022tigerbeetle]. They make this a clear unique selling point, since their website is called "TigerBeetle - A Million Transactions Per Second".
 
 The database itself is available open-source, written in the language `Zig`, while they offer a paid premium service.
 

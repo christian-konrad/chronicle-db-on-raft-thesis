@@ -1,5 +1,0 @@
-\pagenumbering{gobble}
-
-\pagebreak
-
-\listoftodos

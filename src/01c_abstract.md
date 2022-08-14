@@ -6,8 +6,6 @@
 
 \todo{Write abstract}
 
-<!-- I thank my reviewers Nici and Michi... -->
-
 About 1/2 page:
 
 - (1) Motivation (Why do we care?)

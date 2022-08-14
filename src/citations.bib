@@ -1,7 +1,8 @@
-@misc{ongaro2013raft,
+@misc{ongaro2014raft,
   title={In search of an understandable consensus algorithm (extended version)},
   author={Ongaro, Diego and Ousterhout, John},
-  year={2013},
+  year={2014},
+  doi={10.5555/2643634.2643666},
   publisher={Tech Report. May, 2014. http://ramcloud. stanford. edu/Raft. pdf}  
 }
 
@@ -1322,6 +1323,16 @@
   year={2019}
 }
 
+@inproceedings{wang2021rethink,
+  title={Rethink the Linearizability Constraints of Raft for Distributed Key-Value Stores},
+  author={Wang, Yangyang and Wang, Zikai and Chai, Yunpeng and Wang, Xin},
+  booktitle={2021 IEEE 37th International Conference on Data Engineering (ICDE)},
+  pages={1877--1882},
+  year={2021},
+  doi={10.1109/ICDE51399.2021.00170},
+  organization={IEEE}
+}
+
 @inproceedings{auradkar2012data,
   title={Data infrastructure at LinkedIn},
   author={Auradkar, Aditya and Botev, Chavdar and Das, Shirshanka and De Maagd, Dave and Feinberg, Alex and Ganti, Phanindra and Gao, Lei and Ghosh, Bhaskar and Gopalakrishna, Kishore and Harris, Brendan and others},
@@ -1349,6 +1360,14 @@
   howpublished={\url{https://web.archive.org/web/20220812064051/https://hyperledger-fabric.readthedocs.io/en/release-2.2/orderer/ordering_service.html}},
   title={Hyperledger Fabric Ordering Service},
   year={2020},
+  note={Accessed: 2022-08-13}
+}
+
+@misc{etcd2021learners,
+  author={etcd},
+  howpublished={\url{https://web.archive.org/web/20220812064051/https://etcd.io/docs/v3.3/learning/learner/}},
+  title={etcd Learner},
+  year={2021},
   note={Accessed: 2022-08-13}
 }
 
@@ -1664,7 +1683,7 @@ https://developers.eventstore.com/server/v21.10/cluster.html#cluster-nodes}},
 }
 
 @misc{cockroach2022,
-  author={Cockroach Labes},
+  author={Cockroach Labs},
   howpublished={\url{https://web.archive.org/web/20220303101918/https://www.cockroachlabs.com/docs/stable/architecture/replication-layer.html}},
   title={CockroachDB Replication Layer},
   year={2022},
@@ -1743,6 +1762,22 @@ https://developers.eventstore.com/server/v21.10/cluster.html#cluster-nodes}},
   title={Availability and consistency in Event Hubs},
   year={2022},
   note={Accessed: 2022-07-23}
+}
+
+@misc{raft2013viz,
+  author={Raft Authors},
+  howpublished={\url{https://web.archive.org/web/20220714211518/https://thesecretlivesofdata.com/raft/}},
+  title={The Secret Lives of Data},
+  year={2013},
+  note={Accessed: 2022-07-14}
+}
+
+@misc{raft2015mailinggroup,
+  author={Ongaro, Diego},
+  howpublished={\url{https://web.archive.org/web/20220714211518/https://groups.google.com/g/raft-dev/c/cBNLTZT2q8o}},
+  title={Raft-Dev Mailing Group: Raft Vs. Viewstamped Replication},
+  year={2015},
+  note={Accessed: 2022-07-14}
 }
 
 @misc{raft2022implementations,
@@ -1828,15 +1863,11 @@ https://developers.eventstore.com/server/v21.10/cluster.html#cluster-nodes}},
   note={Accessed: 2022-07-12}
 }
 
-# TODO rename repo to chronicledb-cloud, create a tag, create a .cff file, link it
-@misc{konrad2022chroniclecloud,
-  author={Christian Konrad},
-  howpublished={\url{https://github.com/christian-konrad/raft-log-replication-demo}},
-  publisher={GitHub},
-  journal={GitHub Repository},
-  title={ChronicleDB on a Raft},
-  year={2022},
-  note={Accessed: 2022-04-13}
+@software{konrad2022chroniclecloud,
+author={Konrad, Christian},
+title={ChronicleDB on a Raft},
+url={https://github.com/christian-konrad/chronicledb-cloud},
+year={2022}
 }
 
 @misc{kubernetes2022github,

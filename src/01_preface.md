@@ -41,9 +41,7 @@ header-includes: |
     \usepackage{todonotes}
     \usepackage{booktabs}
     \usepackage{tabularx}
-    \newcolumntype{Z}{>{\raggedright\let\newline\\\arraybackslash\hspace{0pt}}X}
-    \usepackage{draftwatermark}    	
-    \SetWatermarkColor[gray]{0.95}
+    \newcolumntype{Z}{>{\raggedright\let\newline\\\arraybackslash\hspace{0pt}}X}    
     \usepackage{lmodern}
     \usepackage{helvet}
     \usepackage[bitstream-charter,sfscaled=false]{mathdesign}

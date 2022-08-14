@@ -108,6 +108,14 @@ writing every event to the Raft log slows down the system tremendously, due to i
 
 // TODO AWS stuff
 
+### Exceeding the Upper Throughput Threshold
+
+We stress-tested the cluster by increasing the write load in a way that the mean throughput exceeds the maximum throughput for a longer period of time.
+
+The stress-test rendered our cluster completely unavailable. It revealed that with spikes in throughput that are above the maximum tolerated throughput, the chance of blocking all of the the leader's threads increases. When this happens, the leader is less likely to send heartbeats in time. This triggers the leader election protocol. Leader election adds even more latency, while write requests are still ongoing, and causes further client requests to accumulate, ending up in a loop of leader elections and finally a complete crash of the system.
+
+While the buffer mitigates this to a certain degree, it is also only able to cover a few spikes in throughput, but can not prevent this behavior in long-term throughput overruns.
+
 ## Benchmarking against Standalone ChronicleDB
 
 ### Write Throughput and Latency
