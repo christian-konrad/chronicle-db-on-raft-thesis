@@ -2,29 +2,11 @@
 
 \epigraph{All software architectures capture tradeoffs, and deciding between alternatives is about choosing which tradeoffs you can live with in a particular context.}{--- \textup{Jimmy Lin}}
 
-\todo{Conclude and start a discussion}
+This work covered the topic of replication for distributed event stores and comparable data stream management systems. We discussed the terms dependability, fault-tolerance and consistency and compared various replication protocols. Based on the potential use cases of a event stores and event processing systems that could be used in edge-to-cloud networks, we found that strong consistency satisfies all cases, even if it increases the total cost of replication, namely the write latency.
 
-This work discussed... and presented ChronicleDB on a Raft...
+With strong consistency, we arrive somehow at a one-size-fits-all solution. It works in every case, but not perfectly. The trade-offs in latency and availability may make this approach not suitable enough for extremely high-throughput cases without further optimizations, but there are multiple other strategies to mitigate this, such as partitioning, which we introduced in our implementation. It may sound pessimisticly, but you can't have it all: the CAP and PACELC theorem have proven that in theory, and many implementations have shown that in practice. But actually, it is not that bad at all: even if there will always be a decision to be made between generalized vs. specialized implementations, both offer better dependability and scalability properties than a single-node deployment may ever be possible to serve.
 
-With strong consistency, we arrive somehow at a one-size-fits-all solution. It works in every case, but not perfectly. The trade-offs in latency and availability may make this approach not suitable enough for extremely high-throughput cases, but there are multiple other strategies to mitigate this, such as partitioning, which we will introduce in our implementation. It may sound pessimisticly, but you can't have it all: the CAP and PACELC theorem have proven that in theory, and many implementations have shown that in practice. But actually, it is not that bad at all: even if there will always be a decision to be made between generalized vs. specialized implementations, both offer better dependability and scalability properties than a single-node deployment may ever be possible to serve.
-
-TODO if we allow for OOO, it is still not suitable for real-time applications with high business criticality, but this is already the case for standalone ChronicleDB (but chance for OOO is higher in distributed Chronicle)
-
-We have shown this in the evaluation: ...
-
-<!-- Style in this way:
-
-This paper presented UNISTORE, the first fault-tolerant and
-scalable data store that combines causal and strong consistency. UNISTORE carefully integrates state-of-the-art scalable
-protocols and extends them in nontrivial ways. To maintain
-liveness despite data center failures, unlike previous work,
-UNISTORE commits a strong transaction only when all its
-causal dependencies are uniform. Our results show that UNISTORE combines causal and strong consistency effectively:
-3.7× lower latency on average than a strongly consistent system with 1.2ms latency on average for causal transactions. We
-expect that the key ideas in UNISTORE will pave the way for
-practical systems that combine causal and strong consistency
- -->
-
+As a result of our research, we presented ChronicleDB on a Raft, a Raft-based replication layer for the high-performance ChronicleDB event store. We have shown that we can provide a replication layer that allows us to deploy ChronicleDB on a distributed cluster, while providing strong consistency to clients—to some degree even for out-of-order events. We evaluated ChronicleDB in regards of the expected trade-offs. We have run all our evaluations on a single stream only. Both the median and maximum throughput for a single stream is significantly lower (almost 3 times for median and 5 times for maximum throughput) compared to standalone ChronicleDB on the same machine. We expect higher throughputs when writing to multiple streams, since this would leverage the write load distribution of Multi-Raft. With such horizontal scaling, we would expect to outperform standalone ChronicleDB. Since our prototype implementation is far from being optimized, we expect that a production-ready distributed ChronicleDB yields better performance, even on a per-stream level. In addition, running ChronicleDB on a distributed cluster increases hardware and infrastructure costs, but this is negligible compared to the benefits in achieving fault tolerance and availability.
  
 <!--
 Also write a discussion:
@@ -47,21 +29,7 @@ https://www.scribbr.co.uk/thesis-dissertation/discussion/
 https://www.scribbr.co.uk/thesis-dissertation/conclusion/
 -->
 
-- Has negative impact on performance (within the expectations of strong consistency) when scaling vertically
-- Can have a positive impact when scaling horizontally, when partitioning is leveraged in a smart way
-- Is fault-tolerant as Raft...
-- Raft formally proven
-    - If ratis is 100 % following raft protocol and therefore formally correct still to be confirmed
-- Possible to build a strong-consistent event store with great availability
-- TODO serialization expensive (and what else?)
 
-The given implementation of the Raft replication protocol has a high cost of replication. With a growing number of replica nodes, the throughput decreases. There are various strategies to address this issue: partitioning strategies (TODO ref to section),... to mention a few. They all come with some level of trade-offs.
-
-## Cost of Replication
-
-We have run all our evaluations on a single stream only. As we expected, both the median and maximum throughput for a single stream is significantly lower (almost 3 times for median and 5 times for maximum throughput) compared to standalone ChronicleDB on the same machine. We expect higher throughputs when writing to multiple streams, since this would leverage the write load distribution of Multi-Raft. With such horizontal scaling, we would expect to outperform standalone ChronicleDB.
-
-In addition, running ChronicleDB on a distributed cluster increases hardware and infrastructure costs, but this is negligible compared to the benefits in achieving fault tolerance and availability.
 
 ## Recommendations and Future Work
 
@@ -71,161 +39,28 @@ In addition, running ChronicleDB on a distributed cluster increases hardware and
 We refer to Gotsman et al. [@gotsman2016cause] to help deciding for a consistency model. If low latency is important, we strongly advice system architects to think about their event design and apply practices of _domain-driven-design_ (DDD), such as breaking down their application to trivial facts (domain events) and derived aggregates and categorizing them as monotonic or non-monotonic, as described in subsection [@sec:consistency-decisions]. Afterwards, the appropriate consistency model can be decided upon, which further guarantees safety and liveness for the adapted system design. If latency is not that important or can be mitigated in other ways through sharding and other practices, we recommend opting for strong consistency, as this ensures safety in any case and allows starting with a simple system design that can be better thought out afterwards. Regarding out-of-order events, they must be either disallowed to provide strong consistency, or the consistency level must be explicitly flagged as eventual consistency, even if a strongly consistent replication protocol is used. We also recommend to look at time-bound partial consistency, as it can help with out-of-order events. We hope that this work will serve as a guidance here.
 -->
 
-TODO finish impl of what we found to be a bottleneck and re-run evaluation
-
+We have noticed that our solution leads to a significant performance drop. Since we did not implement any optimizations other than a simple buffer, this is in line with our expectations. We have discovered possible optimizations and recommend system developers to take them into account when implementing a production-ready distributed event buffer.
 
 ### Consistency Considerations
 
-- As other related data stores such as InfluxDB show, having all data replicated strong consistently with a consensus protocol may be inpractical and slows down the system/currently this is challenging to provide both strong consistency and support high throughputs
-- As others are doing (Apache IoTDB), one could use different protocols for different parts of the implementation, as such for meta data/cluster management, region management, schemas, data itself... Maybe just use raft for meta data and have primary-copy or another approach for the data itself? Perhaps the user should decide this for themselves based on their consistency requirements?
-- But also others like EventStoreDB do provide strong consistency on all layers, to the cost of... 
-
-\todo{Evaluate performance of EventStoreDB!}
-
-TODO the final consistency model should be decided on
-- use case
-- requirements of the programmer: Complexity of the API (dist sys renders itself like a single node app or do they need to work around stale data?)
-- write vs read heavyness
-- infrastructure capabilities and mitigation possibilities (sharding possible, network partitioning resilience, latency improvements...)
-
-We recommend that you should try to go for strong consistency, apply different discussed techniques (sharding/partitioning, partial replication... etc) and then work your way down the consistency levels until your system satisfies the practical (!) requirements, as theoretical considerations often do not manifest in real world applications. TODO cite again many of the strong consistent but HA and low latency systems we have discussed throughout the work
-
-TODO out-of-order: Violates strong consistency (not from the point of view of the event store, but from the point of view of client applications expecting a reliable stream of events); maybe allow to choose two consistency levels: strong consistency with additional out-of-order and "actual strong consistency"?
-
+Some related data stores such as InfluxDB show that strongly consistent replication of all data with a consensus protocol can be impractical and slows down the system, at least if no further optimizations are made in the replication layer. Others, such as TigerBeetle, have demonstrated that this can still be done. We refer to sections [@sec:cost-of-replication] and [@sec:user-decide-conclusion] for further considerations on consistency. The best compromise we can think of at the moment is to allow multiple levels of consistency to coexist in the database, and to let the user decide on the consistency model a per-stream basis.
 
 There is a few recent literature with interesting approaches to state machine replication for streams, such as building the replication layer itself on top of a stream processing engine [@lawniczak2021stream]. We recommend to keep track of the literature and research here, since this is a relatively young area.
 
-#### Multiple Consistency Levels
+### Further Optimizations
 
-"A compromise is to allow multiple consistency levels to coexist in the data store." [@bravo2021unistore]
+In this final section, we outline some of the possible optimizations to Raft on the one hand, and to distributed event stores on the other. Throughout this work, we pointed to them in the discussions of consistency models, system design and our implementation.
 
-- reference CAP and PACELC and describe our trade-offs, and if we could allow users to configure the trade-offs themselvesor 
-- We could limit consensus to critical parts, like creating and evolving an event schema. (All clients agree to simultaneously make the change.), updating meta data and the quorum itself
-- We could also just let database user (= developer) decide
-- We have seen both approaches in other db vendors, as well as fully strong consistently replicated dbs
-- Partial replication and geo-replication
-- If serving data to only a portion of users, not all data need to be replicated into all locations
-- Metadata (book keeper) always strong consistent
-- But let user decide on consistency level for data
-- Similar to Kafka
-- So it is suitable to architect an edge-cloud system design with multiple different consistency levels to fit the edge levels best 
-
-- Recommendation: Allow for different consistency levels on a per-stream basis.
-
-
-<!-- TODO CRDTs do not seem to be suitable. Redis say they can be used for Multi-region IoT data ingest, but I think this will slow the event store down too much by idempotency and so on. But what about SECROs?
-And: Can't we transform the whole ChronicleDB TAB+ tree into a CRDT like with causal trees? http://archagon.net/blog/2018/03/24/data-laced-with-history/#causal-trees-in-depth Can we make all operations idempotent and commutative? 
----
-It could also be considered to implement the event store as an CRDT instead of applying consensus, limiting its consistency to strong eventual consistency. This implementation would be feasible to be used on the edge in edge-cloud networks, beeing able to ingest high volumes of events while providing high availability, while feeding them into a central cluster and merging them. But in this case, the overall performance of the event store will be compromised, as this requires out-of-order merging. Efficient merging strategies need to be discovered to allow for such a CRDT implementation.
--->
-
-### Horizontal Scalability
-
-There are also other strategies to improve the throughput that do not violate correctness and consistency guarantees...
-
-#### Sharding/Partitioning
-
-- Per time split; Log merge... 
-    - Like in IoTDB: "data partitions can be defined according to both time slice and time-series ID" [@wang2020iotdb]
-- Allows to increase number of nodes without decreasing throughput
-- Show diagram of further partitioning/sharding techniques (i.e. by timesplit..., reference methods from background chapter here)
-
-TODO refer to system design; sharding of a single stream
-
-- TODO if there will ever be a concept of transactions here, adjusting the protocol the be coordination-free may be suitable, as with Eris, to avoid high latency by transaction and replication round-trips, but it requires control of the infrastructure (i.e., the network layer)
-
-#### Elasticity: Auto Scaling and Recovery
-
-- Multi-leader etc., TODO reference to the raft extensions section
-- Using Kubernetes?
-- Bring it together with Kubernetes Replicas
-- What about failure detection in general?
-- Does it make sense to move failure detection to K18n? Would this just add a new layer of dependency on a management process, that we initially wanted to avoid?
-- Monitoring throughput and convergence; continously calculating maximum tolerated throughput that does not result in a negative convergence rate.
-
-#### Geo-Replication
-
-Providing strong consistency with geo-replication is expected to be too expensive for high-throughput event stores, as shown in subsection [@sec:geo-replication]. Depending on the locations of the geo-replicas, it will limit the maximum throughput dramatically. Batching writes, i.e. by using a buffer, can help, but only to a certain extend. 
-We recommend to invest time into investigating modern geo-replication approaches, e.g. such with weaker consistency models and coordination-free variants, justified to the cost of consistency. Note that not all use cases allow for this. In that cases, we suggest to look into improved sharding techniques or multi-leader or leaderless Raft, or just mirroring the data into read-only replicas (which maintain the correct event order).
-
-[@hsu2021cost] 
-
-### Raft Optimizations
-
-- A paper describes a formal mapping of Paxos optimization to Raft with guaranteed correctness... [@wang2019parallels]
-
-For Raft improvements and extensions in general, see subsection [@sec:raft-extensions].
-
-#### Raft Log Implementation
-
-\todo{mention here AND in system design}
-TODO the log is a very naive implementation. Popular applications even use efficient embedded (in-memory?) storage engines such as RocksDB (like CockroachDB https://github.com/cockroachdb/cockroach/issues/38322) - and they also come with WAL logs, so we have a multi-layer architecture of the raft log. Even if this comes with some issues, we can learn from it and use a better log approach. Our naive approach (the Ratis default one) can slow down the system. Makes sense to have the raft log running on a different thread to not block other operations and improve I/O
-
-allow for multi-threaded: one thread writes to the log, the other replicates
-
-TODO even consider log-less replication, to satisfy the "The log is the database" thing again, as described in [@skrzypzcak2020towards]
- In contrast to the log-based architecture, replicas agree on a sequence of replica states instead of a sequence of commands
-
- "the leader writes the log entry to its disk in parallel
-with replicating the entry to the followers, which can reduce latency significantly"
-
-"Transient raft log; after succesful commit, entries in log are gone; index is always latest snapshot. Also marry raft log and OOO write-ahead log. If we need to derive the log again: with OOO, not possible"
-
-#### Buffer Improvements
-
-One caveat of our implementation is, that log entries lose atomicity: instead of having one log entry per event, a log entry resembles a batch insertion command. This is shown in figure \ref{fig:chronicle-raft-log} b). A better implementation would be to implement batching right in the log instead of outside the log. The `appendEntries` message of Raft allows to send multiple Raft entries at once. We currently don't take advantage of this.
-
-The traditional Raft algorithm executes a client’s request to meet linear consistency with sequential execution and sequential submission, which badly impacts performance.
-As a possible extension, Li et al. propopsed an additional asynchronous batch processing approach [@li2022improved] that increases the performance of raft in the face of concurrent requests, which in their experimental setup improved the raft performance by 2 to 3.6 times.
-
-#### Introduce Learner Roles
-
-A weakness of Raft compared to Paxos is the absence of the learner role. By introducing dedicated learner nodes, read latency can be improved by providing data-locality for certain shards. This comes especially handy for operating on the edge: It allows to provide read replicas on the edge, close to the clients, without compromising write latency.
-
-In addition, learners would help to put load of from the leader. With increasing load, the leader is more likely to delay the delivery of heartbeats. We experienced in our evaluation, that with spikes in throughput that are above the maximum tolerated throughput, the chance of blocking all of the the leader's threads increases. Once this happens, the leader won't send heartbeats anymore in time, which triggers leader election. This adds more latency and causes further client requests to accumulate, ending up in a loop of leader elections and finally a complete crash of the system. By moving the read load from the leader, the chance for this to happen decreases at least by some degrees.
-
-#### Client Pushback
-
-As we have shown in the above case, a too-high throughput rate can end up in desaster, rendering the whole cluster unavailable. To further prevent this, client requests should be pushed back once the group leader approaches its maximum throughput. This could be either implemented in the cluster by returning pushback messages, or additionally in the client library to provide an interface for developers to take action in such an event, for example by buffering on client side, or simply increasing the intervals between sensor measurements, if applicable.
-
-### Distributed Queries
-
-- Reference to popular databases
-- JOINs between streams
-- Queries over sharded time splits
-
-### Distributed Storages
-
-- Hadoop / HDFS
-- S3
-
-### `gRPC` and `Protocol Buffers` API
-
-`Java` SDK... see [@sec:messaging]
-
-- Performance Boost
-- Protobuf must be married with ChronicleDB schemas
-- May infer the one from the other
-- Or may consider Avro as the source of truth for both?
-
-### Framework Choices
-
-At the time of this writing, the Hashicorp Raft implementation in Go [https://github.com/hashicorp/raft] is the most popular, reliable and supported one... due to the characteristics of the Go language and ecosystem which make Go a perfect fit for challenges in distributed systems, there is a strong advice to use this implementation if you want to start with a proven solution... plug'n'play (is it?)... extensible (is it?)
-
-Apache Ratis has support problems... `Java` makes it somehow inefficient (does it?), but it is very extensible and customizable (big plus) and fits 1:1 in your `Java` environment (as for ChronicleDB and Spring Boot)...
-
-### User Friendliness
-
-- One single RaftServer per Node
-    - Get rid of addtional port for management quorum
-- Code generator for messages
-    - Creates operationMessages, clients and executor bodies from protos
-    - To reduce time to value and potential implementation errors
-- Provide as library
-    - Developers can include it to their spring boot apps to quickly develop and provide replicated data services
-
-### Further Missing Implementations
-
-- Exception Handling, Graceful shutdown...
+- Sharding is essential to allow for horizontal scalability, either by time splits, on the current split, or both.
+- Support of auto-scaling is crucial for production-ready systems, especially those running in containerized environments, such as Kubernetes.
+- Monitoring throughput and stream convergence behaviour allows to continously calculate the maximum tolerated throughput that does not result in a negative convergence rate. Since negative convergence causes random leader elections, selected clients should receive push-backs in this case to prevent the system from becoming unavailable for all clients.
+- Strong consistency is very expensive when running geo-replicated systems. We recommend to run an event processing agent between geo-replicated systems if strong consistency is not neccessary across the globe.
+- There is a multitude of raft optimizations that we presented in section [@sec:raft-extensions], that can increase the total throughput, but may violate the understandability property of Raft. Another paper also tries to map popular optimizations of Paxos to Raft [@wang2019parallels].
+- We use the naive implementation of the Raft log, provided by Apache Ratis, which is extremely slow. The Ratis team recommends that you implement your own log, and so do we. We proposed a log that only consists of pointers to the event store, to support the "The log is the database" philosophy again.
+- We have not implemented a snapshotting mechanism for the event store state machine and therefore strongly recommend that this should be done.
+- Our buffer is a simple solution, but it violates atomicity of Raft log entries. This should be done properly.
+- We recommend to introduce learner roles or something similar to put load of from the leader. With increasing load, the leader is more likely to delay the delivery of heartbeats. We experienced in our evaluation, that with spikes in throughput that are above the maximum tolerated throughput, the chance of blocking all of the the leader's threads increases. Once this happens, the leader won't send heartbeats anymore in time, which triggers leader election. By moving the read load from the leader, the chance for this to happen decreases at least by some degrees.
+- We can also imagine a dedicated role that serves continuous queries.
+- But first, distributed queries must be implemented, since our prototype does not provide query processing at all.
 
 \pagebreak

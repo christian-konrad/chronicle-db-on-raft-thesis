@@ -330,8 +330,6 @@ Li et al. recently suggested to reduce the latency of Raft with the introduction
 
 #### Byzantine Fault Tolerant Raft
 
-TODO see [Types of Possible Faults](#sec:possible-faults) and [Consensus Protocols](#sec:consensus-protocols) for reference
-
 There are certain approaches in research on byzantine fault tolerant versions and derivations of Raft. Since we do not focus on byzantine fault-tolerance, we only list them here for reference. Notable ones include Tangaroa [@copeland2016tangaroa], Validation-Based Byzantine Fault Tolerant Raft [@tan2019vbbft] and this nameless one [@clow2017byzantine]. Some of them are used in blockchains.
 
 #### Learner Roles 

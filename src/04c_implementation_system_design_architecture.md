@@ -599,7 +599,7 @@ Note that even popular event stores and similar systems often do not support str
 
 What have we decided for? The previous discussion has shown that the consistency model applicable heavily depends on the use case of the event store: event sourcing requires at least causal consistency, ESP relies commonly on strongly consistent data and in CEP, pattern matching also works on monotonicly derived aggregates on eventual consistent data. Non-realtime applications are usually satisfied with eventual consistency. And there are also applications that are satisfied with a strong ordering by insertion time. This shows that the event store is not the application, but a platform, inheriting its consistency requirements from the consumers. We must keep in mind that an event in a stream may be associated with state changes in multiple consuming applications with different requirements. Similarly, the literature on event processing emphasizes that the degree of consistency is highly dependent on the use case and end-user requirements [@barga2006consistent]. 
 
-##### Let the User Decide.
+##### Let the User Decide. {#sec:user-decide-conclusion}
 
 In a one-size-fits-all event store, the user should be able to decide for the consistency model. However, the complexity of such an implementation is beyond the scope of this thesis. We focus on one particular consistency model in the implementation of our demo application and highlight its trade-offs. wAt the same time, we refer to the insights gained in this section to develop such an application with multiple consistency layers that allows the user of the event store to decide on consistency, e.g., on a per-stream basis.
 
