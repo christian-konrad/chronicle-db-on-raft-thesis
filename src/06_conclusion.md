@@ -57,6 +57,12 @@ https://www.scribbr.co.uk/thesis-dissertation/conclusion/
 
 The given implementation of the Raft replication protocol has a high cost of replication. With a growing number of replica nodes, the throughput decreases. There are various strategies to address this issue: partitioning strategies (TODO ref to section),... to mention a few. They all come with some level of trade-offs.
 
+## Cost of Replication
+
+We have run all our evaluations on a single stream only. As we expected, both the median and maximum throughput for a single stream is significantly lower (almost 3 times for median and 5 times for maximum throughput) compared to standalone ChronicleDB on the same machine. We expect higher throughputs when writing to multiple streams, since this would leverage the write load distribution of Multi-Raft. With such horizontal scaling, we would expect to outperform standalone ChronicleDB.
+
+In addition, running ChronicleDB on a distributed cluster increases hardware and infrastructure costs, but this is negligible compared to the benefits in achieving fault tolerance and availability.
+
 ## Recommendations and Future Work
 
 \epigraph{\hfill Strive for progress, not perfection.}{}
@@ -64,6 +70,8 @@ The given implementation of the Raft replication protocol has a high cost of rep
 <!--
 We refer to Gotsman et al. [@gotsman2016cause] to help deciding for a consistency model. If low latency is important, we strongly advice system architects to think about their event design and apply practices of _domain-driven-design_ (DDD), such as breaking down their application to trivial facts (domain events) and derived aggregates and categorizing them as monotonic or non-monotonic, as described in subsection [@sec:consistency-decisions]. Afterwards, the appropriate consistency model can be decided upon, which further guarantees safety and liveness for the adapted system design. If latency is not that important or can be mitigated in other ways through sharding and other practices, we recommend opting for strong consistency, as this ensures safety in any case and allows starting with a simple system design that can be better thought out afterwards. Regarding out-of-order events, they must be either disallowed to provide strong consistency, or the consistency level must be explicitly flagged as eventual consistency, even if a strongly consistent replication protocol is used. We also recommend to look at time-bound partial consistency, as it can help with out-of-order events. We hope that this work will serve as a guidance here.
 -->
+
+TODO finish impl of what we found to be a bottleneck and re-run evaluation
 
 
 ### Consistency Considerations

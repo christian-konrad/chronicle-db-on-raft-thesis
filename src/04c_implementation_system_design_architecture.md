@@ -251,8 +251,6 @@ With punctuations, only the punctuations must be ordered, and events between the
 
 In ChronicleDB, a similar approach could be adopted to mitigate the out-of-order problem. With this approach, events would not be required to be inserted in event order, while the punctuation allows for strong ordering guarantees in the aftermath. It would also require event producers to support punctuation. There is literature covering the case that event producers can not produce punctuations themselves, which requires the stream processor or event store to deduce these themselves (called a _heartbeat_ then) [@srivastava2004flexible]. Punctuation processing could either be implemented right in the replication protocol by introducing it in the log and weaking the consistency guarentees between punctuation, or in the event streams themselves. We haven't figured out how this could be implemented, though (what if punctuations arive themselves out-of-order?).
 
-\todo{Draw chart for the shopping cart case with punctuation}
-
 Not all use cases can be served with OOP, as implementing and applying punctuation is far from trivial and can not be used in every situation. Nethertheless, this approach comes in handy for all real-time applications where no strong consistency is needed, such as calculating moving averages and similar aggregates.
 
 ##### Non-Real-Time Applications.
@@ -538,8 +536,6 @@ The out-of-order and inconsistency probabilities can be estimated by continously
 
 With this, rather then deciding for the heuristic watermark, a real-time application could agree on a tolerated inconsistency probability. This means that they would define the minimum required consistency probability $p_{C}$ for the remainder of the stream (the sequence of the stream that is allowed to be read) by configuration. This is equal to the the minimum inconsistency probability that the inconsistency window must cover, making it simple to argue about the length of the inconsistency window (and to derive the heuristic watermark):
 
-\todo{If time, denote this as an algo}
-
 We continously observe and register the delays of out-of-order events in the stream and set the window size in a way that it covers the $p_{C}$ percentile of these delays, including an additional tolerance area (such as 20% of this timeframe). We choose the percentile so we can exclude outliers, as shown in figure \ref{fig:ooo-distribution}. We don't recommend to choose a value of 100%, as if any outlier occurs (due to a node fault or other extreme delays), it would render the inconsistency window too long, thus denying any near-real-time properties. 
 
 <!--
@@ -577,8 +573,6 @@ By investigating the convergence behavior of a stream, we can argue about differ
 #### Buffered Inserts {#sec:buffer-theory}
 
 One solution to cope with out-of-order events is to buffer `insert` operations temporarily before writing them to the stream. The buffer is flushed and all events written in a batch once its content reaches a certain size or after a certain timeout after the last write. On flush, events in the buffer are ordered by event time, instead of insertion time, ensuring consistency for the batch write. This also decreases latency introduced by the replication protocol dramatically, since the network round-trips are reduced, which we will elaborate later in this chapter. We found similar approaches in the literature [@srivastava2004flexible].
-
-\todo{Refer to this section later again in implementation}
 
 The the buffer size and timeout can be chosen in a way that it covers the max delay of out-of-order events—respectively the inconsistency window. This has a similar effect to implementing the inconsistency window in the query processor, with the difference that events in the buffer are only hold in-memory on a single machine instead of being written directly to the event stream, thus causing the risk of data loss of the events in this buffer. While in our approach, the user must define the buffer size, to guarantee consistency, the buffer size should be adjusted according to _progress requirements_.
 
@@ -619,8 +613,6 @@ https://www.cockroachlabs.com/blog/limits-of-the-cap-theorem/
 -->
 
 <!--
-\todo{Incorporate this statement}
-
 I believe that maintaining eventual consistency in the application layer is too heavy of a burden for developers. Read-repair code is extremely susceptible to developer error; if and when you make a mistake, faulty read-repairs will introduce irreversible corruption into the database.
 -->
 
@@ -640,7 +632,7 @@ The buffer can handle out-of-order arrivals of events, if its size and timeout a
 
 ### Deciding for a Replication Protocol
 
-Now that we decided for strong consistency, the space of possible replication protocols (presented in detail in chapter [@sec:background]) is narrowed down to a few, such as consensus protocols, state machine replication and derivates. Of these protocols, the protocol of our choice is Raft (see subchapter [@sec:raft]). Here follows a list of reasons that justify the use of Raft for our purposes:
+Now that we decided for strong consistency, the space of possible replication protocols (presented in detail in chapter [@sec:background]) is narrowed down to a few, such as consensus protocols, state machine replication and derivates. Of these protocols, the protocol of our choice is Raft (see subchapter [@sec:raft]), or more precisely: Multi-Raft. Here follows a list of reasons that justify the use of Raft for our purposes:
 
 - It provides strong consistency,
 - An implementation can be derived from the complete and concise specification, which reduces the chance to introduce violations of correctness guarantees,
@@ -668,7 +660,7 @@ There are several Raft implementations in different programming languages. The R
 
 There may be a few other libraries that are not on this list, but we haven't investigated that yet because this list looks very comprehensive.
 
-#### Library Decision
+#### Library Decision {#sec:library-decision}
 
 Before introducing the library we have chosen, we list the requirements we have for a suitable library implementation.
 
@@ -803,8 +795,6 @@ This subsection outlines the architecture of ChronicleDB on a Raft. The system i
 
 #### Changes in the ChronicleDB Core {#sec:chronicledb-core-changes}
 
-\todo{Mention the other patterns we used other then facades}
-
 A few adjustments where to be made on the original implementation of ChronicleDB. Our adjustments are made on the basis of ChronicleDB version `0.2.0-prealpha`. The original implementation consists of multiple dependent packages:
 
 - `chronicledb-event`: The ChronicleDB event store, which is dependent on the following:
@@ -916,12 +906,6 @@ In addition, the metadata state machine provides the following commands:
 - `GET(string scope_id, string key)` returns the value for the key of the given scope,
 - `GET_ALL_FOR_SCOPE(string scope_id)` returns the whole map for a scope,
 - `GET_ALL()` returns all maps for all scopes. 
-
-<!--
-##### Failure Detection.
-
-\todo{Describe the heartbeat mechanism} 
--->
 
 #### Event Store State Machine {#sec:event-store-state-machine}
 
@@ -1099,8 +1083,6 @@ Figure \ref{fig:ha-chronicle-architecture} illustrates the buffer architecture:
   \item The flushed buffer content is inserted into the event store in a batch operation. Before inserting, the events are ordered in-place in the buffer to prevent out-of-order inserts in the given set. The flush and insertion happen in a single, atomic operation.
   \item The insert of the events happens in a batch. The insert operation, including the event payloads, is appended to the Raft log, replicated and applied to the state machine. Following the Raft consensus protocol, the insertion is acknowledged once a majority of the nodes committed the operation. The state machine manages a state object, that itself encapsulates the actual ChronicleDB event store index.
 \end{enumerate}
- 
-\todo{Algo of the buffer}
 
 ##### Advantages of the Buffer.
 
@@ -1434,8 +1416,6 @@ TODO feeding in env file for properties
 The prototype comes with a simple user interface that helps to access various functions the cluster manager, such as checking the vitality of the cluster. It serves an overview over all running raft groups and the current roles of each node in that groups. It also allows to manage event streams and to run aggregations on them, mainly to continuously observe the throughput in evaluation settings. It is also used to evaluate and demonstrate the aggregations themselves.
 
 It allows navigation between cluster nodes and can also be used to check the impact of the cluster's strong consistency from the user perspective, simply by running the user interfaces of all nodes in multiple browser windows and observing how changes are rendered simultaneously.
-
-\todo{Screenshot of a Raft Group}
 
 \begin{figure}[H]
   \centering

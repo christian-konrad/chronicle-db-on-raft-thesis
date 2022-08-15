@@ -19,7 +19,7 @@ Describe the criteria you used in choosing your approach to your research. List 
 
 The results of our qualitative research are significant since we covered a broad range of relevant literature in our analysis. We analyzed both the history and present of replication in distributed systems for fault-tolerance, dependability, consistency and scalability. We examined not only industry standards, but also not-so-popular approaches that have received less attention in the academic environment. 
 
-Our qualitative results are (a) reliable and (b) valid because (a) our benchmarking setup can be easily replicated (see the Appendix for a Jupyter notebook that can be run against our implementation of ChronicleDB) and (b) our results clearly depict the metrics needed to measure trade-offs and overall performance.
+Our quantitative results are (a) reliable and (b) valid because (a) our benchmarking setup can be easily replicated (see the Appendix for a Jupyter notebook that can be run against our implementation of ChronicleDB) and (b) our results clearly depict the metrics needed to measure trade-offs and overall performance. We also point out to the limitations of our evaluation and possible future steps.
 
 <!-- Discuss any obstacles and their solutions
 Outline any obstacles you encountered in your research and list how you overcame them. The problem-solving skills you present in this section strengthen the validity of your research with readers. -->

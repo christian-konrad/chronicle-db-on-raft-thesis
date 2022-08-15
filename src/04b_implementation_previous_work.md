@@ -45,8 +45,6 @@ Also look at https://www.researchgate.net/figure/Consistency-models-comparison_t
     \label{table:systems-studied}
 \end{table}
 
-\todo{consistency of other orchestration engines, such as orkes?}
-
 \begin{figure}[h]
   \centering
   \includegraphics[width=0.65\textwidth]{images/CAP-dbs.pdf}
@@ -289,7 +287,7 @@ The database itself is available open-source, written in the language `Zig`, whi
 
 QuestDB is a standalone time-series database. The authors claim that "QuestDB is the fastest open source time series database" [@quest2022db]. This claim is underpinned by a benchmark suite that is public and can be run by developers themselves, and their benchmark is impressive: on the same setup, QuestDB shows a peak throughput of almost 1 mio rows/s, while InfluxDB only comes up with around 330k rows/s [@quest2022benchmark].
 
-QuestDB is currently not a distributed database. While they provide a cloud offering, this is not fault-tolerant. Based on their roadmap, they aim to support distributed reads and writes in upcoming releases[^quest-db], including handling of out-of-order events.
+QuestDB is currently not a distributed database, which may explain the high throughput. While they provide a cloud offering, this is not fault-tolerant. Based on their roadmap, they aim to support distributed reads and writes in upcoming releases[^quest-db], including handling of out-of-order events.
 
 [^quest-db]: Cf. https://github.com/orgs/questdb/projects/1/views/5 for reads and https://github.com/questdb/roadmap/issues/12 for writes
 

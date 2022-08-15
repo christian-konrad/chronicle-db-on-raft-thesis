@@ -283,7 +283,7 @@ Raft allows for log compaction by creating snapshots of resulting states from co
 
 We discussed Raft from the perspective of a fixed cluster configuration. In practice, clusters are often reconfigured during their lifetime. Events that result in a change in cluster membership include upscaling outdated machines, replacing crashed servers, outscaling when adding new partitions, rebalancing when a node has proportionally too much load, or increasing or decreasing the replication factor. In some cases, such as in containerized environments, it may be cheaper and more convenient to discard a crashed node and immediately boot a new node with a state snapshot, rather than rebooting a failed node. Raft supports this conveniently and natively, compared to other replication protocols. We won't explain this in detail here and refer to the extended version of the original paper [@ongaro2014raft].
 
-### Cost of Replication
+### Cost of Replication {#sec:raft-costs}
 
 In theory, maintaining strong consistency is achievable but expensive. Raft is used extensibly in production systems, including those that manage a lot of data with very high throughput. We will show some of those throughout later chapters of this work.
 
