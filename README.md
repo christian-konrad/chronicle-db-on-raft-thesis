@@ -1,7 +1,5 @@
 # Log Replication using Raft Consensus Protocol for ChronicleDB, a High-Throughput Time-Series Database
 
-(HA and Strong Consistency in Title???)
-
 Master Thesis written in Markdown and Latex, compilable using Pandoc
 
 ### How to build
